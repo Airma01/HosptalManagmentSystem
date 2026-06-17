@@ -127,3 +127,7 @@ C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\Microsoft.IdentityModel.Logging.dll
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\Microsoft.IdentityModel.Tokens.dll
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\System.IdentityModel.Tokens.Jwt.dll
+C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
+C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\Microsoft.IdentityModel.Protocols.dll
+C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
+C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\HospitalSys.sourcelink.json

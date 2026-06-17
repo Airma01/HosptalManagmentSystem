@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using HospitalSys.Models;
+using HospitalSys.Models.HospitalStruct;
+using HospitalSys.Models.PatientManagment;
 namespace HospitalSys.Data
 {
     public class AppDbContext:DbContext
@@ -19,8 +21,8 @@ namespace HospitalSys.Data
             .Property(u => u.Gender)
             .HasConversion<string>();
 
-            modelBuilder.Entity<Users>()
-            .Property(u => u.UserRole)
+            modelBuilder.Entity<Patient>()
+            .Property(u=>u.Gender)
             .HasConversion<string>();
 
             modelBuilder.Entity<SuperAdmins>()
@@ -28,6 +30,15 @@ namespace HospitalSys.Data
             .HasConversion<string>();
         }
         public DbSet<Users> Users {get;set;}
+        public DbSet<Role> Roles {get;set;}
+        public DbSet<Doctor> Doctors {get;set;}
+        public DbSet<Nurse> Nurses {get;set;}
+        public DbSet<Receptionist> Receptionists {get;set;}
+        public DbSet<Pharmacist> Pharmacists {get;set;}
+        public DbSet<LaboratoryTechnician> LaboratoryTechnicians {get;set;}
+        public DbSet<Cashier> Cashiers {get;set;}
+        public DbSet<ClinicalDepartment> ClinicalDepartments {get;set;}
+        public DbSet<TriageDepartment> TriageDepartments {get;set;}
         public DbSet<SuperAdmins> SuperAdmin {get;set;}
         
     }
