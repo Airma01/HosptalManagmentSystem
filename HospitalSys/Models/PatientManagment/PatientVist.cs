@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using HospitalSys.Models.BillingAndPayment;
 using HospitalSys.Models.Consultation_M;
 
 namespace HospitalSys.Models.PatientManagment
@@ -16,6 +17,7 @@ namespace HospitalSys.Models.PatientManagment
 
         public List<Triage> Triage {get;set;} = new();
         public List<Consultation> Consultation {get;set;} = new();
+        public List<Bill> Bill {get;set;} = new();
         
 
     }

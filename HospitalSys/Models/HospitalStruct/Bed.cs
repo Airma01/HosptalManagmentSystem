@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using HospitalSys.Models.Inpatient;
 
 namespace HospitalSys.Models.HospitalStruct
 {
@@ -11,5 +12,7 @@ namespace HospitalSys.Models.HospitalStruct
         public string BedNumber {get;set;} = "";
 
         public string Status {get;set;} = "";
+
+        public List<Admission> Admission {get;set;} = new();
     }
 }

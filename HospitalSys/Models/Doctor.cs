@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using HospitalSys.Models.Consultation_M;
 using HospitalSys.Models.HospitalStruct;
+using HospitalSys.Models.Inpatient;
 using HospitalSys.Models.PatientManagment;
 using HospitalSys.Models.Pharmacy.Common;
 
@@ -28,5 +29,6 @@ namespace HospitalSys.Models
         public List<Consultation> Consultation {get;set;} = new();
         public List<MedicalRecord> MedicalRecord {get;set;} = new();
         public List<Prescription> Prescription {get;set;} = new();
+        public List<Admission> Admission {get;set;} = new();
     }
 }

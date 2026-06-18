@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using HospitalSys.Models.PatientManagment;
 
 namespace HospitalSys.Models.HospitalStruct
 {
@@ -10,5 +11,7 @@ namespace HospitalSys.Models.HospitalStruct
         public string DepartmentName {get;set;} = "";
         [MaxLength(250)]
         public string Description {get;set;} = "";
+
+        public List<Triage> Triage {get;set;} = new();
     }
 }

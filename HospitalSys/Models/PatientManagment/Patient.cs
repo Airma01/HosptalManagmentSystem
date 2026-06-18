@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
+using HospitalSys.Models.BillingAndPayment;
 using HospitalSys.Models.Consultation_M;
+using HospitalSys.Models.Inpatient;
 using HospitalSys.Models.Pharmacy.Common;
 
 namespace HospitalSys.Models.PatientManagment
@@ -25,10 +27,11 @@ namespace HospitalSys.Models.PatientManagment
         [MaxLength(100)]
         public string EmergencyContact {get;set;} = "";
         public DateTime Created_at {get;set;} = DateTime.UtcNow;
-
         public List<PatientVist> PatientVist {get;set;} = new();
         public List<Appointment> Appointment {get;set;} = new();
         public List<MedicalRecord> MedicalRecord {get;set;} = new();
         public List<Prescription> Prescription {get;set;} = new();
+        public List<Bill> Bill {get;set;} = new();
+        public List<Admission> Admission {get;set;} = new();
     }
 }

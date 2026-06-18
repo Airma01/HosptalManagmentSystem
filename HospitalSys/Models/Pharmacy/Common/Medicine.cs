@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using HospitalSys.Models.Pharmacy.AidStore;
+using HospitalSys.Models.Pharmacy.Branch;
 using HospitalSys.Models.Pharmacy.CentralStore;
 
 namespace HospitalSys.Models.Pharmacy.Common
@@ -23,6 +24,7 @@ namespace HospitalSys.Models.Pharmacy.Common
         public List<CentralStoreTransfer> CentralStoreTransfer {get;set;} = new();
         public List<AidStoreInventory> AidStoreInventory {get;set;} = new();
         public List<AidStoreRequestDetail> AidStoreRequestDetail {get;set;} = new();
+        public List<BranchInventory> BranchInventory {get;set;} = new();
 
     }
 }

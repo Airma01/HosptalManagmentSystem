@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using HospitalSys.Models.BillingAndPayment;
 using HospitalSys.Models.Consultation_M;
 using HospitalSys.Models.PatientManagment;
 using HospitalSys.Models.Pharmacy.Branch;
@@ -21,5 +22,6 @@ namespace HospitalSys.Models.Pharmacy.Common
 
        public List<PrescriptionDetail> PrescriptionDetail {get;set;} = new();
        public List<DispenseMedicine> DispenseMedicine {get;set;} = new();
+       public List<PharmacyPayment> PharmacyPayment {get;set;} = new();
     }
 }
