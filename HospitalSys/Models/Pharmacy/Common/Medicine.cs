@@ -13,7 +13,7 @@ namespace HospitalSys.Models.Pharmacy.Common
         public string MedicineName {get;set;} = "";
         [MaxLength(200)]
         public string GenericName {get;set;} = "";
-        public double UnitPrice {get;set;}
+        public decimal UnitPrice {get;set;}
         [MaxLength(200)]
         public string UnitOfMeasure {get;set;} = "";
         

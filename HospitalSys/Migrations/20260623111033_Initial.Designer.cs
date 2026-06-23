@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HospitalSys.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260618045509_Initial")]
+    [Migration("20260623111033_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -42,9 +42,6 @@ namespace HospitalSys.Migrations
                     b.Property<int>("PatientID")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("PatientVistVistID")
-                        .HasColumnType("integer");
-
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");
@@ -61,7 +58,7 @@ namespace HospitalSys.Migrations
 
                     b.HasIndex("PatientID");
 
-                    b.HasIndex("PatientVistVistID");
+                    b.HasIndex("VisitID");
 
                     b.ToTable("Bills");
                 });
@@ -81,19 +78,57 @@ namespace HospitalSys.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("ServiceName")
+                        .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<double>("TotalPrice")
-                        .HasColumnType("double precision");
+                    b.Property<decimal>("TotalPrice")
+                        .HasColumnType("numeric");
 
-                    b.Property<double>("UnitPrice")
-                        .HasColumnType("double precision");
+                    b.Property<decimal>("UnitPrice")
+                        .HasColumnType("numeric");
 
                     b.HasKey("BillItemID");
 
                     b.HasIndex("BillID");
 
                     b.ToTable("BillItems");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.BillingAndPayment.LaboratoryPayment", b =>
+                {
+                    b.Property<int>("LaboratoryPaymentID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("LaboratoryPaymentID"));
+
+                    b.Property<decimal>("AmountPaid")
+                        .HasColumnType("numeric");
+
+                    b.Property<int>("LaboratoryCashierID")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("PaymentDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PaymentMethod")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PaymentStatus")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("TestID")
+                        .HasColumnType("integer");
+
+                    b.HasKey("LaboratoryPaymentID");
+
+                    b.HasIndex("LaboratoryCashierID");
+
+                    b.HasIndex("TestID");
+
+                    b.ToTable("LaboratoryPayments");
                 });
 
             modelBuilder.Entity("HospitalSys.Models.BillingAndPayment.PaymentHospital", b =>
@@ -104,8 +139,8 @@ namespace HospitalSys.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("PaymentID"));
 
-                    b.Property<double>("AmountPaid")
-                        .HasColumnType("double precision");
+                    b.Property<decimal>("AmountPaid")
+                        .HasColumnType("numeric");
 
                     b.Property<int>("BillID")
                         .HasColumnType("integer");
@@ -141,8 +176,8 @@ namespace HospitalSys.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("PharmacyPaymentID"));
 
-                    b.Property<double>("AmountPaid")
-                        .HasColumnType("double precision");
+                    b.Property<decimal>("AmountPaid")
+                        .HasColumnType("numeric");
 
                     b.Property<DateTime>("PaymentDate")
                         .HasColumnType("timestamp with time zone");
@@ -170,6 +205,43 @@ namespace HospitalSys.Migrations
                     b.ToTable("PharmacyPayments");
                 });
 
+            modelBuilder.Entity("HospitalSys.Models.BillingAndPayment.RadiologyPayment", b =>
+                {
+                    b.Property<int>("RadiologyPaymentID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("RadiologyPaymentID"));
+
+                    b.Property<decimal>("AmountPaid")
+                        .HasColumnType("numeric");
+
+                    b.Property<DateTime>("PaymentDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PaymentMethod")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PaymentStatus")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("RadiologyCashierID")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("RadiologyRequestID")
+                        .HasColumnType("integer");
+
+                    b.HasKey("RadiologyPaymentID");
+
+                    b.HasIndex("RadiologyCashierID");
+
+                    b.HasIndex("RadiologyRequestID");
+
+                    b.ToTable("RadiologyPayment");
+                });
+
             modelBuilder.Entity("HospitalSys.Models.Cashier", b =>
                 {
                     b.Property<int>("CashierID")
@@ -181,12 +253,9 @@ namespace HospitalSys.Migrations
                     b.Property<int>("UserID")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("UsersUserID")
-                        .HasColumnType("integer");
-
                     b.HasKey("CashierID");
 
-                    b.HasIndex("UsersUserID");
+                    b.HasIndex("UserID");
 
                     b.ToTable("Cashiers");
                 });
@@ -213,9 +282,6 @@ namespace HospitalSys.Migrations
                     b.Property<int>("DoctorID")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("PatientVistVistID")
-                        .HasColumnType("integer");
-
                     b.Property<string>("TreatmentPlan")
                         .IsRequired()
                         .HasColumnType("text");
@@ -227,7 +293,7 @@ namespace HospitalSys.Migrations
 
                     b.HasIndex("DoctorID");
 
-                    b.HasIndex("PatientVistVistID");
+                    b.HasIndex("VisitID");
 
                     b.ToTable("Consultations");
                 });
@@ -341,7 +407,7 @@ namespace HospitalSys.Migrations
 
                     b.HasKey("ClinicalDepartmentID");
 
-                    b.ToTable("ClinicalDepartment");
+                    b.ToTable("ClinicalDepartments");
                 });
 
             modelBuilder.Entity("HospitalSys.Models.HospitalStruct.Room", b =>
@@ -392,7 +458,7 @@ namespace HospitalSys.Migrations
 
                     b.HasKey("TriageDepartmentID");
 
-                    b.ToTable("TriageDepartment");
+                    b.ToTable("TriageDepartments");
                 });
 
             modelBuilder.Entity("HospitalSys.Models.HospitalStruct.Ward", b =>
@@ -454,6 +520,149 @@ namespace HospitalSys.Migrations
                     b.ToTable("Admissions");
                 });
 
+            modelBuilder.Entity("HospitalSys.Models.Laboratory.LaboratoryResult", b =>
+                {
+                    b.Property<int>("ResultID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ResultID"));
+
+                    b.Property<DateTime>("ResultDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ResultDescription")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("TechnicianID")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TestID")
+                        .HasColumnType("integer");
+
+                    b.HasKey("ResultID");
+
+                    b.HasIndex("TechnicianID");
+
+                    b.HasIndex("TestID");
+
+                    b.ToTable("LaboratoryResults");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.Laboratory.LaboratorySection", b =>
+                {
+                    b.Property<int>("LaboratorySectionID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("LaboratorySectionID"));
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SectionName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("LaboratorySectionID");
+
+                    b.ToTable("LaboratorySections");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.Laboratory.LaboratoryTest", b =>
+                {
+                    b.Property<int>("TestID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("TestID"));
+
+                    b.Property<int>("ConsultationID")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("DoctorID")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("LaboratoryTestTypeID")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PatientID")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("RequestDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("TestID");
+
+                    b.HasIndex("ConsultationID");
+
+                    b.HasIndex("DoctorID");
+
+                    b.HasIndex("LaboratoryTestTypeID");
+
+                    b.HasIndex("PatientID");
+
+                    b.ToTable("LaboratoryTests");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.Laboratory.LaboratoryTestType", b =>
+                {
+                    b.Property<int>("LaboratoryTestTypeID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("LaboratoryTestTypeID"));
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("LaboratorySectionID")
+                        .HasColumnType("integer");
+
+                    b.Property<double>("NormalRange")
+                        .HasColumnType("double precision");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("TestName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("LaboratoryTestTypeID");
+
+                    b.HasIndex("LaboratorySectionID");
+
+                    b.ToTable("LaboratoryTestTypes");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.LaboratoryCashier", b =>
+                {
+                    b.Property<int>("LaboratoryCashierID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("LaboratoryCashierID"));
+
+                    b.Property<int>("UserID")
+                        .HasColumnType("integer");
+
+                    b.HasKey("LaboratoryCashierID");
+
+                    b.HasIndex("UserID");
+
+                    b.ToTable("LaboratoryCashiers");
+                });
+
             modelBuilder.Entity("HospitalSys.Models.LaboratoryTechnician", b =>
                 {
                     b.Property<int>("TechnicianID")
@@ -465,12 +674,9 @@ namespace HospitalSys.Migrations
                     b.Property<int>("UserID")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("UsersUserID")
-                        .HasColumnType("integer");
-
                     b.HasKey("TechnicianID");
 
-                    b.HasIndex("UsersUserID");
+                    b.HasIndex("UserID");
 
                     b.ToTable("LaboratoryTechnicians");
                 });
@@ -489,14 +695,11 @@ namespace HospitalSys.Migrations
                     b.Property<int>("UserID")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("UsersUserID")
-                        .HasColumnType("integer");
-
                     b.HasKey("NurseID");
 
                     b.HasIndex("ClinicalDepartmentID");
 
-                    b.HasIndex("UsersUserID");
+                    b.HasIndex("UserID");
 
                     b.ToTable("Nurses");
                 });
@@ -528,6 +731,8 @@ namespace HospitalSys.Migrations
                         .HasColumnType("character varying(100)");
 
                     b.HasKey("AppointmentID");
+
+                    b.HasIndex("AppointmentDate");
 
                     b.HasIndex("DoctorID");
 
@@ -581,16 +786,18 @@ namespace HospitalSys.Migrations
 
                     b.HasKey("PatientID");
 
+                    b.HasIndex("Phone");
+
                     b.ToTable("Patients");
                 });
 
-            modelBuilder.Entity("HospitalSys.Models.PatientManagment.PatientVist", b =>
+            modelBuilder.Entity("HospitalSys.Models.PatientManagment.PatientVisit", b =>
                 {
-                    b.Property<int>("VistID")
+                    b.Property<int>("VisitID")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("VistID"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("VisitID"));
 
                     b.Property<DateTime>("Created_at")
                         .HasColumnType("timestamp with time zone");
@@ -605,13 +812,15 @@ namespace HospitalSys.Migrations
                     b.Property<DateTime>("VisitDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("VistType")
+                    b.Property<string>("VisitType")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.HasKey("VistID");
+                    b.HasKey("VisitID");
 
                     b.HasIndex("PatientID");
+
+                    b.HasIndex("VisitDate");
 
                     b.ToTable("PatientVists");
                 });
@@ -640,9 +849,6 @@ namespace HospitalSys.Migrations
                     b.Property<int>("NurseID")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("PatientVistVistID")
-                        .HasColumnType("integer");
-
                     b.Property<double>("RespiratotyRate")
                         .HasColumnType("double precision");
 
@@ -652,7 +858,7 @@ namespace HospitalSys.Migrations
                     b.Property<int>("TriageDepartmentID")
                         .HasColumnType("integer");
 
-                    b.Property<int>("VistID")
+                    b.Property<int>("VisitID")
                         .HasColumnType("integer");
 
                     b.Property<double>("Weight")
@@ -664,9 +870,9 @@ namespace HospitalSys.Migrations
 
                     b.HasIndex("NurseID");
 
-                    b.HasIndex("PatientVistVistID");
-
                     b.HasIndex("TriageDepartmentID");
+
+                    b.HasIndex("VisitID");
 
                     b.ToTable("Triages");
                 });
@@ -685,14 +891,11 @@ namespace HospitalSys.Migrations
                     b.Property<int>("UserID")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("UsersUserID")
-                        .HasColumnType("integer");
-
                     b.HasKey("PharmacistID");
 
                     b.HasIndex("BranchPharmacyID");
 
-                    b.HasIndex("UsersUserID");
+                    b.HasIndex("UserID");
 
                     b.ToTable("Pharmacists");
                 });
@@ -706,9 +909,6 @@ namespace HospitalSys.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("AidInventoryID"));
 
                     b.Property<int>("AidPharmacyID")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("AidStorePharmacyAidPharmacyID")
                         .HasColumnType("integer");
 
                     b.Property<string>("BatchNumber")
@@ -726,7 +926,7 @@ namespace HospitalSys.Migrations
 
                     b.HasKey("AidInventoryID");
 
-                    b.HasIndex("AidStorePharmacyAidPharmacyID");
+                    b.HasIndex("AidPharmacyID");
 
                     b.HasIndex("MedicineID");
 
@@ -752,12 +952,9 @@ namespace HospitalSys.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int?>("UsersUserID")
-                        .HasColumnType("integer");
-
                     b.HasKey("AidPharmacyID");
 
-                    b.HasIndex("UsersUserID");
+                    b.HasIndex("ManagerPharmacistID");
 
                     b.ToTable("AidStorePharmacies");
                 });
@@ -771,9 +968,6 @@ namespace HospitalSys.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("AidRequestID"));
 
                     b.Property<int>("BranchPharmacyID")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("PharmacistID")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("RequestDate")
@@ -790,7 +984,7 @@ namespace HospitalSys.Migrations
 
                     b.HasIndex("BranchPharmacyID");
 
-                    b.HasIndex("PharmacistID");
+                    b.HasIndex("RequestedByPharmacistID");
 
                     b.ToTable("AidStoreRequests");
                 });
@@ -806,9 +1000,6 @@ namespace HospitalSys.Migrations
                     b.Property<int>("AidRequestID")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("AidStoreRequestAidRequestID")
-                        .HasColumnType("integer");
-
                     b.Property<int>("ApprovedQuantity")
                         .HasColumnType("integer");
 
@@ -820,7 +1011,7 @@ namespace HospitalSys.Migrations
 
                     b.HasKey("AidRequestDetailID");
 
-                    b.HasIndex("AidStoreRequestAidRequestID");
+                    b.HasIndex("AidRequestID");
 
                     b.HasIndex("MedicineID");
 
@@ -841,12 +1032,6 @@ namespace HospitalSys.Migrations
                     b.Property<int>("AidRequestID")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("AidStorePharmacyAidPharmacyID")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("AidStoreRequestAidRequestID")
-                        .HasColumnType("integer");
-
                     b.Property<int>("BranchPharmacyID")
                         .HasColumnType("integer");
 
@@ -859,9 +1044,9 @@ namespace HospitalSys.Migrations
 
                     b.HasKey("AidTransferID");
 
-                    b.HasIndex("AidStorePharmacyAidPharmacyID");
+                    b.HasIndex("AidPharmacyID");
 
-                    b.HasIndex("AidStoreRequestAidRequestID");
+                    b.HasIndex("AidRequestID");
 
                     b.HasIndex("BranchPharmacyID");
 
@@ -876,9 +1061,6 @@ namespace HospitalSys.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("AidTransferDetailID"));
 
-                    b.Property<int?>("AidStoreTransferAidTransferID")
-                        .HasColumnType("integer");
-
                     b.Property<int>("AidTransferID")
                         .HasColumnType("integer");
 
@@ -890,7 +1072,7 @@ namespace HospitalSys.Migrations
 
                     b.HasKey("AidTransferDetailID");
 
-                    b.HasIndex("AidStoreTransferAidTransferID");
+                    b.HasIndex("AidTransferID");
 
                     b.HasIndex("MedicineID");
 
@@ -966,9 +1148,6 @@ namespace HospitalSys.Migrations
                     b.Property<int>("CentralPharmacyID")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("CentralStorePharmacyCentralPharmacyID")
-                        .HasColumnType("integer");
-
                     b.Property<DateTime>("ExpiryDate")
                         .HasColumnType("timestamp with time zone");
 
@@ -980,7 +1159,7 @@ namespace HospitalSys.Migrations
 
                     b.HasKey("CentralInventoryID");
 
-                    b.HasIndex("CentralStorePharmacyCentralPharmacyID");
+                    b.HasIndex("CentralPharmacyID");
 
                     b.HasIndex("MedicineID");
 
@@ -1006,12 +1185,9 @@ namespace HospitalSys.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int?>("UsersUserID")
-                        .HasColumnType("integer");
-
                     b.HasKey("CentralPharmacyID");
 
-                    b.HasIndex("UsersUserID");
+                    b.HasIndex("ManagerPharmacistID");
 
                     b.ToTable("CentralStorePharmacies");
                 });
@@ -1025,9 +1201,6 @@ namespace HospitalSys.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("CentralRequestID"));
 
                     b.Property<int>("BranchPharmacyID")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("PharmacistID")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("RequestDate")
@@ -1044,7 +1217,7 @@ namespace HospitalSys.Migrations
 
                     b.HasIndex("BranchPharmacyID");
 
-                    b.HasIndex("PharmacistID");
+                    b.HasIndex("RequestedByPharmacistID");
 
                     b.ToTable("CentralStoreRequests");
                 });
@@ -1063,9 +1236,6 @@ namespace HospitalSys.Migrations
                     b.Property<int>("CentralRequestID")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("CentralStoreRequestCentralRequestID")
-                        .HasColumnType("integer");
-
                     b.Property<int>("MedicineID")
                         .HasColumnType("integer");
 
@@ -1074,7 +1244,7 @@ namespace HospitalSys.Migrations
 
                     b.HasKey("CentralRequestDetailID");
 
-                    b.HasIndex("CentralStoreRequestCentralRequestID");
+                    b.HasIndex("CentralRequestID");
 
                     b.HasIndex("MedicineID");
 
@@ -1098,12 +1268,6 @@ namespace HospitalSys.Migrations
                     b.Property<int>("CentralRequestID")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("CentralStorePharmacyCentralPharmacyID")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("CentralStoreRequestCentralRequestID")
-                        .HasColumnType("integer");
-
                     b.Property<int?>("MedicineID")
                         .HasColumnType("integer");
 
@@ -1118,9 +1282,9 @@ namespace HospitalSys.Migrations
 
                     b.HasIndex("BranchPharmacyID");
 
-                    b.HasIndex("CentralStorePharmacyCentralPharmacyID");
+                    b.HasIndex("CentralPharmacyID");
 
-                    b.HasIndex("CentralStoreRequestCentralRequestID");
+                    b.HasIndex("CentralRequestID");
 
                     b.HasIndex("MedicineID");
 
@@ -1135,9 +1299,6 @@ namespace HospitalSys.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("CentralTransferDetailID"));
 
-                    b.Property<int?>("CentralStoreTransferCentralTransferID")
-                        .HasColumnType("integer");
-
                     b.Property<int>("CentralTransferID")
                         .HasColumnType("integer");
 
@@ -1149,7 +1310,7 @@ namespace HospitalSys.Migrations
 
                     b.HasKey("CentralTransferDetailID");
 
-                    b.HasIndex("CentralStoreTransferCentralTransferID");
+                    b.HasIndex("CentralTransferID");
 
                     b.HasIndex("MedicineID");
 
@@ -1198,9 +1359,6 @@ namespace HospitalSys.Migrations
                     b.Property<int>("DispenseID")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("DispenseMedicineDispenseID")
-                        .HasColumnType("integer");
-
                     b.Property<int>("MedicineID")
                         .HasColumnType("integer");
 
@@ -1209,7 +1367,7 @@ namespace HospitalSys.Migrations
 
                     b.HasKey("DispenseDetailID");
 
-                    b.HasIndex("DispenseMedicineDispenseID");
+                    b.HasIndex("DispenseID");
 
                     b.HasIndex("MedicineID");
 
@@ -1239,8 +1397,8 @@ namespace HospitalSys.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<double>("UnitPrice")
-                        .HasColumnType("double precision");
+                    b.Property<decimal>("UnitPrice")
+                        .HasColumnType("numeric");
 
                     b.HasKey("MedicineID");
 
@@ -1295,11 +1453,11 @@ namespace HospitalSys.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<float>("Duration")
-                        .HasColumnType("real");
+                    b.Property<decimal>("Duration")
+                        .HasColumnType("numeric");
 
-                    b.Property<float>("Frequency")
-                        .HasColumnType("real");
+                    b.Property<decimal>("Frequency")
+                        .HasColumnType("numeric");
 
                     b.Property<int>("MedicineID")
                         .HasColumnType("integer");
@@ -1307,8 +1465,8 @@ namespace HospitalSys.Migrations
                     b.Property<int>("PrescriptionID")
                         .HasColumnType("integer");
 
-                    b.Property<float>("Quantity")
-                        .HasColumnType("real");
+                    b.Property<decimal>("Quantity")
+                        .HasColumnType("numeric");
 
                     b.HasKey("PrescriptionDetailID");
 
@@ -1333,16 +1491,170 @@ namespace HospitalSys.Migrations
                     b.Property<int>("UserID")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("UsersUserID")
-                        .HasColumnType("integer");
-
                     b.HasKey("PharmacyCashierID");
 
                     b.HasIndex("BranchPharmacyID");
 
-                    b.HasIndex("UsersUserID");
+                    b.HasIndex("UserID");
 
                     b.ToTable("PharmacyCashiers");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.Radiology.RadiologyDepartment", b =>
+                {
+                    b.Property<int>("RadiologyDepartmentID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("RadiologyDepartmentID"));
+
+                    b.Property<string>("DepartmentName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("RadiologyDepartmentID");
+
+                    b.ToTable("RadiologyDepartments");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.Radiology.RadiologyRequest", b =>
+                {
+                    b.Property<int>("RadiologyRequestID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("RadiologyRequestID"));
+
+                    b.Property<int>("ConsultationID")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("DoctorID")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PatientID")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("RadiologyTestTypeID")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("RequestDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("RadiologyRequestID");
+
+                    b.HasIndex("ConsultationID");
+
+                    b.HasIndex("DoctorID");
+
+                    b.HasIndex("PatientID");
+
+                    b.HasIndex("RadiologyTestTypeID");
+
+                    b.ToTable("RadiologyRequests");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.Radiology.RadiologyResult", b =>
+                {
+                    b.Property<int>("RadiologyResultID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("RadiologyResultID"));
+
+                    b.Property<int>("RadiologyRequestID")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("RadiologyTechnicianID")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("ResultDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ResultDescription")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("RadiologyResultID");
+
+                    b.HasIndex("RadiologyRequestID");
+
+                    b.HasIndex("RadiologyTechnicianID");
+
+                    b.ToTable("RadiologyResults");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.Radiology.RadiologyTestType", b =>
+                {
+                    b.Property<int>("RadiologyTestTypeID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("RadiologyTestTypeID"));
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("numeric");
+
+                    b.Property<int>("RadiologyDepartmentID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TestName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("RadiologyTestTypeID");
+
+                    b.HasIndex("RadiologyDepartmentID");
+
+                    b.ToTable("RadiologyTestTypes");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.RadiologyCashier", b =>
+                {
+                    b.Property<int>("RadiologyCashierID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("RadiologyCashierID"));
+
+                    b.Property<int>("UserID")
+                        .HasColumnType("integer");
+
+                    b.HasKey("RadiologyCashierID");
+
+                    b.HasIndex("UserID");
+
+                    b.ToTable("RadiologyCashiers");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.RadiologyTechnician", b =>
+                {
+                    b.Property<int>("RadiologyTechnicianID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("RadiologyTechnicianID"));
+
+                    b.Property<int>("UserID")
+                        .HasColumnType("integer");
+
+                    b.HasKey("RadiologyTechnicianID");
+
+                    b.HasIndex("UserID");
+
+                    b.ToTable("RadiologyTechnicians");
                 });
 
             modelBuilder.Entity("HospitalSys.Models.Receptionist", b =>
@@ -1356,12 +1668,9 @@ namespace HospitalSys.Migrations
                     b.Property<int>("UserID")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("UsersUserID")
-                        .HasColumnType("integer");
-
                     b.HasKey("ReceptionistID");
 
-                    b.HasIndex("UsersUserID");
+                    b.HasIndex("UserID");
 
                     b.ToTable("Receptionists");
                 });
@@ -1402,7 +1711,7 @@ namespace HospitalSys.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<string>("username")
+                    b.Property<string>("Username")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
@@ -1487,15 +1796,17 @@ namespace HospitalSys.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("HospitalSys.Models.PatientManagment.PatientVist", "PatientVist")
+                    b.HasOne("HospitalSys.Models.PatientManagment.PatientVisit", "PatientVisit")
                         .WithMany("Bill")
-                        .HasForeignKey("PatientVistVistID");
+                        .HasForeignKey("VisitID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Cashier");
 
                     b.Navigation("Patient");
 
-                    b.Navigation("PatientVist");
+                    b.Navigation("PatientVisit");
                 });
 
             modelBuilder.Entity("HospitalSys.Models.BillingAndPayment.BillItem", b =>
@@ -1507,6 +1818,25 @@ namespace HospitalSys.Migrations
                         .IsRequired();
 
                     b.Navigation("Bill");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.BillingAndPayment.LaboratoryPayment", b =>
+                {
+                    b.HasOne("HospitalSys.Models.LaboratoryCashier", "LaboratoryCashier")
+                        .WithMany("LaboratoryPayments")
+                        .HasForeignKey("LaboratoryCashierID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HospitalSys.Models.Laboratory.LaboratoryTest", "LaboratoryTest")
+                        .WithMany("LaboratoryPayments")
+                        .HasForeignKey("TestID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("LaboratoryCashier");
+
+                    b.Navigation("LaboratoryTest");
                 });
 
             modelBuilder.Entity("HospitalSys.Models.BillingAndPayment.PaymentHospital", b =>
@@ -1547,11 +1877,32 @@ namespace HospitalSys.Migrations
                     b.Navigation("Prescription");
                 });
 
+            modelBuilder.Entity("HospitalSys.Models.BillingAndPayment.RadiologyPayment", b =>
+                {
+                    b.HasOne("HospitalSys.Models.RadiologyCashier", "RadiologyCashier")
+                        .WithMany("RadiologyPayment")
+                        .HasForeignKey("RadiologyCashierID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HospitalSys.Models.Radiology.RadiologyRequest", "RadiologyRequest")
+                        .WithMany("RadiologyPayment")
+                        .HasForeignKey("RadiologyRequestID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("RadiologyCashier");
+
+                    b.Navigation("RadiologyRequest");
+                });
+
             modelBuilder.Entity("HospitalSys.Models.Cashier", b =>
                 {
                     b.HasOne("HospitalSys.Models.Users", "Users")
                         .WithMany("Cashier")
-                        .HasForeignKey("UsersUserID");
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Users");
                 });
@@ -1564,13 +1915,15 @@ namespace HospitalSys.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("HospitalSys.Models.PatientManagment.PatientVist", "PatientVist")
+                    b.HasOne("HospitalSys.Models.PatientManagment.PatientVisit", "PatientVisit")
                         .WithMany("Consultation")
-                        .HasForeignKey("PatientVistVistID");
+                        .HasForeignKey("VisitID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Doctor");
 
-                    b.Navigation("PatientVist");
+                    b.Navigation("PatientVisit");
                 });
 
             modelBuilder.Entity("HospitalSys.Models.Consultation_M.MedicalRecord", b =>
@@ -1666,11 +2019,89 @@ namespace HospitalSys.Migrations
                     b.Navigation("Patient");
                 });
 
+            modelBuilder.Entity("HospitalSys.Models.Laboratory.LaboratoryResult", b =>
+                {
+                    b.HasOne("HospitalSys.Models.LaboratoryTechnician", "LaboratoryTechnician")
+                        .WithMany("LaboratoryResult")
+                        .HasForeignKey("TechnicianID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HospitalSys.Models.Laboratory.LaboratoryTest", "LaboratoryTest")
+                        .WithMany("LaboratoryResult")
+                        .HasForeignKey("TestID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("LaboratoryTechnician");
+
+                    b.Navigation("LaboratoryTest");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.Laboratory.LaboratoryTest", b =>
+                {
+                    b.HasOne("HospitalSys.Models.Consultation_M.Consultation", "Consultation")
+                        .WithMany("LaboratoryTest")
+                        .HasForeignKey("ConsultationID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HospitalSys.Models.Doctor", "Doctor")
+                        .WithMany("LaboratoryTest")
+                        .HasForeignKey("DoctorID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HospitalSys.Models.Laboratory.LaboratoryTestType", "LaboratoryTestType")
+                        .WithMany("LaboratoryTest")
+                        .HasForeignKey("LaboratoryTestTypeID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HospitalSys.Models.PatientManagment.Patient", "Patient")
+                        .WithMany("LaboratoryTest")
+                        .HasForeignKey("PatientID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Consultation");
+
+                    b.Navigation("Doctor");
+
+                    b.Navigation("LaboratoryTestType");
+
+                    b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.Laboratory.LaboratoryTestType", b =>
+                {
+                    b.HasOne("HospitalSys.Models.Laboratory.LaboratorySection", "LaboratorySection")
+                        .WithMany("LaboratoryTestType")
+                        .HasForeignKey("LaboratorySectionID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("LaboratorySection");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.LaboratoryCashier", b =>
+                {
+                    b.HasOne("HospitalSys.Models.Users", "Users")
+                        .WithMany("LaboratoryCashier")
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Users");
+                });
+
             modelBuilder.Entity("HospitalSys.Models.LaboratoryTechnician", b =>
                 {
                     b.HasOne("HospitalSys.Models.Users", "Users")
                         .WithMany("LaboratoryTechnician")
-                        .HasForeignKey("UsersUserID");
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Users");
                 });
@@ -1685,7 +2116,9 @@ namespace HospitalSys.Migrations
 
                     b.HasOne("HospitalSys.Models.Users", "Users")
                         .WithMany("Nurse")
-                        .HasForeignKey("UsersUserID");
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("ClinicalDepartment");
 
@@ -1711,10 +2144,10 @@ namespace HospitalSys.Migrations
                     b.Navigation("Patient");
                 });
 
-            modelBuilder.Entity("HospitalSys.Models.PatientManagment.PatientVist", b =>
+            modelBuilder.Entity("HospitalSys.Models.PatientManagment.PatientVisit", b =>
                 {
                     b.HasOne("HospitalSys.Models.PatientManagment.Patient", "Patient")
-                        .WithMany("PatientVist")
+                        .WithMany("PatientVisit")
                         .HasForeignKey("PatientID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1736,13 +2169,15 @@ namespace HospitalSys.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("HospitalSys.Models.PatientManagment.PatientVist", "PatientVist")
-                        .WithMany("Triage")
-                        .HasForeignKey("PatientVistVistID");
-
                     b.HasOne("HospitalSys.Models.HospitalStruct.TriageDepartment", "TriageDepartment")
                         .WithMany("Triage")
                         .HasForeignKey("TriageDepartmentID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HospitalSys.Models.PatientManagment.PatientVisit", "PatientVisit")
+                        .WithMany("Triage")
+                        .HasForeignKey("VisitID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1750,7 +2185,7 @@ namespace HospitalSys.Migrations
 
                     b.Navigation("Nurse");
 
-                    b.Navigation("PatientVist");
+                    b.Navigation("PatientVisit");
 
                     b.Navigation("TriageDepartment");
                 });
@@ -1765,7 +2200,9 @@ namespace HospitalSys.Migrations
 
                     b.HasOne("HospitalSys.Models.Users", "Users")
                         .WithMany("Pharmacist")
-                        .HasForeignKey("UsersUserID");
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("BranchPharmacy");
 
@@ -1776,7 +2213,9 @@ namespace HospitalSys.Migrations
                 {
                     b.HasOne("HospitalSys.Models.Pharmacy.AidStore.AidStorePharmacy", "AidStorePharmacy")
                         .WithMany("AidStoreInventory")
-                        .HasForeignKey("AidStorePharmacyAidPharmacyID");
+                        .HasForeignKey("AidPharmacyID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("HospitalSys.Models.Pharmacy.Common.Medicine", "Medicine")
                         .WithMany("AidStoreInventory")
@@ -1793,7 +2232,9 @@ namespace HospitalSys.Migrations
                 {
                     b.HasOne("HospitalSys.Models.Users", "Users")
                         .WithMany("AidStorePharmacy")
-                        .HasForeignKey("UsersUserID");
+                        .HasForeignKey("ManagerPharmacistID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Users");
                 });
@@ -1808,7 +2249,9 @@ namespace HospitalSys.Migrations
 
                     b.HasOne("HospitalSys.Models.Pharmacist", "Pharmacist")
                         .WithMany("AidStoreRequest")
-                        .HasForeignKey("PharmacistID");
+                        .HasForeignKey("RequestedByPharmacistID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("BranchPharmacy");
 
@@ -1819,7 +2262,9 @@ namespace HospitalSys.Migrations
                 {
                     b.HasOne("HospitalSys.Models.Pharmacy.AidStore.AidStoreRequest", "AidStoreRequest")
                         .WithMany("AidStoreRequestDetail")
-                        .HasForeignKey("AidStoreRequestAidRequestID");
+                        .HasForeignKey("AidRequestID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("HospitalSys.Models.Pharmacy.Common.Medicine", "Medicine")
                         .WithMany("AidStoreRequestDetail")
@@ -1836,11 +2281,15 @@ namespace HospitalSys.Migrations
                 {
                     b.HasOne("HospitalSys.Models.Pharmacy.AidStore.AidStorePharmacy", "AidStorePharmacy")
                         .WithMany("AidStoreTransfer")
-                        .HasForeignKey("AidStorePharmacyAidPharmacyID");
+                        .HasForeignKey("AidPharmacyID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("HospitalSys.Models.Pharmacy.AidStore.AidStoreRequest", "AidStoreRequest")
                         .WithMany("AidStoreTransfer")
-                        .HasForeignKey("AidStoreRequestAidRequestID");
+                        .HasForeignKey("AidRequestID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("HospitalSys.Models.Pharmacy.Branch.BranchPharmacy", "BranchPharmacy")
                         .WithMany("AidStoreTransfer")
@@ -1859,7 +2308,9 @@ namespace HospitalSys.Migrations
                 {
                     b.HasOne("HospitalSys.Models.Pharmacy.AidStore.AidStoreTransfer", "AidStoreTransfer")
                         .WithMany("CentralStoreTransferDetail")
-                        .HasForeignKey("AidStoreTransferAidTransferID");
+                        .HasForeignKey("AidTransferID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("HospitalSys.Models.Pharmacy.Common.Medicine", "Medicine")
                         .WithMany()
@@ -1895,7 +2346,9 @@ namespace HospitalSys.Migrations
                 {
                     b.HasOne("HospitalSys.Models.Pharmacy.CentralStore.CentralStorePharmacy", "CentralStorePharmacy")
                         .WithMany("CentralStoreInventory")
-                        .HasForeignKey("CentralStorePharmacyCentralPharmacyID");
+                        .HasForeignKey("CentralPharmacyID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("HospitalSys.Models.Pharmacy.Common.Medicine", "Medicine")
                         .WithMany("CentralStoreInventory")
@@ -1912,7 +2365,9 @@ namespace HospitalSys.Migrations
                 {
                     b.HasOne("HospitalSys.Models.Users", "Users")
                         .WithMany("CentralStorePharmacy")
-                        .HasForeignKey("UsersUserID");
+                        .HasForeignKey("ManagerPharmacistID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Users");
                 });
@@ -1927,7 +2382,9 @@ namespace HospitalSys.Migrations
 
                     b.HasOne("HospitalSys.Models.Pharmacist", "Pharmacist")
                         .WithMany("CentralStoreRequest")
-                        .HasForeignKey("PharmacistID");
+                        .HasForeignKey("RequestedByPharmacistID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("BranchPharmacy");
 
@@ -1938,7 +2395,9 @@ namespace HospitalSys.Migrations
                 {
                     b.HasOne("HospitalSys.Models.Pharmacy.CentralStore.CentralStoreRequest", "CentralStoreRequest")
                         .WithMany("CentralStoreRequestDetail")
-                        .HasForeignKey("CentralStoreRequestCentralRequestID");
+                        .HasForeignKey("CentralRequestID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("HospitalSys.Models.Pharmacy.Common.Medicine", "Medicine")
                         .WithMany("CentralStoreRequestDetail")
@@ -1961,11 +2420,15 @@ namespace HospitalSys.Migrations
 
                     b.HasOne("HospitalSys.Models.Pharmacy.CentralStore.CentralStorePharmacy", "CentralStorePharmacy")
                         .WithMany("CentralStoreTransfer")
-                        .HasForeignKey("CentralStorePharmacyCentralPharmacyID");
+                        .HasForeignKey("CentralPharmacyID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("HospitalSys.Models.Pharmacy.CentralStore.CentralStoreRequest", "CentralStoreRequest")
                         .WithMany("CentralStoreTransfer")
-                        .HasForeignKey("CentralStoreRequestCentralRequestID");
+                        .HasForeignKey("CentralRequestID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("HospitalSys.Models.Pharmacy.Common.Medicine", null)
                         .WithMany("CentralStoreTransfer")
@@ -1982,7 +2445,9 @@ namespace HospitalSys.Migrations
                 {
                     b.HasOne("HospitalSys.Models.Pharmacy.CentralStore.CentralStoreTransfer", "CentralStoreTransfer")
                         .WithMany("CentralStoreTransferDetail")
-                        .HasForeignKey("CentralStoreTransferCentralTransferID");
+                        .HasForeignKey("CentralTransferID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("HospitalSys.Models.Pharmacy.Common.Medicine", "Medicine")
                         .WithMany()
@@ -2026,7 +2491,9 @@ namespace HospitalSys.Migrations
                 {
                     b.HasOne("HospitalSys.Models.Pharmacy.Common.DispenseMedicine", "DispenseMedicine")
                         .WithMany("DispenseMedicineDetails")
-                        .HasForeignKey("DispenseMedicineDispenseID");
+                        .HasForeignKey("DispenseID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("HospitalSys.Models.Pharmacy.Common.Medicine", "Medicine")
                         .WithMany("DispenseMedicineDetail")
@@ -2103,9 +2570,98 @@ namespace HospitalSys.Migrations
 
                     b.HasOne("HospitalSys.Models.Users", "Users")
                         .WithMany("PharmacyCashier")
-                        .HasForeignKey("UsersUserID");
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("BranchPharmacy");
+
+                    b.Navigation("Users");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.Radiology.RadiologyRequest", b =>
+                {
+                    b.HasOne("HospitalSys.Models.Consultation_M.Consultation", "Consultation")
+                        .WithMany("RadiologyRequest")
+                        .HasForeignKey("ConsultationID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HospitalSys.Models.Doctor", "Doctor")
+                        .WithMany("RadiologyRequest")
+                        .HasForeignKey("DoctorID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HospitalSys.Models.PatientManagment.Patient", "Patient")
+                        .WithMany("RadiologyRequest")
+                        .HasForeignKey("PatientID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HospitalSys.Models.Radiology.RadiologyTestType", "RadiologyTestType")
+                        .WithMany("RadiologyRequest")
+                        .HasForeignKey("RadiologyTestTypeID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Consultation");
+
+                    b.Navigation("Doctor");
+
+                    b.Navigation("Patient");
+
+                    b.Navigation("RadiologyTestType");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.Radiology.RadiologyResult", b =>
+                {
+                    b.HasOne("HospitalSys.Models.Radiology.RadiologyRequest", "RadiologyRequest")
+                        .WithMany("RadiologyResult")
+                        .HasForeignKey("RadiologyRequestID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HospitalSys.Models.RadiologyTechnician", "RadiologyTechnician")
+                        .WithMany("RadiologyResult")
+                        .HasForeignKey("RadiologyTechnicianID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("RadiologyRequest");
+
+                    b.Navigation("RadiologyTechnician");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.Radiology.RadiologyTestType", b =>
+                {
+                    b.HasOne("HospitalSys.Models.Radiology.RadiologyDepartment", "RadiologyDepartment")
+                        .WithMany("RadiologyTestType")
+                        .HasForeignKey("RadiologyDepartmentID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("RadiologyDepartment");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.RadiologyCashier", b =>
+                {
+                    b.HasOne("HospitalSys.Models.Users", "Users")
+                        .WithMany("RadiologyCashier")
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Users");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.RadiologyTechnician", b =>
+                {
+                    b.HasOne("HospitalSys.Models.Users", "Users")
+                        .WithMany("RadiologyTechnician")
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Users");
                 });
@@ -2114,7 +2670,9 @@ namespace HospitalSys.Migrations
                 {
                     b.HasOne("HospitalSys.Models.Users", "Users")
                         .WithMany("Receptionist")
-                        .HasForeignKey("UsersUserID");
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Users");
                 });
@@ -2146,9 +2704,13 @@ namespace HospitalSys.Migrations
 
             modelBuilder.Entity("HospitalSys.Models.Consultation_M.Consultation", b =>
                 {
+                    b.Navigation("LaboratoryTest");
+
                     b.Navigation("MedicalRecord");
 
                     b.Navigation("Prescription");
+
+                    b.Navigation("RadiologyRequest");
                 });
 
             modelBuilder.Entity("HospitalSys.Models.Doctor", b =>
@@ -2159,9 +2721,13 @@ namespace HospitalSys.Migrations
 
                     b.Navigation("Consultation");
 
+                    b.Navigation("LaboratoryTest");
+
                     b.Navigation("MedicalRecord");
 
                     b.Navigation("Prescription");
+
+                    b.Navigation("RadiologyRequest");
                 });
 
             modelBuilder.Entity("HospitalSys.Models.HospitalStruct.Bed", b =>
@@ -2193,6 +2759,33 @@ namespace HospitalSys.Migrations
                     b.Navigation("Room");
                 });
 
+            modelBuilder.Entity("HospitalSys.Models.Laboratory.LaboratorySection", b =>
+                {
+                    b.Navigation("LaboratoryTestType");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.Laboratory.LaboratoryTest", b =>
+                {
+                    b.Navigation("LaboratoryPayments");
+
+                    b.Navigation("LaboratoryResult");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.Laboratory.LaboratoryTestType", b =>
+                {
+                    b.Navigation("LaboratoryTest");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.LaboratoryCashier", b =>
+                {
+                    b.Navigation("LaboratoryPayments");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.LaboratoryTechnician", b =>
+                {
+                    b.Navigation("LaboratoryResult");
+                });
+
             modelBuilder.Entity("HospitalSys.Models.Nurse", b =>
                 {
                     b.Navigation("Triage");
@@ -2206,14 +2799,18 @@ namespace HospitalSys.Migrations
 
                     b.Navigation("Bill");
 
+                    b.Navigation("LaboratoryTest");
+
                     b.Navigation("MedicalRecord");
 
-                    b.Navigation("PatientVist");
+                    b.Navigation("PatientVisit");
 
                     b.Navigation("Prescription");
+
+                    b.Navigation("RadiologyRequest");
                 });
 
-            modelBuilder.Entity("HospitalSys.Models.PatientManagment.PatientVist", b =>
+            modelBuilder.Entity("HospitalSys.Models.PatientManagment.PatientVisit", b =>
                 {
                     b.Navigation("Bill");
 
@@ -2328,6 +2925,33 @@ namespace HospitalSys.Migrations
                     b.Navigation("PharmacyPayment");
                 });
 
+            modelBuilder.Entity("HospitalSys.Models.Radiology.RadiologyDepartment", b =>
+                {
+                    b.Navigation("RadiologyTestType");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.Radiology.RadiologyRequest", b =>
+                {
+                    b.Navigation("RadiologyPayment");
+
+                    b.Navigation("RadiologyResult");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.Radiology.RadiologyTestType", b =>
+                {
+                    b.Navigation("RadiologyRequest");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.RadiologyCashier", b =>
+                {
+                    b.Navigation("RadiologyPayment");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.RadiologyTechnician", b =>
+                {
+                    b.Navigation("RadiologyResult");
+                });
+
             modelBuilder.Entity("HospitalSys.Models.Role", b =>
                 {
                     b.Navigation("Users");
@@ -2343,6 +2967,8 @@ namespace HospitalSys.Migrations
 
                     b.Navigation("Doctor");
 
+                    b.Navigation("LaboratoryCashier");
+
                     b.Navigation("LaboratoryTechnician");
 
                     b.Navigation("Nurse");
@@ -2350,6 +2976,10 @@ namespace HospitalSys.Migrations
                     b.Navigation("Pharmacist");
 
                     b.Navigation("PharmacyCashier");
+
+                    b.Navigation("RadiologyCashier");
+
+                    b.Navigation("RadiologyTechnician");
 
                     b.Navigation("Receptionist");
                 });

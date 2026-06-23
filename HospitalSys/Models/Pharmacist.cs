@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using HospitalSys.Models.Pharmacy.AidStore;
 using HospitalSys.Models.Pharmacy.Branch;
 using HospitalSys.Models.Pharmacy.CentralStore;
@@ -11,8 +12,10 @@ namespace HospitalSys.Models
         [Key]
         public int PharmacistID {get;set;}
         public int UserID {get;set;}
+        [ForeignKey(nameof(UserID))]
         public Users? Users {get;set;}
         public int BranchPharmacyID {get;set;}
+        [ForeignKey(nameof(BranchPharmacyID))]
         public BranchPharmacy? BranchPharmacy {get;set;}
         public List<DispenseMedicine> DispenseMedicine {get;set;} = new();
         public List<CentralStoreRequest> CentralStoreRequest {get;set;} = new();

@@ -9,6 +9,8 @@ using HospitalSys.Models.Pharmacy.AidStore;
 using HospitalSys.Models.Pharmacy.Branch;
 using HospitalSys.Models.Pharmacy.CentralStore;
 using HospitalSys.Models.Pharmacy.Common;
+using HospitalSys.Models.Laboratory;
+using HospitalSys.Models.Radiology;
 namespace HospitalSys.Data
 {
     public class AppDbContext:DbContext
@@ -35,6 +37,16 @@ namespace HospitalSys.Data
             modelBuilder.Entity<SuperAdmins>()
             .Property(u=>u.AdminRole)
             .HasConversion<string>();
+
+            modelBuilder.Entity<Patient>()
+            .HasIndex(p => p.Phone);
+
+            modelBuilder.Entity<PatientVisit>()
+            .HasIndex(p => p.VisitDate);
+
+            modelBuilder.Entity<Appointment>()
+            .HasIndex(a => a.AppointmentDate);
+            
         }
         public DbSet<Users> Users {get;set;}
         public DbSet<Role> Roles {get;set;}
@@ -53,14 +65,12 @@ namespace HospitalSys.Data
         public DbSet<Consultation> Consultations {get;set;}
         public DbSet<MedicalRecord> MedicalRecords {get;set;}
         public DbSet<Bed> Beds {get;set;}
-        public DbSet<ClinicalDepartment> ClinicalDepartment {get;set;}
         public DbSet<Room> Rooms {get;set;}
-        public DbSet<TriageDepartment> TriageDepartment {get;set;}
         public DbSet<Ward> Wards {get;set;}
         public DbSet<Admission> Admissions {get;set;}
         public DbSet<Appointment> Appointments {get;set;}
         public DbSet<Patient> Patients {get;set;}
-        public DbSet<PatientVist> PatientVists {get;set;}
+        public DbSet<PatientVisit> PatientVists {get;set;}
         public DbSet<Triage> Triages {get;set;}
         public DbSet<AidStorePharmacy> AidStorePharmacies {get;set;}
         public DbSet<AidStoreInventory> AidStoreInventories {get;set;}
@@ -83,6 +93,18 @@ namespace HospitalSys.Data
         public DbSet<PrescriptionDetail> PrescriptionDetails {get;set;}
         public DbSet<PharmacyCashier> PharmacyCashiers {get;set;}
         public DbSet<SuperAdmins> SuperAdmin {get;set;}
+        public DbSet<LaboratoryTest> LaboratoryTests {get;set;}
+        public DbSet<LaboratoryTestType> LaboratoryTestTypes {get;set;}
+        public DbSet<LaboratorySection> LaboratorySections {get;set;}
+        public DbSet<LaboratoryResult> LaboratoryResults {get;set;}
+        public DbSet<LaboratoryPayment> LaboratoryPayments {get;set;}
+        public DbSet<LaboratoryCashier> LaboratoryCashiers {get;set;}
+        public DbSet<RadiologyDepartment> RadiologyDepartments {get;set;}
+        public DbSet<RadiologyRequest> RadiologyRequests {get;set;}
+        public DbSet<RadiologyTestType> RadiologyTestTypes {get;set;}
+        public DbSet<RadiologyResult> RadiologyResults {get;set;}
+        public DbSet<RadiologyCashier> RadiologyCashiers {get;set;}
+        public DbSet<RadiologyTechnician> RadiologyTechnicians {get;set;}
         
     }
 }

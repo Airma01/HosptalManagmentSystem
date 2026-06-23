@@ -2,7 +2,9 @@ using System.ComponentModel.DataAnnotations;
 using HospitalSys.Models.BillingAndPayment;
 using HospitalSys.Models.Consultation_M;
 using HospitalSys.Models.Inpatient;
+using HospitalSys.Models.Laboratory;
 using HospitalSys.Models.Pharmacy.Common;
+using HospitalSys.Models.Radiology;
 
 namespace HospitalSys.Models.PatientManagment
 {
@@ -27,11 +29,13 @@ namespace HospitalSys.Models.PatientManagment
         [MaxLength(100)]
         public string EmergencyContact {get;set;} = "";
         public DateTime Created_at {get;set;} = DateTime.UtcNow;
-        public List<PatientVist> PatientVist {get;set;} = new();
+        public List<PatientVisit> PatientVisit {get;set;} = new();
         public List<Appointment> Appointment {get;set;} = new();
         public List<MedicalRecord> MedicalRecord {get;set;} = new();
         public List<Prescription> Prescription {get;set;} = new();
         public List<Bill> Bill {get;set;} = new();
         public List<Admission> Admission {get;set;} = new();
+        public List<LaboratoryTest> LaboratoryTest {get;set;} = new();
+        public List<RadiologyRequest> RadiologyRequest {get;set;} = new();
     }
 }

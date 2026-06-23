@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace HospitalSys.Models.BillingAndPayment
 {
@@ -7,10 +8,11 @@ namespace HospitalSys.Models.BillingAndPayment
         [Key]
         public int BillItemID {get;set;}
         public int BillID {get;set;}
+        [ForeignKey(nameof(BillID))]
         public Bill? Bill {get;set;}
-        public string? ServiceName {get;set;}
+        public string ServiceName {get;set;} = "";
         public int Quantity {get;set;}
-        public double UnitPrice {get;set;}
-        public double TotalPrice {get;set;}
+        public decimal UnitPrice {get;set;}
+        public decimal TotalPrice {get;set;}
     }
 }
