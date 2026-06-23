@@ -27,22 +27,30 @@ builder.Services.AddDbContext<AppDbContext>(
         builder.Configuration.GetConnectionString("Default")
     )
 );
-builder.Services.AddCors(options=>
-options.AddPolicy("Jwt-Policy", Policy =>
-{
-    Policy.WithOrigins("http://localhost:5173")
-    .AllowAnyHeader()
-    .AllowAnyMethod()
-    .AllowCredentials();
-})
+builder.Services.AddCors(options =>
+    options.AddPolicy("Jwt-Policy", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials(); 
+    })
 );
+
 builder.Services.AddControllers();
+
 var app = builder.Build();
+
+// 2. HTTP Request Pipeline Ordering (CRITICAL)
+app.UseHttpsRedirection();
+
+// UseCors MUST come after UseRouting (implicit here) and BEFORE UseAuthorization
+app.UseCors("Jwt-Policy");
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();

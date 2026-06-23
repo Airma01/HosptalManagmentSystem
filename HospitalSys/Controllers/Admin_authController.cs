@@ -12,53 +12,143 @@ namespace HospitalSys.Controllers
 {
     [ApiController]
     [Route("Hospital/[controller]")]
-    public class AdminAuthController : ControllerBase
+    public class Admin_authController : ControllerBase
     {
         private readonly AppDbContext _context;
-        public AdminAuthController(AppDbContext context)
+        private readonly IConfiguration _configuration;
+
+        public Admin_authController(AppDbContext context, IConfiguration configuration)
         {
-           _context = context; 
+            _context = context;
+            _configuration = configuration;
         }
+
         [HttpPost("login")]
         public async Task<IActionResult> AdminLogin([FromBody] AdminLoginDto admin)
         {
-            if(string.IsNullOrWhiteSpace(admin.username) || string.IsNullOrWhiteSpace(admin.Password))
+            if (string.IsNullOrWhiteSpace(admin.username) || string.IsNullOrWhiteSpace(admin.Password))
             {
-                return BadRequest("Required Field");
+                return BadRequest(new { message = "Username and Password are required" });
             }
-            var Admin = await _context.SuperAdmin.FirstOrDefaultAsync(u=>u.Username==admin.username);
-            if(Admin == null)
+
+            var Admin = await _context.SuperAdmin.FirstOrDefaultAsync(u => u.Username == admin.username);
+            if (Admin == null)
             {
-                return NotFound("User Not Found");
+                return NotFound(new { message = "User Not Found" });
             }
-            bool IsPass = BCrypt.Net.BCrypt.Verify(admin.Password,Admin.HashPassword);
+
+            bool IsPass = BCrypt.Net.BCrypt.Verify(admin.Password, Admin.HashPassword);
             if (!IsPass)
             {
-                return Unauthorized("Incorrect Password");
+                return Unauthorized(new { message = "Incorrect Password" });
             }
-            string token = GenrateAuthToken(Admin);
-            return Ok(new
+
+            // Generate token
+            string token = GenerateAuthToken(Admin);
+
+            // Set HttpOnly Cookie
+            var cookieOptions = new CookieOptions
             {
-                Token = token
+                HttpOnly = true,          // Can't be accessed by JavaScript
+                Secure = true,            // Only sent over HTTPS (set to false for local development with HTTP)
+                SameSite = SameSiteMode.Lax, // CSRF protection
+                Expires = DateTime.UtcNow.AddHours(2),
+                Path = "/",
+                Domain = "localhost"      // Optional: specify domain
+            };
+
+            // Append the cookie to the response
+            Response.Cookies.Append("jwt", token, cookieOptions);
+
+            // Return success response (without token in body)
+            return Ok(new 
+            { 
+                message = "Login successful", 
+                username = Admin.Username,
+                role = Admin.AdminRole.ToString()
             });
         }
-        private string GenrateAuthToken(SuperAdmins admin)
+
+        [HttpPost("logout")]
+        public IActionResult Logout()
         {
-            var Claim = new[]
+            // Delete the cookie
+            Response.Cookies.Delete("jwt", new CookieOptions
             {
-                new Claim(ClaimTypes.GivenName,admin.Username),
-                new Claim(ClaimTypes.NameIdentifier,admin.ID.ToString()),
-                new Claim(ClaimTypes.Role,admin.AdminRole.ToString())
-            };
-            var Key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("hkfjhdkfjhddkjfhsdkjfhkjfjliieorieh.lalaklewkewikk"));
-            var Cred = new SigningCredentials(Key,SecurityAlgorithms.HmacSha256);
-            var token = new JwtSecurityToken(
-                claims:Claim,
-                signingCredentials:Cred,
-                expires:DateTime.UtcNow.AddHours(2)
-            );
-            return new JwtSecurityTokenHandler().WriteToken(token);
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Lax,
+                Path = "/",
+                Domain = "localhost"
+            });
+
+            return Ok(new { message = "Logged out successfully" });
+        }
+
+        [HttpGet("me")]
+        public async Task<IActionResult> GetCurrentUser()
+        {
+            // Get token from cookie
+            var token = Request.Cookies["jwt"];
             
+            if (string.IsNullOrEmpty(token))
+            {
+                return Unauthorized(new { message = "No authentication token found" });
+            }
+
+            try
+            {
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var key = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"] ?? "hkfjhdkfjhddkjfhsdkjfhkjfjliieorieh.lalaklewkewikk");
+                
+                var validationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ClockSkew = TimeSpan.Zero
+                };
+
+                var principal = tokenHandler.ValidateToken(token, validationParameters, out _);
+                var userId = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                var username = principal.FindFirst(ClaimTypes.GivenName)?.Value;
+                var role = principal.FindFirst(ClaimTypes.Role)?.Value;
+
+                return Ok(new
+                {
+                    id = userId,
+                    username = username,
+                    role = role
+                });
+            }
+            catch
+            {
+                return Unauthorized(new { message = "Invalid token" });
+            }
+        }
+
+        public string GenerateAuthToken(SuperAdmins admin)
+        {
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.GivenName, admin.Username),
+                new Claim(ClaimTypes.NameIdentifier, admin.ID.ToString()),
+                new Claim(ClaimTypes.Role, admin.AdminRole.ToString())
+            };
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("hkfjhdkfjhddkjfhsdkjfhkjfjliieorieh.lalaklewkewikk"));
+            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            
+            var token = new JwtSecurityToken(
+                claims: claims,
+                signingCredentials: credentials,
+                expires: DateTime.UtcNow.AddHours(2),
+                issuer: "HospitalSys",
+                audience: "HospitalSysClient"
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
 }
