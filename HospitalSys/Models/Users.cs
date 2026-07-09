@@ -44,6 +44,7 @@ namespace HospitalSys.Models
         public bool IsActive {get;set;} = true;
         public DateTime Created_at {get;set;} = DateTime.UtcNow;
 
+        
         public List<Doctor> Doctor {get;set;} = new();
         public List<Nurse> Nurse {get;set;} = new();
         public List<Receptionist> Receptionist {get;set;} = new();
@@ -52,9 +53,10 @@ namespace HospitalSys.Models
         public List<RadiologyTechnician> RadiologyTechnician {get;set;} = new();
         public List<Cashier> Cashier {get;set;} = new();
         public List<PharmacyCashier> PharmacyCashier {get;set;} = new();
-        public List<CentralStorePharmacy> CentralStorePharmacy {get;set;} = new();
-        public List<AidStorePharmacy> AidStorePharmacy {get;set;} = new();
+        // public List<CentralStorePharmacy> CentralStorePharmacy {get;set;} = new();
+        // public List<AidStorePharmacy> AidStorePharmacy {get;set;} = new();
         public List<RadiologyCashier> RadiologyCashier {get;set;} = new();
         public List<LaboratoryCashier> LaboratoryCashier {get;set;} = new();
+        public List<MainPharmacyManager> MainPharmacyManager {get;set;} = new();
     }
 }

@@ -43,13 +43,10 @@ namespace HospitalSys.Controllers
                 return Unauthorized(new { message = "Incorrect Password" });
             }
 
-            // Generate token
             string token = GenerateAuthToken(Admin);
-
-            // Set HttpOnly Cookie
             var cookieOptions = new CookieOptions
             {
-                HttpOnly = true,          // Can't be accessed by JavaScript
+                HttpOnly = true,          
                 Secure = true,            // Only sent over HTTPS (set to false for local development with HTTP)
                 SameSite = SameSiteMode.Lax, // CSRF protection
                 Expires = DateTime.UtcNow.AddHours(2),
@@ -57,10 +54,9 @@ namespace HospitalSys.Controllers
                 Domain = "localhost"      // Optional: specify domain
             };
 
-            // Append the cookie to the response
             Response.Cookies.Append("jwt", token, cookieOptions);
 
-            // Return success response (without token in body)
+            
             return Ok(new 
             { 
                 message = "Login successful", 
@@ -72,7 +68,6 @@ namespace HospitalSys.Controllers
         [HttpPost("logout")]
         public IActionResult Logout()
         {
-            // Delete the cookie
             Response.Cookies.Delete("jwt", new CookieOptions
             {
                 HttpOnly = true,
@@ -100,7 +95,6 @@ namespace HospitalSys.Controllers
             {
                 var tokenHandler = new JwtSecurityTokenHandler();
                 var key = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"] ?? "hkfjhdkfjhddkjfhsdkjfhkjfjliieorieh.lalaklewkewikk");
-                
                 var validationParameters = new TokenValidationParameters
                 {
                     ValidateIssuerSigningKey = true,
@@ -139,7 +133,7 @@ namespace HospitalSys.Controllers
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("hkfjhdkfjhddkjfhsdkjfhkjfjliieorieh.lalaklewkewikk"));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-            
+            var han = new JwtSecurityTokenHandler();
             var token = new JwtSecurityToken(
                 claims: claims,
                 signingCredentials: credentials,

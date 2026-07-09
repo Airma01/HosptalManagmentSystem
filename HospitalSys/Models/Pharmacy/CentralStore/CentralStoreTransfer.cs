@@ -17,6 +17,9 @@ namespace HospitalSys.Models.Pharmacy.CentralStore
         public int BranchPharmacyID {get;set;}
         [ForeignKey(nameof(BranchPharmacyID))]
         public BranchPharmacy? BranchPharmacy {get;set;}
+        public int CentralStoreManagerID {get;set;}
+        [ForeignKey(nameof(CentralStoreManagerID))]
+        public CentralStoreManager? CentralStoreManager {get;set;}
         public DateTime TransferDate {get;set;}
         public string Status {get;set;} = "";
 

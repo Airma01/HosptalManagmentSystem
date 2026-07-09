@@ -1,0 +1,26 @@
+.grid{
+    display: grid;
+    grid-template-columns: 20px 1fr;
+
+}
+.grid1{
+    display: grid;
+    grid-template-columns: 300px 1fr;
+
+}
+.sidenav{
+    background-color: burlywood;
+   position: fixed;
+    /* top: 0;
+    left: 0;
+    height: 100vh;
+    width: 250px; */
+   
+}
+.component{
+   margin-left:100rem;
+   padding: 20px;
+}
+.side{
+     
+}

@@ -6,8 +6,11 @@ C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\HospitalSys.runtimeconfig.json
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\HospitalSys.dll
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\HospitalSys.pdb
+C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\BCrypt-Net-Next.dll
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\Humanizer.dll
+C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\Microsoft.AspNetCore.OpenApi.dll
+C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\Microsoft.Bcl.Cryptography.dll
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\Microsoft.Build.Framework.dll
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\Microsoft.CodeAnalysis.dll
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\Microsoft.CodeAnalysis.CSharp.dll
@@ -20,6 +23,12 @@ C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\Microsoft.EntityFrameworkCore.Design.dll
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\Microsoft.EntityFrameworkCore.Relational.dll
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\Microsoft.Extensions.DependencyModel.dll
+C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\Microsoft.IdentityModel.Abstractions.dll
+C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\Microsoft.IdentityModel.JsonWebTokens.dll
+C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\Microsoft.IdentityModel.Logging.dll
+C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\Microsoft.IdentityModel.Protocols.dll
+C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
+C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\Microsoft.IdentityModel.Tokens.dll
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\Microsoft.OpenApi.dll
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\Microsoft.VisualStudio.SolutionPersistence.dll
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\Mono.TextTemplating.dll
@@ -32,6 +41,7 @@ C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\System.Composition.Hosting.dll
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\System.Composition.Runtime.dll
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\System.Composition.TypedParts.dll
+C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\System.IdentityModel.Tokens.Jwt.dll
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\cs\Microsoft.CodeAnalysis.resources.dll
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\de\Microsoft.CodeAnalysis.resources.dll
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\es\Microsoft.CodeAnalysis.resources.dll
@@ -105,6 +115,7 @@ C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\HospitalSys.csproj.CoreCompileInputs.cache
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\HospitalSys.MvcApplicationPartsAssemblyInfo.cs
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\HospitalSys.MvcApplicationPartsAssemblyInfo.cache
+C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\HospitalSys.sourcelink.json
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\rjimswa.dswa.cache.json
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\rjsmrazor.dswa.cache.json
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\rjsmcshtml.dswa.cache.json
@@ -120,14 +131,3 @@ C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\HospitalSys.pdb
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\HospitalSys.genruntimeconfig.cache
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\ref\HospitalSys.dll
-C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\BCrypt-Net-Next.dll
-C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\Microsoft.Bcl.Cryptography.dll
-C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\Microsoft.IdentityModel.Abstractions.dll
-C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\Microsoft.IdentityModel.JsonWebTokens.dll
-C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\Microsoft.IdentityModel.Logging.dll
-C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\Microsoft.IdentityModel.Tokens.dll
-C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\System.IdentityModel.Tokens.Jwt.dll
-C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
-C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\Microsoft.IdentityModel.Protocols.dll
-C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
-C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\HospitalSys.sourcelink.json

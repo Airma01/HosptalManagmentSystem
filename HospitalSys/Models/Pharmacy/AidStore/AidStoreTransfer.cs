@@ -17,6 +17,9 @@ namespace HospitalSys.Models.Pharmacy.AidStore
         public int BranchPharmacyID {get;set;}
         [ForeignKey(nameof(BranchPharmacyID))]
         public BranchPharmacy? BranchPharmacy {get;set;}
+         public int AidStoreManagerID {get;set;}
+        [ForeignKey(nameof(AidStoreManagerID))]
+        public AidStoreManager? AidStoreManager {get;set;}
         public DateTime TransferDate {get;set;}
         public string Status {get;set;} = "";
 

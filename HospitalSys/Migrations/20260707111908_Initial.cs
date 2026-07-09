@@ -13,6 +13,20 @@ namespace HospitalSys.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
+                name: "AidStorePharmacies",
+                columns: table => new
+                {
+                    AidPharmacyID = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    Location = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AidStorePharmacies", x => x.AidPharmacyID);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "BranchPharmacies",
                 columns: table => new
                 {
@@ -24,6 +38,20 @@ namespace HospitalSys.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_BranchPharmacies", x => x.BranchPharmacyID);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "CentralStorePharmacies",
+                columns: table => new
+                {
+                    CentralPharmacyID = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    Location = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CentralStorePharmacies", x => x.CentralPharmacyID);
                 });
 
             migrationBuilder.CreateTable(
@@ -184,6 +212,35 @@ namespace HospitalSys.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "AidStoreInventories",
+                columns: table => new
+                {
+                    AidInventoryID = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    AidPharmacyID = table.Column<int>(type: "integer", nullable: false),
+                    MedicineID = table.Column<int>(type: "integer", nullable: false),
+                    QuantityAvailable = table.Column<float>(type: "real", nullable: false),
+                    ExpiryDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    BatchNumber = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AidStoreInventories", x => x.AidInventoryID);
+                    table.ForeignKey(
+                        name: "FK_AidStoreInventories_AidStorePharmacies_AidPharmacyID",
+                        column: x => x.AidPharmacyID,
+                        principalTable: "AidStorePharmacies",
+                        principalColumn: "AidPharmacyID",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_AidStoreInventories_Medicines_MedicineID",
+                        column: x => x.MedicineID,
+                        principalTable: "Medicines",
+                        principalColumn: "MedicineID",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "BranchInventories",
                 columns: table => new
                 {
@@ -206,6 +263,35 @@ namespace HospitalSys.Migrations
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_BranchInventories_Medicines_MedicineID",
+                        column: x => x.MedicineID,
+                        principalTable: "Medicines",
+                        principalColumn: "MedicineID",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "CentralStoreInventories",
+                columns: table => new
+                {
+                    CentralInventoryID = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    CentralPharmacyID = table.Column<int>(type: "integer", nullable: false),
+                    MedicineID = table.Column<int>(type: "integer", nullable: false),
+                    QuantityAvailable = table.Column<float>(type: "real", nullable: false),
+                    ExpiryDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    BatchNumber = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CentralStoreInventories", x => x.CentralInventoryID);
+                    table.ForeignKey(
+                        name: "FK_CentralStoreInventories_CentralStorePharmacies_CentralPharm~",
+                        column: x => x.CentralPharmacyID,
+                        principalTable: "CentralStorePharmacies",
+                        principalColumn: "CentralPharmacyID",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_CentralStoreInventories_Medicines_MedicineID",
                         column: x => x.MedicineID,
                         principalTable: "Medicines",
                         principalColumn: "MedicineID",
@@ -307,27 +393,6 @@ namespace HospitalSys.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "AidStorePharmacies",
-                columns: table => new
-                {
-                    AidPharmacyID = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Name = table.Column<string>(type: "text", nullable: false),
-                    Location = table.Column<string>(type: "text", nullable: false),
-                    ManagerPharmacistID = table.Column<int>(type: "integer", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_AidStorePharmacies", x => x.AidPharmacyID);
-                    table.ForeignKey(
-                        name: "FK_AidStorePharmacies_Users_ManagerPharmacistID",
-                        column: x => x.ManagerPharmacistID,
-                        principalTable: "Users",
-                        principalColumn: "UserID",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Cashiers",
                 columns: table => new
                 {
@@ -347,34 +412,12 @@ namespace HospitalSys.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "CentralStorePharmacies",
-                columns: table => new
-                {
-                    CentralPharmacyID = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Name = table.Column<string>(type: "text", nullable: false),
-                    Location = table.Column<string>(type: "text", nullable: false),
-                    ManagerPharmacistID = table.Column<int>(type: "integer", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_CentralStorePharmacies", x => x.CentralPharmacyID);
-                    table.ForeignKey(
-                        name: "FK_CentralStorePharmacies_Users_ManagerPharmacistID",
-                        column: x => x.ManagerPharmacistID,
-                        principalTable: "Users",
-                        principalColumn: "UserID",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Doctors",
                 columns: table => new
                 {
                     DoctorID = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     UserID = table.Column<int>(type: "integer", nullable: false),
-                    UsersUserID = table.Column<int>(type: "integer", nullable: true),
                     ClinicalDepartmentID = table.Column<int>(type: "integer", maxLength: 200, nullable: false),
                     LicenseNumber = table.Column<string>(type: "text", nullable: false)
                 },
@@ -388,10 +431,11 @@ namespace HospitalSys.Migrations
                         principalColumn: "ClinicalDepartmentID",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Doctors_Users_UsersUserID",
-                        column: x => x.UsersUserID,
+                        name: "FK_Doctors_Users_UserID",
+                        column: x => x.UserID,
                         principalTable: "Users",
-                        principalColumn: "UserID");
+                        principalColumn: "UserID",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -426,6 +470,25 @@ namespace HospitalSys.Migrations
                     table.PrimaryKey("PK_LaboratoryTechnicians", x => x.TechnicianID);
                     table.ForeignKey(
                         name: "FK_LaboratoryTechnicians_Users_UserID",
+                        column: x => x.UserID,
+                        principalTable: "Users",
+                        principalColumn: "UserID",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "MainPharmacyManagers",
+                columns: table => new
+                {
+                    ManagerID = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    UserID = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MainPharmacyManagers", x => x.ManagerID);
+                    table.ForeignKey(
+                        name: "FK_MainPharmacyManagers_Users_UserID",
                         column: x => x.UserID,
                         principalTable: "Users",
                         principalColumn: "UserID",
@@ -589,35 +652,6 @@ namespace HospitalSys.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "AidStoreInventories",
-                columns: table => new
-                {
-                    AidInventoryID = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    AidPharmacyID = table.Column<int>(type: "integer", nullable: false),
-                    MedicineID = table.Column<int>(type: "integer", nullable: false),
-                    QuantityAvailable = table.Column<float>(type: "real", nullable: false),
-                    ExpiryDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    BatchNumber = table.Column<string>(type: "text", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_AidStoreInventories", x => x.AidInventoryID);
-                    table.ForeignKey(
-                        name: "FK_AidStoreInventories_AidStorePharmacies_AidPharmacyID",
-                        column: x => x.AidPharmacyID,
-                        principalTable: "AidStorePharmacies",
-                        principalColumn: "AidPharmacyID",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_AidStoreInventories_Medicines_MedicineID",
-                        column: x => x.MedicineID,
-                        principalTable: "Medicines",
-                        principalColumn: "MedicineID",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Bills",
                 columns: table => new
                 {
@@ -650,35 +684,6 @@ namespace HospitalSys.Migrations
                         column: x => x.PatientID,
                         principalTable: "Patients",
                         principalColumn: "PatientID",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "CentralStoreInventories",
-                columns: table => new
-                {
-                    CentralInventoryID = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    CentralPharmacyID = table.Column<int>(type: "integer", nullable: false),
-                    MedicineID = table.Column<int>(type: "integer", nullable: false),
-                    QuantityAvailable = table.Column<float>(type: "real", nullable: false),
-                    ExpiryDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    BatchNumber = table.Column<string>(type: "text", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_CentralStoreInventories", x => x.CentralInventoryID);
-                    table.ForeignKey(
-                        name: "FK_CentralStoreInventories_CentralStorePharmacies_CentralPharm~",
-                        column: x => x.CentralPharmacyID,
-                        principalTable: "CentralStorePharmacies",
-                        principalColumn: "CentralPharmacyID",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_CentralStoreInventories_Medicines_MedicineID",
-                        column: x => x.MedicineID,
-                        principalTable: "Medicines",
-                        principalColumn: "MedicineID",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -738,6 +743,62 @@ namespace HospitalSys.Migrations
                         column: x => x.VisitID,
                         principalTable: "PatientVists",
                         principalColumn: "VisitID",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AidStoreManagers",
+                columns: table => new
+                {
+                    AidStoreManagerID = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    AidPharmacyID = table.Column<int>(type: "integer", nullable: false),
+                    ManagerID = table.Column<int>(type: "integer", nullable: false),
+                    IsCurrent = table.Column<bool>(type: "boolean", nullable: false),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AidStoreManagers", x => x.AidStoreManagerID);
+                    table.ForeignKey(
+                        name: "FK_AidStoreManagers_AidStorePharmacies_AidPharmacyID",
+                        column: x => x.AidPharmacyID,
+                        principalTable: "AidStorePharmacies",
+                        principalColumn: "AidPharmacyID",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_AidStoreManagers_MainPharmacyManagers_ManagerID",
+                        column: x => x.ManagerID,
+                        principalTable: "MainPharmacyManagers",
+                        principalColumn: "ManagerID",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "CentralStoreManagers",
+                columns: table => new
+                {
+                    CentralStoreManagerID = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    CentralPharmacyID = table.Column<int>(type: "integer", nullable: false),
+                    ManagerID = table.Column<int>(type: "integer", nullable: false),
+                    IsCurrent = table.Column<bool>(type: "boolean", nullable: false),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CentralStoreManagers", x => x.CentralStoreManagerID);
+                    table.ForeignKey(
+                        name: "FK_CentralStoreManagers_CentralStorePharmacies_CentralPharmacy~",
+                        column: x => x.CentralPharmacyID,
+                        principalTable: "CentralStorePharmacies",
+                        principalColumn: "CentralPharmacyID",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_CentralStoreManagers_MainPharmacyManagers_ManagerID",
+                        column: x => x.ManagerID,
+                        principalTable: "MainPharmacyManagers",
+                        principalColumn: "ManagerID",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -1128,12 +1189,19 @@ namespace HospitalSys.Migrations
                     AidRequestID = table.Column<int>(type: "integer", nullable: false),
                     AidPharmacyID = table.Column<int>(type: "integer", nullable: false),
                     BranchPharmacyID = table.Column<int>(type: "integer", nullable: false),
+                    AidStoreManagerID = table.Column<int>(type: "integer", nullable: false),
                     TransferDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Status = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_AidStoreTransfers", x => x.AidTransferID);
+                    table.ForeignKey(
+                        name: "FK_AidStoreTransfers_AidStoreManagers_AidStoreManagerID",
+                        column: x => x.AidStoreManagerID,
+                        principalTable: "AidStoreManagers",
+                        principalColumn: "AidStoreManagerID",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_AidStoreTransfers_AidStorePharmacies_AidPharmacyID",
                         column: x => x.AidPharmacyID,
@@ -1191,6 +1259,7 @@ namespace HospitalSys.Migrations
                     CentralRequestID = table.Column<int>(type: "integer", nullable: false),
                     CentralPharmacyID = table.Column<int>(type: "integer", nullable: false),
                     BranchPharmacyID = table.Column<int>(type: "integer", nullable: false),
+                    CentralStoreManagerID = table.Column<int>(type: "integer", nullable: false),
                     TransferDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Status = table.Column<string>(type: "text", nullable: false),
                     MedicineID = table.Column<int>(type: "integer", nullable: true)
@@ -1203,6 +1272,12 @@ namespace HospitalSys.Migrations
                         column: x => x.BranchPharmacyID,
                         principalTable: "BranchPharmacies",
                         principalColumn: "BranchPharmacyID",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_CentralStoreTransfers_CentralStoreManagers_CentralStoreMana~",
+                        column: x => x.CentralStoreManagerID,
+                        principalTable: "CentralStoreManagers",
+                        principalColumn: "CentralStoreManagerID",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_CentralStoreTransfers_CentralStorePharmacies_CentralPharmac~",
@@ -1540,9 +1615,14 @@ namespace HospitalSys.Migrations
                 column: "MedicineID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_AidStorePharmacies_ManagerPharmacistID",
-                table: "AidStorePharmacies",
-                column: "ManagerPharmacistID");
+                name: "IX_AidStoreManagers_AidPharmacyID",
+                table: "AidStoreManagers",
+                column: "AidPharmacyID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AidStoreManagers_ManagerID",
+                table: "AidStoreManagers",
+                column: "ManagerID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AidStoreRequestDetails_AidRequestID",
@@ -1583,6 +1663,11 @@ namespace HospitalSys.Migrations
                 name: "IX_AidStoreTransfers_AidRequestID",
                 table: "AidStoreTransfers",
                 column: "AidRequestID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AidStoreTransfers_AidStoreManagerID",
+                table: "AidStoreTransfers",
+                column: "AidStoreManagerID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AidStoreTransfers_BranchPharmacyID",
@@ -1655,9 +1740,14 @@ namespace HospitalSys.Migrations
                 column: "MedicineID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_CentralStorePharmacies_ManagerPharmacistID",
-                table: "CentralStorePharmacies",
-                column: "ManagerPharmacistID");
+                name: "IX_CentralStoreManagers_CentralPharmacyID",
+                table: "CentralStoreManagers",
+                column: "CentralPharmacyID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CentralStoreManagers_ManagerID",
+                table: "CentralStoreManagers",
+                column: "ManagerID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_CentralStoreRequestDetails_CentralRequestID",
@@ -1705,6 +1795,11 @@ namespace HospitalSys.Migrations
                 column: "CentralRequestID");
 
             migrationBuilder.CreateIndex(
+                name: "IX_CentralStoreTransfers_CentralStoreManagerID",
+                table: "CentralStoreTransfers",
+                column: "CentralStoreManagerID");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_CentralStoreTransfers_MedicineID",
                 table: "CentralStoreTransfers",
                 column: "MedicineID");
@@ -1750,9 +1845,9 @@ namespace HospitalSys.Migrations
                 column: "ClinicalDepartmentID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Doctors_UsersUserID",
+                name: "IX_Doctors_UserID",
                 table: "Doctors",
-                column: "UsersUserID");
+                column: "UserID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_LaboratoryCashiers_UserID",
@@ -1808,6 +1903,11 @@ namespace HospitalSys.Migrations
                 name: "IX_LaboratoryTestTypes_LaboratorySectionID",
                 table: "LaboratoryTestTypes",
                 column: "LaboratorySectionID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MainPharmacyManagers_UserID",
+                table: "MainPharmacyManagers",
+                column: "UserID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_MedicalRecords_ConsultationID",
@@ -2131,13 +2231,13 @@ namespace HospitalSys.Migrations
                 name: "Rooms");
 
             migrationBuilder.DropTable(
-                name: "AidStorePharmacies");
+                name: "AidStoreManagers");
 
             migrationBuilder.DropTable(
                 name: "AidStoreRequests");
 
             migrationBuilder.DropTable(
-                name: "CentralStorePharmacies");
+                name: "CentralStoreManagers");
 
             migrationBuilder.DropTable(
                 name: "CentralStoreRequests");
@@ -2159,6 +2259,15 @@ namespace HospitalSys.Migrations
 
             migrationBuilder.DropTable(
                 name: "Wards");
+
+            migrationBuilder.DropTable(
+                name: "AidStorePharmacies");
+
+            migrationBuilder.DropTable(
+                name: "CentralStorePharmacies");
+
+            migrationBuilder.DropTable(
+                name: "MainPharmacyManagers");
 
             migrationBuilder.DropTable(
                 name: "Pharmacists");

@@ -20,5 +20,6 @@ namespace HospitalSys.Models
         public List<DispenseMedicine> DispenseMedicine {get;set;} = new();
         public List<CentralStoreRequest> CentralStoreRequest {get;set;} = new();
         public List<AidStoreRequest> AidStoreRequest {get;set;} = new();
+        
     }
 }

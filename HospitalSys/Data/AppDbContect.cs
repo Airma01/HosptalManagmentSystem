@@ -26,6 +26,16 @@ namespace HospitalSys.Data
             .HasIndex(u=>u.Username)
             .IsUnique();
 
+          modelBuilder.Entity<Doctor>(entity =>
+           {
+            entity.HasKey(d => d.DoctorID);
+            entity.HasOne(d => d.Users)
+            .WithMany(u => u.Doctor)
+            .HasForeignKey(d => d.UserID)  // Explicitly use UserID
+            .OnDelete(DeleteBehavior.Restrict);
+           });
+
+
             modelBuilder.Entity<Users>()
             .Property(u => u.Gender)
             .HasConversion<string>();
@@ -73,6 +83,7 @@ namespace HospitalSys.Data
         public DbSet<PatientVisit> PatientVists {get;set;}
         public DbSet<Triage> Triages {get;set;}
         public DbSet<AidStorePharmacy> AidStorePharmacies {get;set;}
+        public DbSet<AidStoreManager> AidStoreManagers {get;set;}
         public DbSet<AidStoreInventory> AidStoreInventories {get;set;}
         public DbSet<AidStoreRequest> AidStoreRequests {get;set;}
         public DbSet<AidStoreRequestDetail> AidStoreRequestDetails {get;set;}
@@ -82,6 +93,7 @@ namespace HospitalSys.Data
         public DbSet<BranchPharmacy> BranchPharmacies {get;set;}
         public DbSet<CentralStoreInventory> CentralStoreInventories {get;set;}
         public DbSet<CentralStorePharmacy> CentralStorePharmacies {get;set;}
+        public DbSet<CentralStoreManager> CentralStoreManagers {get;set;}
         public DbSet<CentralStoreRequest> CentralStoreRequests {get;set;}
         public DbSet<CentralStoreRequestDetail> CentralStoreRequestDetails {get;set;}
         public DbSet<CentralStoreTransfer> CentralStoreTransfers {get;set;}
@@ -105,6 +117,6 @@ namespace HospitalSys.Data
         public DbSet<RadiologyResult> RadiologyResults {get;set;}
         public DbSet<RadiologyCashier> RadiologyCashiers {get;set;}
         public DbSet<RadiologyTechnician> RadiologyTechnicians {get;set;}
-        
+        public DbSet<MainPharmacyManager> MainPharmacyManagers {get;set;}
     }
 }
