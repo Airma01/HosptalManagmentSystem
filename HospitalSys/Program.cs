@@ -1,31 +1,15 @@
-// Program.cs
 using HospitalSys.Data;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.CookiePolicy;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services
+// Add services to the container.
+// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
-builder.Services.AddControllers();
-
-// Configure CORS FIRST
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("Jwt-Policy", policy =>
-    {
-        policy.WithOrigins("http://localhost:5173")
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials() // CRITICAL: Allow credentials
-              .SetIsOriginAllowed(origin => true); // For development
-    });
-});
-
-// Configure Authentication
+// Configure JWT Authentication to read from cookie
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -41,10 +25,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 Encoding.UTF8.GetBytes("hkfjhdkfjhddkjfhsdkjfhkjfjliieorieh.lalaklewkewikk"))
         };
 
+        // CRITICAL: Read JWT from cookie
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
             {
+                // Read the token from cookie named "jwt"
                 var token = context.Request.Cookies["jwt"];
                 if (!string.IsNullOrEmpty(token))
                 {
@@ -56,24 +42,31 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
-builder.Services.AddDbContext<AppDbContext>(options => 
-    options.UseNpgsql(builder.Configuration.GetConnectionString("Default"))
+builder.Services.AddDbContext<AppDbContext>(
+    options => options.UseNpgsql(
+        builder.Configuration.GetConnectionString("Default")
+    )
 );
+
+builder.Services.AddCors(options =>
+    options.AddPolicy("Jwt-Policy", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials(); 
+    })
+);
+
+builder.Services.AddControllers();
 
 var app = builder.Build();
 
-// Middleware ORDER is CRITICAL
+// 2. HTTP Request Pipeline Ordering (CRITICAL)
 app.UseHttpsRedirection();
 
-// CORS MUST come before Authentication and Authorization
+// UseCors MUST come after UseRouting (implicit here) and BEFORE UseAuthorization
 app.UseCors("Jwt-Policy");
-
-app.UseCookiePolicy(new CookiePolicyOptions
-{
-    MinimumSameSitePolicy = SameSiteMode.Lax,
-    Secure = CookieSecurePolicy.Always,
-    HttpOnly = HttpOnlyPolicy.Always
-});
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -84,4 +77,30 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+app.UseHttpsRedirection();
+
+var summaries = new[]
+{
+    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
+};
+
+app.MapGet("/weatherforecast", () =>
+{
+    var forecast =  Enumerable.Range(1, 5).Select(index =>
+        new WeatherForecast
+        (
+            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
+            Random.Shared.Next(-20, 55),
+            summaries[Random.Shared.Next(summaries.Length)]
+        ))
+        .ToArray();
+    return forecast;
+})
+.WithName("GetWeatherForecast");
+
 app.Run();
+
+record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
+{
+    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+}

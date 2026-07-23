@@ -24,7 +24,7 @@ const AdminLogin = () => {
       console.log("Login successful:", user.username);
       
       if (response.status === 200) {
-        navigate("/Dashboard");
+        navigate("/admin/Dashboard");
       }
     } catch (error) {
       const errorMsg = error.response?.data?.message || 

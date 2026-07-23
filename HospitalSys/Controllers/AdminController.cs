@@ -203,6 +203,8 @@ namespace HospitalSys.Controllers
             }
         }
 
+        [HttpPost("add_pharmacy_manager")]
+        [AuthorizeRole("Admin")]
          public async Task<IActionResult> AddMainPhramacyManager([FromBody] RegisterMainPharmacyMangerDto PharmacyMangerDto)
         {
             try
@@ -221,6 +223,8 @@ namespace HospitalSys.Controllers
                 throw;
             }
         }
+        [HttpPost("add_manager_to_central")]
+        [AuthorizeRole("Admin")]
          public async Task<IActionResult> AddCentralPhramacyManager([FromBody] RegisterCentralStoreManagerDto CentralStoreManagerDto)
         {
             try
@@ -241,17 +245,20 @@ namespace HospitalSys.Controllers
                 throw;
             }
         }
-
-         public async Task<IActionResult> AddAidPharmacyManager([FromBody] RegisterAidStoreManagerDto AidStoreManagerDto)
+        [HttpPost("add_manager_to_aid")]
+        [AuthorizeRole("Admin")]
+       public async Task<IActionResult> AddAidPharmacyManager([FromBody] RegisterAidStoreManagerDto AidStoreManagerDto)
         {
             try
             {
-                var AidStoreManager = new AidStoreManager
+                var aidStoreManager = new AidStoreManager
                 {
                     AidPharmacyID = AidStoreManagerDto.AidPharmacyID,
                     ManagerID = AidStoreManagerDto.ManagerID,
                     IsCurrent = AidStoreManagerDto.IsCurrent
                 };
+                await _context.AidStoreManagers.AddAsync(aidStoreManager);
+                await _context.SaveChangesAsync();
                 return Ok("Mangers Added Successfully To Central Store");
             }
             catch (Exception ex)
@@ -384,66 +391,81 @@ namespace HospitalSys.Controllers
             }
         }
 
-        [HttpPost("add_to_central_inventory")]
-        [AuthorizeRole("Admin")]
-        public async Task<IActionResult> AddToCentralStoreInventory([FromBody] AddToCentralInventoryDto CentralInventoryDto)
+    [HttpPost("add_to_central_inventory")]
+    [AuthorizeRole("Admin")]
+    public async Task<IActionResult> AddToCentralStoreInventory([FromBody] AddToCentralInventoryDto CentralInventoryDto)
+    {
+        if(string.IsNullOrWhiteSpace(CentralInventoryDto.CentralPharmacyID.ToString()) 
+        ||string.IsNullOrWhiteSpace(CentralInventoryDto.MedicineID.ToString()) 
+        ||string.IsNullOrWhiteSpace(CentralInventoryDto.QuantityAvailable.ToString())
+        || string.IsNullOrWhiteSpace(CentralInventoryDto.ExpiryDate.ToString()))
         {
-            if(string.IsNullOrWhiteSpace(CentralInventoryDto.CentralPharmacyID.ToString()) 
-            ||string.IsNullOrWhiteSpace(CentralInventoryDto.MedicineID.ToString()) 
-            ||string.IsNullOrWhiteSpace(CentralInventoryDto.QuantityAvailable.ToString())
-            || string.IsNullOrWhiteSpace(CentralInventoryDto.ExpiryDate.ToString()))
-            {
-                return BadRequest("Fields Are Required");
-            }
-            try
-            {
-                var centralInventory = new CentralStoreInventory
-                {
-                  CentralPharmacyID = CentralInventoryDto.CentralPharmacyID,
-                  MedicineID = CentralInventoryDto.MedicineID,
-                  QuantityAvailable = CentralInventoryDto.QuantityAvailable,
-                  ExpiryDate = CentralInventoryDto.ExpiryDate,
-                  BatchNumber = CentralInventoryDto.BatchNumber
-                };
-                await _context.CentralStoreInventories.AddAsync(centralInventory);
-                await _context.SaveChangesAsync();
-             return Ok("Medicine Added To Central Store Inventory");   
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500,ex.Message);
-                throw;
-            }
+            return BadRequest("Fields Are Required");
         }
-        [HttpPost("add_to_aid_inventory")]
-        [AuthorizeRole("Admin")]
-        public async Task<IActionResult> AddToAidStoreInventory([FromBody] AddToAidInventoryDto AidInventoryDto)
+        try
         {
-            if(string.IsNullOrWhiteSpace(AidInventoryDto.AidPharmacyID.ToString()) 
-            ||string.IsNullOrWhiteSpace(AidInventoryDto.MedicineID.ToString()) 
-            ||string.IsNullOrWhiteSpace(AidInventoryDto.QuantityAvailable.ToString())
-            || string.IsNullOrWhiteSpace(AidInventoryDto.ExpiryDate.ToString()))
+            // Convert to UTC if it's not already UTC
+            var expiryDate = CentralInventoryDto.ExpiryDate;
+            if (expiryDate.Kind != DateTimeKind.Utc)
             {
-                return BadRequest("Fields Are Required");
+                expiryDate = DateTime.SpecifyKind(expiryDate, DateTimeKind.Utc);
             }
-            try
+
+            var centralInventory = new CentralStoreInventory
             {
-                var aidInventory = new AidStoreInventory
-                {
-                    AidPharmacyID = AidInventoryDto.AidPharmacyID,
-                    MedicineID = AidInventoryDto.MedicineID,
-                    QuantityAvailable = AidInventoryDto.QuantityAvailable,
-                    ExpiryDate = AidInventoryDto.ExpiryDate,
-                    BatchNumber = AidInventoryDto.BatchNumber
-                };
-             return Ok("Medicine Added To Aid Store Inventory");   
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500,ex.Message);
-                throw;
-            }
+                CentralPharmacyID = CentralInventoryDto.CentralPharmacyID,
+                MedicineID = CentralInventoryDto.MedicineID,
+                QuantityAvailable = CentralInventoryDto.QuantityAvailable,
+                ExpiryDate = expiryDate, // Use the UTC version
+                BatchNumber = CentralInventoryDto.BatchNumber
+            };
+            await _context.CentralStoreInventories.AddAsync(centralInventory);
+            await _context.SaveChangesAsync();
+            return Ok("Medicine Added To Central Store Inventory");   
         }
+        catch (Exception ex)
+        {
+            return StatusCode(500, ex.Message);
+        }
+    }
+
+    [HttpPost("add_to_aid_inventory")]
+    [AuthorizeRole("Admin")]
+    public async Task<IActionResult> AddToAidStoreInventory([FromBody] AddToAidInventoryDto AidInventoryDto)
+    {
+        if(string.IsNullOrWhiteSpace(AidInventoryDto.AidPharmacyID.ToString()) 
+        ||string.IsNullOrWhiteSpace(AidInventoryDto.MedicineID.ToString()) 
+        ||string.IsNullOrWhiteSpace(AidInventoryDto.QuantityAvailable.ToString())
+        || string.IsNullOrWhiteSpace(AidInventoryDto.ExpiryDate.ToString()))
+        {
+            return BadRequest("Fields Are Required");
+        }
+        try
+        {
+            // Convert to UTC if it's not already UTC
+            var expiryDate = AidInventoryDto.ExpiryDate;
+            if (expiryDate.Kind != DateTimeKind.Utc)
+            {
+                expiryDate = DateTime.SpecifyKind(expiryDate, DateTimeKind.Utc);
+            }
+
+            var aidInventory = new AidStoreInventory
+            {
+                AidPharmacyID = AidInventoryDto.AidPharmacyID,
+                MedicineID = AidInventoryDto.MedicineID,
+                QuantityAvailable = AidInventoryDto.QuantityAvailable,
+                ExpiryDate = expiryDate, // Use the UTC version
+                BatchNumber = AidInventoryDto.BatchNumber
+            };
+            await _context.AidStoreInventories.AddAsync(aidInventory);
+            await _context.SaveChangesAsync();
+            return Ok("Medicine Added To Aid Store Inventory");   
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, ex.Message);
+        }
+    }
 
         [HttpPost("create_main_central_pharmacy")]
         [AuthorizeRole("Admin")]
@@ -494,34 +516,298 @@ namespace HospitalSys.Controllers
         }
 
        // GET: Hospital/Admin/get_doc/{doctorId}
-[HttpGet("get_doc/{doctorId}")]
-public async Task<IActionResult> GetDoctorInfo(int doctorId)
+    [HttpGet("get_doc/{doctorId}")]
+    public async Task<IActionResult> GetDoctorInfo(int doctorId)
+    {
+        try
+        {
+            var doc = await _context.Doctors
+                            .Include(u=>u.Users)
+                            .Where(u=>u.DoctorID == doctorId)
+                            .Select(u => new
+                            {
+                                u.DoctorID,
+                                u.LicenseNumber,
+                                u.ClinicalDepartmentID,
+                                DepartmentName = u.ClinicalDepartment != null ? u.ClinicalDepartment.DepartmentName : "",
+                                User = u.Users != null ?new
+                                {
+                                 u.Users.FirstName,
+                                 u.Users.FatherName
+                                }:null
+                            
+                            })
+                            .FirstOrDefaultAsync();
+            return Ok(doc);
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, new { success = false, message = "An error occurred while processing your request." });
+        }
+    }
+    
+    [HttpGet("get_nurse_info/{nurseID}")]
+    public async Task<IActionResult> GetNurseInfo(int nurseID)
+        {
+            try
+            {
+                var getNurse = await _context.Nurses
+                                    .Include(u=>u.Users)
+                                    .Include(u=>u.ClinicalDepartment)
+                                    .Where(u=>u.NurseID == nurseID)
+                                    .Select(u => new
+                                    {
+                                        u.NurseID,
+                                        u.ClinicalDepartmentID,
+                                        User = u.Users != null ? new
+                                        {
+                                            u.Users.FirstName,
+                                            u.Users.FatherName,
+                                            u.Users.Email,
+                                            u.Users.Phone
+                                        } :null,
+                                        DepartmentName = u.ClinicalDepartment !=null ? u.ClinicalDepartment.DepartmentName : "",
+                                    })
+                                    .FirstOrDefaultAsync();
+                                    
+                return Ok(getNurse);
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { success = false, message = "An error occurred while processing your request." });
+                
+            }
+        }
+        
+
+        [HttpGet("get_all_user")]
+        public async Task<IActionResult> GetAllUsers()
+        {
+            try
+            {
+                var getUser = await _context.Users
+                                .Include(u=>u.Role)
+                                .Select(u =>new
+                                {
+                                    u.UserID,
+                                    u.FirstName,
+                                    u.FatherName,
+                                    u.Email,
+                                    u.Phone,
+                                    u.Username,
+                                    Role = u.Role != null ? u.Role.RoleName : ""
+                                    
+                                })
+                                .ToListAsync();
+                             
+
+                return Ok(getUser);
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { success = false, message = "An error occurred while processing your request." });
+                throw;
+            }
+        }
+
+        [HttpGet("get_all_clinical_departments")]
+        public async Task<IActionResult> GetClinicalDepartment()
+        {
+            try
+            {
+                
+                var getAllClinic = await _context.ClinicalDepartments
+                                        .Select(u => new
+                                        {
+                                            u.ClinicalDepartmentID,
+                                            u.DepartmentName,
+                                            u.Description
+                                        })
+                                        .ToListAsync();
+
+                return Ok(getAllClinic);
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { success = false, message = "An error occurred while processing your request." });
+                throw;
+            }
+        }
+
+        // Get all roles
+[HttpGet("get_all_roles")]
+public async Task<IActionResult> GetAllRoles()
 {
     try
     {
-        var doc = await _context.Doctors
-                        .Include(u=>u.Users)
-                        .Where(u=>u.DoctorID == doctorId)
-                        .Select(u => new
-                        {
-                            u.DoctorID,
-                            u.LicenseNumber,
-                            u.ClinicalDepartmentID,
-                            u.Users.FirstName,
-                            u.Users.FatherName
-                            // DepartmentName = u.ClinicalDepartment != null ? u.ClinicalDepartment.DepartmentName : ""
-                            // User = u.Users != null ?new
-                            // {
-                                
-                            // }:null
-                           
-                        })
-                        .FirstOrDefaultAsync();
-        return Ok(doc);
+        var roles = await _context.Roles
+            .Select(r => new { r.RoleID, r.RoleName })
+            .ToListAsync();
+        return Ok(roles);
     }
-    catch (Exception)
+    catch (Exception ex)
     {
-        return StatusCode(500, new { success = false, message = "An error occurred while processing your request." });
+        return StatusCode(500, ex.Message);
+    }
+}
+
+// Get all medicines
+[HttpGet("get_all_medicines")]
+public async Task<IActionResult> GetAllMedicines()
+{
+    try
+    {
+        var medicines = await _context.Medicines
+            .Select(m => new { m.MedicineID, m.MedicineName, m.GenericName })
+            .ToListAsync();
+        return Ok(medicines);
+    }
+    catch (Exception ex)
+    {
+        return StatusCode(500, ex.Message);
+    }
+}
+
+// Get all branch pharmacies
+[HttpGet("get_all_branch_pharmacies")]
+public async Task<IActionResult> GetAllBranchPharmacies()
+{
+    try
+    {
+        var branches = await _context.BranchPharmacies
+            .Select(b => new { b.BranchPharmacyID, b.BranchName, b.Location })
+            .ToListAsync();
+        return Ok(branches);
+    }
+    catch (Exception ex)
+    {
+        return StatusCode(500, ex.Message);
+    }
+}
+
+// Get all central pharmacies
+[HttpGet("get_all_central_pharmacies")]
+public async Task<IActionResult> GetAllCentralPharmacies()
+{
+    try
+    {
+        var central = await _context.CentralStorePharmacies
+            .Select(c => new { c.CentralPharmacyID, c.Name, c.Location })
+            .ToListAsync();
+        return Ok(central);
+    }
+    catch (Exception ex)
+    {
+        return StatusCode(500, ex.Message);
+    }
+}
+
+// Get all aid pharmacies
+[HttpGet("get_all_aid_pharmacies")]
+public async Task<IActionResult> GetAllAidPharmacies()
+{
+    try
+    {
+        var aid = await _context.AidStorePharmacies
+            .Select(a => new { a.AidPharmacyID, a.Name, a.Location })
+            .ToListAsync();
+        return Ok(aid);
+    }
+    catch (Exception ex)
+    {
+        return StatusCode(500, ex.Message);
+    }
+}
+
+[HttpGet("Get_Stock/{storeID}")]
+public async Task<IActionResult> GetCentralInventory(int storeID)
+{
+    try
+    {
+        var getCentralInventoryStore = await _context.CentralStoreInventories
+                                             .Include(inv => inv.Medicine)
+                                             .Include(inv=> inv.CentralStorePharmacy)
+                                             .Where(inv => inv.CentralPharmacyID == storeID)
+                                             .Select(inv => new{
+                                                inv.CentralInventoryID,
+                                                inv.QuantityAvailable,
+                                                inv.ExpiryDate,
+                                                inv.BatchNumber,
+                                                Medicine = inv.Medicine != null ? new {
+                                                    inv.Medicine.MedicineID,
+                                                    inv.Medicine.MedicineName,
+                                                    inv.Medicine.GenericName,
+                                                    inv.Medicine.UnitPrice,
+                                                    inv.Medicine.UnitOfMeasure
+                                                }:null,
+                                                Store = inv.CentralStorePharmacy != null ? new
+                                                {
+                                                    inv.CentralStorePharmacy.CentralPharmacyID,
+                                                    inv.CentralStorePharmacy.Name
+                                                }:null
+                                             })
+                                             .ToListAsync();
+
+        return Ok(getCentralInventoryStore);
+    }
+    catch (System.Exception)
+    {
+        
+        throw;
+    }
+}
+
+[HttpGet("get_all_doctors")]
+public async Task<IActionResult> GetAllDoctors()
+{
+    try
+    {
+        var doctors = await _context.Doctors
+            .Include(u => u.Users)
+               .ThenInclude(u=>u.Role)
+            .Select(u => new
+            {
+                u.Users.UserID,
+                u.Users.FirstName,
+                u.Users.FatherName,
+                u.Users.Email,
+                u.Users.Phone,
+                u.Users.Username,
+                Role = u.Users.Role.RoleName
+            })
+            .ToListAsync();
+        return Ok(doctors);
+    }
+    catch (Exception ex)
+    {
+        return StatusCode(500, new { success = false, message = ex.Message });
+    }
+}
+
+[HttpGet("get_all_nurses")]
+public async Task<IActionResult> GetAllNurses()
+{
+    try
+    {
+        var nurses = await _context.Nurses
+            .Include(u => u.Users)
+               .ThenInclude(u=>u.Role)
+            .Select(u => new
+            {
+                u.Users.UserID,
+                u.Users.FirstName,
+                u.Users.FatherName,
+                u.Users.Email,
+                u.Users.Phone,
+                u.Users.Username,
+                u.Users.Role.RoleName
+            })
+            .ToListAsync();
+        return Ok(nurses);
+    }
+    catch (Exception ex)
+    {
+        return StatusCode(500, new { success = false, message = ex.Message });
     }
 }
     }
