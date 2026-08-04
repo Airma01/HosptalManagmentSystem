@@ -244,7 +244,7 @@ const Doctors = () => {
                                     <option value="">Select a user</option>
                                     {users.map(user => (
                                         <option key={user.userID} value={user.userID}>
-                                            {user.firstName} {user.fatherName} ({user.username})
+                                            {user.firstName} {user.fatherName} ({user.roles.join(', ')})
                                         </option>
                                     ))}
                                 </select>

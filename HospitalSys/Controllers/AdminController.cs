@@ -80,49 +80,72 @@ namespace HospitalSys.Controllers
             }
         }
 
-        [HttpPost("add_user")]
-        [AuthorizeRole("Admin")]
-        public async Task<IActionResult> AddUser([FromBody] RegisterUserDto UserDto)
-        {
-            if(string.IsNullOrEmpty(UserDto.FirstName) || string.IsNullOrEmpty(UserDto.FatherName) || string.IsNullOrEmpty(UserDto.Username) || string.IsNullOrEmpty(UserDto.Password) || string.IsNullOrEmpty(UserDto.Phone))
-            {
-                return BadRequest("All Field Are Required");
-            }
-            bool IsUsernameFound = await _context.Users.AnyAsync(u => u.Username == UserDto.Username);
-            // bool IsEmailFound = await _context.Users.AnyAsync(u => u.Email == UserDto.Email);
-            if (IsUsernameFound)
-            {
-                return BadRequest("This Username Have been Registrated insert new UserName");
-            }
-            // if(IsEmailFound)
-            // {
-            //     return BadRequest("this email have been registrated");
-            // }
-            
-            try
-            {
-                string HashPass = BCrypt.Net.BCrypt.HashPassword(UserDto.Password);
-                var User = new Users
-                {
-                  FirstName = UserDto.FirstName,
-                  FatherName = UserDto.FatherName,
-                  Username = UserDto.Username,
-                  Email = UserDto.Email,
-                  HashPassword = HashPass,
-                  RoleID = UserDto.RoleID,
-                  Phone = UserDto.Phone
-                };
-                await _context.Users.AddAsync(User);
-                await _context.SaveChangesAsync();
-                return Ok("User Added Successfuly");
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500,ex.Message);
-                throw;
-            }
-        }
+       [HttpPost("add_user")]
+[AuthorizeRole("Admin")]
+public async Task<IActionResult> AddUser([FromBody] RegisterUserDto userDto)
+{
+    // Validate required fields
+    if (string.IsNullOrEmpty(userDto.FirstName) ||
+        string.IsNullOrEmpty(userDto.FatherName) ||
+        string.IsNullOrEmpty(userDto.Username) ||
+        string.IsNullOrEmpty(userDto.Password) ||
+        string.IsNullOrEmpty(userDto.Phone))
+    {
+        return BadRequest("All required fields must be filled.");
+    }
 
+    if (await _context.Users.AnyAsync(u => u.Username == userDto.Username))
+        return BadRequest("Username already taken.");
+
+    // Validate roles
+    if (userDto.RoleIDs == null || !userDto.RoleIDs.Any())
+        return BadRequest("At least one role must be assigned.");
+
+    var existingRoleIds = await _context.Roles
+        .Where(r => userDto.RoleIDs.Contains(r.RoleID))
+        .Select(r => r.RoleID)
+        .ToListAsync();
+
+    if (existingRoleIds.Count != userDto.RoleIDs.Count)
+        return BadRequest("One or more roles are invalid.");
+
+    try
+    {
+        var user = new Users
+        {
+            FirstName = userDto.FirstName,
+            FatherName = userDto.FatherName,
+            Username = userDto.Username,
+            Email = userDto.Email,
+            HashPassword = BCrypt.Net.BCrypt.HashPassword(userDto.Password),
+            Phone = userDto.Phone
+            // Gender and other fields if needed
+        };
+
+        using var transaction = await _context.Database.BeginTransactionAsync();
+
+        await _context.Users.AddAsync(user);
+        await _context.SaveChangesAsync(); // user.UserID generated
+
+        // Insert into UserRoles
+        var userRoles = userDto.RoleIDs.Select(roleId => new UserRole
+        {
+            UserID = user.UserID,
+            RoleID = roleId
+        });
+        await _context.UserRoles.AddRangeAsync(userRoles);
+        await _context.SaveChangesAsync();
+
+        await transaction.CommitAsync();
+
+        return Ok("User added successfully with roles.");
+    }
+    catch (Exception ex)
+    {
+        // Log exception
+        return StatusCode(500, "Internal server error.");
+    }
+}
         [HttpPost("add_clinical_department")]
         [AuthorizeRole("Admin")]
         public async Task<IActionResult> AddClinicalDepartment([FromBody] RegClinicalDepDto ClinicDto)
@@ -153,7 +176,84 @@ namespace HospitalSys.Controllers
                 throw;
             }
         }
-        
+
+        public async Task<bool> FindNurse(int UserID)
+        {
+            bool isFound = await _context.Nurses
+            .Where(u=>u.UserID==UserID)
+             .AnyAsync();
+            if(isFound)
+            {
+                return true;
+            }
+            else
+            {
+               return false; 
+            }
+            
+        }
+        public async Task<bool> FindDoctor(int UserID)
+        {
+            bool isFound = await _context.Doctors
+            .Where(u=>u.UserID==UserID)
+             .AnyAsync();
+            if(isFound)
+            {
+                return true;
+            }
+            else
+            {
+               return false; 
+            }
+            
+        }
+        public async Task<bool> FindPharmacist(int UserID)
+        {
+            bool isFound = await _context.Pharmacists
+            .Where(u=>u.UserID==UserID)
+             .AnyAsync();
+            if(isFound)
+            {
+                return true;
+            }
+            else
+            {
+               return false; 
+            }
+            
+        }
+        public async Task<bool> FindCashier(int UserID)
+        {
+            bool isFound = await _context.Cashiers
+            .Where(u=>u.UserID==UserID)
+             .AnyAsync();
+            if(isFound)
+            {
+                return true;
+            }
+            else
+            {
+               return false; 
+            }
+            
+        }
+        public async Task<bool> FindReceptionist(int UserID)
+        {
+            bool isFound = await _context.Receptionists
+            .Where(u=>u.UserID==UserID)
+             .AnyAsync();
+            if(isFound)
+            {
+                return true;
+            }
+            else
+            {
+               return false; 
+            }
+            
+        }
+    
+
         [HttpPost("add_doctor")]
         [AuthorizeRole("Admin")]
         public async Task<IActionResult> AddDoctor([FromBody] RegisterDoctorDto DoctorDto)
@@ -162,8 +262,24 @@ namespace HospitalSys.Controllers
             {
                 return BadRequest("Fields Are Required");
             }
+            if(FindNurse(DoctorDto.UserID).Result)
+            {
+                return BadRequest("This User Is Already Registred As Nurse");
+            }
+            if(FindDoctor(DoctorDto.UserID).Result)
+            {
+                return BadRequest("This User Is Already Registred As Doctor");
+            }
             try
             {  
+                var user = await _context.Users
+                           .Include(u => u.UserRole)
+                           .ThenInclude(ur => ur.Role)
+                           .FirstOrDefaultAsync(u => u.UserID == DoctorDto.UserID);
+                if(user.UserRole.All(r => r.Role.RoleName != "Doctor"))
+                {
+                    return BadRequest("This User Is Not Assigned The Doctor Role");
+                }
                 var doctor = new Doctor
                 {
                     UserID = DoctorDto.UserID,
@@ -180,7 +296,152 @@ namespace HospitalSys.Controllers
                 throw;
             }
         }
+        
+        [HttpPost("add_select_user_doctor_role/{DepartmentID}")]
+        public async Task<IActionResult> AddSelectedDoctorForDepartment(int DepartmentID,[FromBody] SelectedDoctorsDto selectedDoctorsDto)
+        {
+            if(DepartmentID == 0)
+            {
+                return BadRequest("Department ID Is Required");
+            }
+        
+            try
+            {
+            var doctor = new SelectedDoctorsDto
+            {
+                UserIDs = selectedDoctorsDto.UserIDs
+            };
+            await _context.Doctors.AddRangeAsync(doctor.UserIDs.Select(id => new Doctor
+            {
+                UserID = id,
+                ClinicalDepartmentID = DepartmentID, // or some default value
+                LicenseNumber = "" // or some default value
+            }));
+            await _context.SaveChangesAsync();
+            return Ok("Selected Doctors Added Successfully");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500,ex.Message);
+                throw;
+            }
+           
+        }
+        [HttpGet("get_unassigned_doctors")]
+        public async Task<IActionResult> GetUnassignedDoctors()
+        {
+            try
+            {
+                var unassignedDoctors = await _context.Users
+                    .Include(u => u.UserRole)
+                    .ThenInclude(ur => ur.Role)
+                    .Where(u => u.UserRole.Any(ur => ur.Role.RoleName == "Doctor") && !u.Doctor.Any())
+                    .Select(u => new
+                    {
+                        u.UserID,
+                        u.FirstName,
+                        u.FatherName,
+                        u.Username,
+                        Roles = u.UserRole.Select(ur => ur.Role.RoleName).ToList()
+                    })
+                    .ToListAsync();
 
+                return Ok(unassignedDoctors);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message); 
+            }
+            
+        }
+        [HttpGet("get_doctor_for_department/{DepartmentID}")]
+        public async Task<IActionResult> GetDoctorForDepartment(int DepartmentID)
+        {
+            if(DepartmentID == 0)
+            {
+                return BadRequest("Department ID Is Required");
+            }
+            var doctors = await _context.Doctors
+            .Where(d => d.ClinicalDepartmentID == DepartmentID)
+            .Include(d => d.Users)
+            .ThenInclude(u => u.UserRole)
+            .ThenInclude(ur => ur.Role)
+            .Select(d => new DoctorDto
+            {
+                Id = d.UserID,
+                doctorID = d.DoctorID,
+                Username = d.Users.Username,
+                FullName = d.Users.FirstName + " " + d.Users.FatherName,
+                Email = d.Users.Email,
+                Phone = d.Users.Phone,
+                Roles = d.Users.UserRole.Select(ur => ur.Role.RoleName).ToList()
+            })
+            .ToListAsync();
+
+            return Ok(doctors);
+        }
+        [HttpDelete("remove_doctor_from_department/{doctorId}")]
+        public async Task<IActionResult> RemoveDoctorFromDepartment(int doctorId)
+        {
+            var doctor = await _context.Doctors.FindAsync(doctorId);
+            if (doctor == null)
+            {
+                return NotFound("Doctor not found.");
+            }
+
+            _context.Doctors.Remove(doctor);
+            await _context.SaveChangesAsync();
+
+            return Ok("Doctor removed from department successfully.");
+        }
+        [HttpGet("department/{id}")]
+        public async Task<IActionResult> GetDepartmentById(int id)
+        {
+            var department = await _context.ClinicalDepartments
+                .FirstOrDefaultAsync(d => d.ClinicalDepartmentID == id);
+            if (department == null)
+                return NotFound();
+
+            return Ok(new {
+                clinicalDepartmentID = department.ClinicalDepartmentID,
+                departmentName = department.DepartmentName,
+                description = department.Description
+            });
+        }
+        [HttpPost("add_all_role_doctor")]
+        [AuthorizeRole("Admin")]
+        public async Task<IActionResult> AddAllRoleDoctor()
+        {
+            
+            var doctor = await _context.Users
+                             .Include(u => u.UserRole)
+                             .ThenInclude(ur => ur.Role)
+                             .Include(u=>u.Doctor)
+                .FirstOrDefaultAsync(u => u.UserRole.Any(ur => ur.Role.RoleName == "Doctor" && !u.Doctor.Any()));
+            if (doctor == null)
+            {
+                return NotFound("Doctor role not found.");
+            }
+
+            var usersWithoutDoctorRole = await _context.Users
+                .Where(u => !u.UserRole.Any(ur => ur.Role.RoleName == "Doctor"))
+                .ToListAsync();
+
+            foreach (var docRole in doctor.UserRole.Where(ur => ur.Role.RoleName == "Doctor"))
+            {
+                var doc = new Doctor
+                {
+                    // UserID = doctor.UserID,
+                    // ClinicalDepartmentID = "", // Set to null or a default value if needed
+                    // LicenseNumber = null // Set to null or a default value if needed
+                };
+                
+                await _context.Doctors.AddAsync(doc);
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok("All users have been assigned the Doctor role.");
+        }
         [HttpPost("add_pharmacist")]
         [AuthorizeRole("Admin")]
         public async Task<IActionResult> AddPharmacist([FromBody] RegisterPharmacistDto PharmacistDto)
@@ -580,35 +841,35 @@ namespace HospitalSys.Controllers
         }
         
 
-        [HttpGet("get_all_user")]
-        public async Task<IActionResult> GetAllUsers()
-        {
-            try
+     [HttpGet("get_all_user")]
+public async Task<IActionResult> GetAllUsers()
+{
+    try
+    {
+        var users = await _context.Users
+            .Include(u => u.UserRole)
+            .ThenInclude(ur => ur.Role)
+            .Where(u => u.UserRole.Any())
+            .Select(u => new
             {
-                var getUser = await _context.Users
-                                .Include(u=>u.Role)
-                                .Select(u =>new
-                                {
-                                    u.UserID,
-                                    u.FirstName,
-                                    u.FatherName,
-                                    u.Email,
-                                    u.Phone,
-                                    u.Username,
-                                    Role = u.Role != null ? u.Role.RoleName : ""
-                                    
-                                })
-                                .ToListAsync();
-                             
+                u.UserID,
+                u.FirstName,
+                u.FatherName,
+                u.Email,
+                u.Phone,
+                u.Username,
+                // Return an array of role names
+                Roles = u.UserRole.Select(ur => ur.Role.RoleName).ToList()
+            })
+            .ToListAsync();
 
-                return Ok(getUser);
-            }
-            catch (Exception)
-            {
-                return StatusCode(500, new { success = false, message = "An error occurred while processing your request." });
-                throw;
-            }
-        }
+        return Ok(users);
+    }
+    catch (Exception)
+    {
+        return StatusCode(500, new { success = false, message = "An error occurred while processing your request." });
+    }
+}
 
         [HttpGet("get_all_clinical_departments")]
         public async Task<IActionResult> GetClinicalDepartment()
@@ -719,6 +980,7 @@ public async Task<IActionResult> GetAllAidPharmacies()
     }
 }
 
+
 [HttpGet("Get_Stock/{storeID}")]
 public async Task<IActionResult> GetCentralInventory(int storeID)
 {
@@ -764,7 +1026,7 @@ public async Task<IActionResult> GetAllDoctors()
     {
         var doctors = await _context.Doctors
             .Include(u => u.Users)
-               .ThenInclude(u=>u.Role)
+            //    .ThenInclude(u=>u.Role)
             .Select(u => new
             {
                 u.Users.UserID,
@@ -773,7 +1035,7 @@ public async Task<IActionResult> GetAllDoctors()
                 u.Users.Email,
                 u.Users.Phone,
                 u.Users.Username,
-                Role = u.Users.Role.RoleName
+                // Role = u.Users.Role.RoleName
             })
             .ToListAsync();
         return Ok(doctors);
@@ -791,7 +1053,7 @@ public async Task<IActionResult> GetAllNurses()
     {
         var nurses = await _context.Nurses
             .Include(u => u.Users)
-               .ThenInclude(u=>u.Role)
+            //    .ThenInclude(u=>u.Role)
             .Select(u => new
             {
                 u.Users.UserID,
@@ -800,7 +1062,7 @@ public async Task<IActionResult> GetAllNurses()
                 u.Users.Email,
                 u.Users.Phone,
                 u.Users.Username,
-                u.Users.Role.RoleName
+                // u.Users.Role.RoleName
             })
             .ToListAsync();
         return Ok(nurses);
@@ -810,5 +1072,22 @@ public async Task<IActionResult> GetAllNurses()
         return StatusCode(500, new { success = false, message = ex.Message });
     }
 }
-    }
+[HttpPost("create_triage_department")]
+public async Task<IActionResult> CreateTriageDepartment([FromBody] CreateTriageDepartmentDto dto)
+{
+    if (string.IsNullOrWhiteSpace(dto.DepartmentName))
+        return BadRequest(new { message = "Department name is required." });
+
+    var dept = new TriageDepartment
+    {
+        DepartmentName = dto.DepartmentName,
+        Description = dto.Description
+    };
+
+    await _context.TriageDepartments.AddAsync(dept);
+    await _context.SaveChangesAsync();
+
+    return Ok(new { message = "Created", id = dept.TriageDepartmentID });
+}
+        }
 }

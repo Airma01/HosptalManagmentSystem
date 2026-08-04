@@ -38,9 +38,10 @@ namespace HospitalSys.Models
         [MaxLength(250)]
          [Required]
         public string HashPassword {get;set;} = "";
-        public int RoleID {get;set;}
-        [ForeignKey(nameof(RoleID))]
-        public Role? Role {get;set;}
+        // public int RoleID {get;set;}
+        // [ForeignKey(nameof(RoleID))]
+        // public Role? Role {get;set;}
+
         public bool IsActive {get;set;} = true;
         public DateTime Created_at {get;set;} = DateTime.UtcNow;
 
@@ -58,5 +59,6 @@ namespace HospitalSys.Models
         public List<RadiologyCashier> RadiologyCashier {get;set;} = new();
         public List<LaboratoryCashier> LaboratoryCashier {get;set;} = new();
         public List<MainPharmacyManager> MainPharmacyManager {get;set;} = new();
+        public List<UserRole> UserRole {get;set;} = new List<UserRole>();
     }
 }

@@ -9,6 +9,6 @@ namespace HospitalSys.Models
         [MaxLength(200)]
         [Required]
         public string RoleName {get;set;} = "";
-        public List<Users> Users {get;set;} = new();
+        public List<UserRole> UserRole {get;set;} = new List<UserRole>();
     }
 }

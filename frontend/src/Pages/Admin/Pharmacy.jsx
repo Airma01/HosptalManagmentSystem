@@ -5,6 +5,7 @@ import API from '../../Config/API';
 const Pharmacy = () => {
     const [loading, setLoading] = useState(false);
     const [branchPharmacies, setBranchPharmacies] = useState([]);
+    const [centralPharmacy, setCentralPharmacy] = useState(null);
     const [users, setUsers] = useState([]);
     const [showBranchModal, setShowBranchModal] = useState(false);
     const [showPharmacistModal, setShowPharmacistModal] = useState(false);
@@ -19,12 +20,14 @@ const Pharmacy = () => {
 
     const fetchData = async () => {
         try {
-            const [branchesRes, usersRes] = await Promise.all([
+            const [branchesRes, usersRes, centralRes] = await Promise.all([
                 API.get('/Hospital/Admin/get_all_branch_pharmacies'),
-                API.get('/Hospital/Admin/get_all_user')
+                API.get('/Hospital/Admin/get_all_user'),
+                API.get('/Hospital/Admin/get_all_central_pharmacies')
             ]);
             setBranchPharmacies(branchesRes.data || []);
             setUsers(usersRes.data || []);
+            setCentralPharmacy(centralRes.data || null);
         } catch (error) {
             console.error('Error fetching data:', error);
         }
@@ -117,18 +120,74 @@ const Pharmacy = () => {
             </div>
 
             {/* Branch Pharmacies List */}
-            <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-                <h3 className="text-lg font-semibold mb-4">Branch Pharmacies</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {branchPharmacies.map((branch) => (
-                        <div key={branch.branchPharmacyID} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                            <h4 className="font-semibold">{branch.branchName}</h4>
-                            <p className="text-gray-600 text-sm">{branch.location || 'No location specified'}</p>
-                            <p className="text-gray-400 text-xs mt-2">ID: {branch.branchPharmacyID}</p>
-                        </div>
-                    ))}
-                </div>
-            </div>
+            
+
+            {/* Branch Pharmacies Table */}
+<div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+    <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold">Branch Pharmacies</h3>
+        {/* Optional: Add a "Create" button if you need full CRUD */}
+        <button className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 transition">
+            + Add Branch
+        </button>
+    </div>
+    <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+                <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        ID
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Branch Name
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Location
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                    </th>
+                </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+                {branchPharmacies.map((branch) => (
+                    <tr key={branch.branchPharmacyID} className="hover:bg-gray-50 transition">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {branch.branchPharmacyID}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {branch.branchName}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {branch.location || 'No location specified'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button
+                                onClick={() => handleDelete(branch.branchPharmacyID)}
+                                className="mr-3 text-blue-600 hover:text-red-900"
+                            >
+                                Read
+                            </button>
+                            <button
+                                onClick={() => handleEdit(branch.branchPharmacyID)}
+                                className="text-indigo-600 hover:text-indigo-900 mr-3"
+                            >
+                                Edit
+                            </button>
+                            <button
+                                onClick={() => handleDelete(branch.branchPharmacyID)}
+                                className="text-red-600 hover:text-red-900"
+                            >
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+    </div>
+</div>
+             
 
             {/* Create Pharmacies */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

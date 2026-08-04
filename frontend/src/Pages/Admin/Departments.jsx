@@ -1,7 +1,7 @@
 // src/Pages/Admin/Departments.jsx
 import React, { useState, useEffect } from 'react';
 import API from '../../Config/API';
-
+import { Link } from 'react-router-dom';
 const Departments = () => {
     const [departments, setDepartments] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -62,6 +62,9 @@ const Departments = () => {
                                 <h3 className="text-lg font-semibold text-gray-800">{dept.departmentName}</h3>
                                 <p className="text-gray-600 text-sm mt-1">{dept.description || 'No description'}</p>
                                 <p className="text-gray-400 text-xs mt-2">ID: {dept.clinicalDepartmentID}</p>
+                                <Link to={`/admin/dashboard/departments/${dept.clinicalDepartmentID}`} className="text-blue-600 hover:text-blue-800 bg-blue-100 px-2 py-1 rounded mt-2 flex items-center gap-1">
+                                    <i className="bi bi-three-dots"></i>Actions
+                                </Link>
                             </div>
                             <div className="flex gap-2">
                                 <button className="text-blue-600 hover:text-blue-800">

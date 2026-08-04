@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
+using HospitalSys.Attributes;
 
 namespace HospitalSys.Controllers
 {
@@ -81,6 +82,7 @@ namespace HospitalSys.Controllers
         }
 
         [HttpGet("me")]
+        [AuthorizeRole("Admin")]
         public async Task<IActionResult> GetCurrentUser()
         {
             // Get token from cookie

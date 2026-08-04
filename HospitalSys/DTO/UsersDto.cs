@@ -161,28 +161,15 @@ namespace HospitalSys.Dto
     // For User Registration (Extended)
     
     public class RegisterUserDto
-    {
-        [MaxLength(100)]
-        public string FirstName { get; set; } = "";
-
-        [MaxLength(100)]
-        public string FatherName { get; set; } = "";
-
-        public string Gender { get; set; } = "";
-
-        [MaxLength(20)]
-        public string Phone { get; set; } = "";
-
-        [MaxLength(100)]
-        public string Email { get; set; } = "";
-
-        [MaxLength(100)]
-        public string Username { get; set; } = "";
-
-        [MinLength(6)]
-        public string Password { get; set; } = "";
-        public int RoleID { get; set; }
-    }
+{
+    public string FirstName { get; set; }
+    public string FatherName { get; set; }
+    public string Username { get; set; }
+    public string Password { get; set; }
+    public string Email { get; set; }
+    public string Phone { get; set; }
+    public List<int> RoleIDs { get; set; }   // ← array of role IDs
+}
 
     // For User Profile Update
     public class UpdateUserProfileDto

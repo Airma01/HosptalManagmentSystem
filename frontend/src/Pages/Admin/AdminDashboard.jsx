@@ -13,7 +13,8 @@ import Pharmacy from "./Pharmacy";
 import Admins from "./Admins";
 import Settings from "./Settings";
 import AdminAuthRouter from "../../ProtectRoute/AdminAuthRouter";
-
+import UserAction from "./UserAction";
+import DepartmentDetail from "./DepartmentDetail";
 const AdminDashboard = () => {
   return (
     <div className="flex bg-gray-100 min-h-screen">
@@ -52,6 +53,8 @@ const AdminDashboard = () => {
           <Route path="pharmacy" element={<Pharmacy />} />
           <Route path="admins" element={<Admins />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="users/:id" element={<UserAction />} />
+          <Route path="departments/:id" element={<DepartmentDetail/>} />
           <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
           </Route>
         </Routes>

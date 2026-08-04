@@ -118,5 +118,6 @@ namespace HospitalSys.Data
         public DbSet<RadiologyCashier> RadiologyCashiers {get;set;}
         public DbSet<RadiologyTechnician> RadiologyTechnicians {get;set;}
         public DbSet<MainPharmacyManager> MainPharmacyManagers {get;set;}
+        public DbSet<UserRole> UserRoles {get;set;} 
     }
 }

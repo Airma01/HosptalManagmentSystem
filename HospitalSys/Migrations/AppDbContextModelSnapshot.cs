@@ -1791,6 +1791,29 @@ namespace HospitalSys.Migrations
                     b.ToTable("SuperAdmin");
                 });
 
+            modelBuilder.Entity("HospitalSys.Models.UserRole", b =>
+                {
+                    b.Property<int>("UserRoleID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("UserRoleID"));
+
+                    b.Property<int>("RoleID")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("UserID")
+                        .HasColumnType("integer");
+
+                    b.HasKey("UserRoleID");
+
+                    b.HasIndex("RoleID");
+
+                    b.HasIndex("UserID");
+
+                    b.ToTable("UserRoles");
+                });
+
             modelBuilder.Entity("HospitalSys.Models.Users", b =>
                 {
                     b.Property<int>("UserID")
@@ -1834,17 +1857,12 @@ namespace HospitalSys.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
-                    b.Property<int>("RoleID")
-                        .HasColumnType("integer");
-
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
                     b.HasKey("UserID");
-
-                    b.HasIndex("RoleID");
 
                     b.HasIndex("Username")
                         .IsUnique();
@@ -2792,15 +2810,23 @@ namespace HospitalSys.Migrations
                     b.Navigation("Users");
                 });
 
-            modelBuilder.Entity("HospitalSys.Models.Users", b =>
+            modelBuilder.Entity("HospitalSys.Models.UserRole", b =>
                 {
                     b.HasOne("HospitalSys.Models.Role", "Role")
-                        .WithMany("Users")
+                        .WithMany("UserRole")
                         .HasForeignKey("RoleID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("HospitalSys.Models.Users", "Users")
+                        .WithMany("UserRole")
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Role");
+
+                    b.Navigation("Users");
                 });
 
             modelBuilder.Entity("HospitalSys.Models.BillingAndPayment.Bill", b =>
@@ -3090,7 +3116,7 @@ namespace HospitalSys.Migrations
 
             modelBuilder.Entity("HospitalSys.Models.Role", b =>
                 {
-                    b.Navigation("Users");
+                    b.Navigation("UserRole");
                 });
 
             modelBuilder.Entity("HospitalSys.Models.Users", b =>
@@ -3116,6 +3142,8 @@ namespace HospitalSys.Migrations
                     b.Navigation("RadiologyTechnician");
 
                     b.Navigation("Receptionist");
+
+                    b.Navigation("UserRole");
                 });
 #pragma warning restore 612, 618
         }

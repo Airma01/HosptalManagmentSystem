@@ -1,7 +1,7 @@
-// src/Pages/Admin/UserManagement.jsx
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import API from '../../Config/API';
+import UserAction from './UserAction';
 
 const UserManagement = () => {
     const navigate = useNavigate();
@@ -25,14 +25,22 @@ const UserManagement = () => {
         }
     };
 
-    // Filter users based on search term
-    const filteredUsers = users.filter(user => 
-        user.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.fatherName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.role?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const toUserDetails = (userId) => {
+        
+        <UserAction userId={userId} actionType="view" />
+    }
+    // Filter users based on search term (search across all roles)
+    const filteredUsers = users.filter(user => {
+        const searchLower = searchTerm.toLowerCase();
+        const rolesString = (user.roles || []).join(' ').toLowerCase();
+        return (
+            user.firstName?.toLowerCase().includes(searchLower) ||
+            user.fatherName?.toLowerCase().includes(searchLower) ||
+            user.username?.toLowerCase().includes(searchLower) ||
+            user.email?.toLowerCase().includes(searchLower) ||
+            rolesString.includes(searchLower)
+        );
+    });
 
     return (
         <div>
@@ -75,9 +83,10 @@ const UserManagement = () => {
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">ID</th>
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Name</th>
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Username</th>
-                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Role</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Roles</th>
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Email</th>
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Phone</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -95,12 +104,26 @@ const UserManagement = () => {
                                         <td className="px-4 py-3 text-sm font-medium">{user.firstName} {user.fatherName}</td>
                                         <td className="px-4 py-3 text-sm">{user.username}</td>
                                         <td className="px-4 py-3 text-sm">
-                                            <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                                                {user.role || 'N/A'}
-                                            </span>
+                                            {/* Render multiple roles as badges */}
+                                            <div className="flex flex-wrap gap-1">
+                                                {user.roles && user.roles.length > 0 ? (
+                                                    user.roles.map((role, index) => (
+                                                        <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                                                            {role}
+                                                        </span>
+                                                    ))
+                                                ) : (
+                                                    <span className="text-gray-400">No roles</span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="px-4 py-3 text-sm">{user.email || '-'}</td>
                                         <td className="px-4 py-3 text-sm">{user.phone}</td>
+                                        <td className="">
+                                                        <Link to={`/admin/dashboard/users/${user.userID}`} className="px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                                                <i className="bi bi-eye"></i> View
+                                            </Link>
+                                        </td>
                                     </tr>
                                 ))
                             ) : (
