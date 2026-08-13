@@ -49,6 +49,7 @@ namespace HospitalSys.Controllers
                 role = role
             });
         }
+        
         [HttpPost("receptionist_login")]
         public async Task<IActionResult> ReceptionistLogin([FromBody] ReceptionistLoginDto loginDto)
         {

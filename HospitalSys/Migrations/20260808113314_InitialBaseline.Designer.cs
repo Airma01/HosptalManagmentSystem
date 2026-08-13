@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HospitalSys.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260731201947_AddUserRolesTable")]
-    partial class AddUserRolesTable
+    [Migration("20260808113314_InitialBaseline")]
+    partial class InitialBaseline
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -861,7 +861,7 @@ namespace HospitalSys.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("NurseID")
+                    b.Property<int?>("NurseID")
                         .HasColumnType("integer");
 
                     b.Property<double>("RespiratotyRate")
@@ -1200,6 +1200,10 @@ namespace HospitalSys.Migrations
 
                     b.Property<float>("QuantityAvailable")
                         .HasColumnType("real");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.HasKey("CentralInventoryID");
 
@@ -2269,9 +2273,7 @@ namespace HospitalSys.Migrations
 
                     b.HasOne("HospitalSys.Models.Nurse", "Nurse")
                         .WithMany("Triage")
-                        .HasForeignKey("NurseID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("NurseID");
 
                     b.HasOne("HospitalSys.Models.HospitalStruct.TriageDepartment", "TriageDepartment")
                         .WithMany("Triage")

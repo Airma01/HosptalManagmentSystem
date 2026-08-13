@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace HospitalSys.Models.Radiology
 {
@@ -7,6 +8,7 @@ namespace HospitalSys.Models.Radiology
         [Key]
         public int RadiologyTestTypeID {get;set;}
         public int RadiologyDepartmentID {get;set;}
+        [ForeignKey(nameof(RadiologyDepartmentID))]
         public RadiologyDepartment? RadiologyDepartment {get;set;}
         public string TestName {get;set;} = "";
         public decimal Price {get;set;}

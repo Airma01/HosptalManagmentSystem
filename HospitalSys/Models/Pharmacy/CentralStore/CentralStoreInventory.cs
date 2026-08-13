@@ -17,5 +17,6 @@ namespace HospitalSys.Models.Pharmacy.CentralStore
         public float QuantityAvailable {get;set;}
         public DateTime ExpiryDate {get;set;}
         public string BatchNumber {get;set;} = "";
+        public string Source { get; set; } = "";  // Renamed from FromWhere
     }
 }

@@ -204,5 +204,71 @@ public async Task<IActionResult> RecentTriageVist()
                 return StatusCode(500, new { message = "An error occurred while assigning the clinical department.", error = ex.Message });
             }
         }
+
+        [HttpGet("get-recent-triage/{departmentID}")]
+        public async Task<IActionResult> GetRecentTriage(int departmentID)
+        {
+            if(departmentID == null)
+            {
+                return BadRequest("");
+            }
+            try
+            {
+                var triage = await _context.Triages
+                     .Include(u=>u.PatientVisit)
+                     .ThenInclude(u=>u.Patient)
+                    .OrderByDescending(t => t.TriageId)
+                    .Where(t=>t.ClinicalDepartmentID == departmentID)
+                    .Select(t => new
+                    {
+                        t.TriageId,
+                        t.VisitID,
+                        FullName = t.PatientVisit.Patient.FirstName + " " + t.PatientVisit.Patient.LastName,
+                        t.PatientVisit.Patient.PatientID,
+                        t.NurseID,
+                        t.TriageDepartmentID,
+                        t.ClinicalDepartmentID,
+                        t.Temprature,
+                        t.BloodPressure,
+                        t.HeartRate,
+                        t.RespiratotyRate,
+                        t.Weight,
+                        t.Notes
+                    })
+                    .ToListAsync();
+
+                if (triage == null)
+                {
+                    return NotFound(new { message = "No triage records found." });
+                }
+
+                return Ok(triage);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while retrieving the recent triage record.", error = ex.Message });
+            }
+        }
+        [HttpGet("clinical_departments")]
+        public async Task<IActionResult> GetClinicalDepartment()
+        {
+            try
+            {
+    
+                var clinicalDepartments = await _context.ClinicalDepartments
+                                           .Select(u=>new
+                                           {
+                                               u.ClinicalDepartmentID,
+                                               u.DepartmentName,
+                                               u.Description
+                                           })
+                                          .ToListAsync();
+                return Ok(clinicalDepartments);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while retrieving clinical departments.", error = ex.Message });
+            }
+        }
     }
 }

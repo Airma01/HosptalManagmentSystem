@@ -1,4 +1,3 @@
-// src/Pages/Admin/AdminDashboard.jsx
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import AdminNav from "./AdminNav";
@@ -15,6 +14,11 @@ import Settings from "./Settings";
 import AdminAuthRouter from "../../ProtectRoute/AdminAuthRouter";
 import UserAction from "./UserAction";
 import DepartmentDetail from "./DepartmentDetail";
+import PharmacyDetail from "./PharmacyDetail"; // NEW
+import CentralPharmacy from './CentralPharmacy/CentralPharmacy';
+import CentralPharmacyDetail from './CentralPharmacy/CentralPharmacyDetail';
+import BranchPharmacy from './BranchPharmacy/BranchPharmacy';
+import BranchPharmacyDetail from './BranchPharmacy/BranchPharmacyDetail';
 const AdminDashboard = () => {
   return (
     <div className="flex bg-gray-100 min-h-screen">
@@ -39,26 +43,28 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Routes - Notice the paths don't have /admin/dashboard prefix */}
-        
         <Routes>
           <Route element={<AdminAuthRouter />}>
-          <Route path="/" element={<DashboardOverview />} />
-          <Route path="users" element={<UserManagement />} />
-          <Route path="departments" element={<Departments />} />
-          <Route path="doctors" element={<Doctors />} />
-          <Route path="nurses" element={<Nurses />} />
-          <Route path="medicine" element={<Medicine />} />
-          <Route path="inventory" element={<Inventory />} />
-          <Route path="pharmacy" element={<Pharmacy />} />
-          <Route path="admins" element={<Admins />} />
-          <Route path="settings" element={<Settings />} />
-          <Route path="users/:id" element={<UserAction />} />
-          <Route path="departments/:id" element={<DepartmentDetail/>} />
-          <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
+            <Route path="/" element={<DashboardOverview />} />
+            <Route path="users" element={<UserManagement />} />
+            <Route path="departments" element={<Departments />} />
+            <Route path="doctors" element={<Doctors />} />
+            <Route path="nurses" element={<Nurses />} />
+            <Route path="medicine" element={<Medicine />} />
+            <Route path="inventory" element={<Inventory />} />
+            <Route path="central-pharmacy" element={<CentralPharmacy />} />
+<Route path="central-pharmacy/:id" element={<CentralPharmacyDetail />} />
+<Route path="branch-pharmacy" element={<BranchPharmacy />} />
+<Route path="branch-pharmacy/:id" element={<BranchPharmacyDetail />} />
+            <Route path="pharmacy" element={<Pharmacy />} />
+            <Route path="pharmacy/:type/:id" element={<PharmacyDetail />} /> {/* NEW */}
+            <Route path="admins" element={<Admins />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="users/:id" element={<UserAction />} />
+            <Route path="departments/:id" element={<DepartmentDetail />} />
+            <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
           </Route>
         </Routes>
-        
       </div>
     </div>
   );

@@ -18,8 +18,10 @@ namespace HospitalSys.Models.Radiology
         [ForeignKey(nameof(PatientID))]
         public Patient? Patient {get;set;}
         public int DoctorID {get;set;}
+        [ForeignKey(nameof(DoctorID))]
         public Doctor? Doctor {get;set;}
         public int RadiologyTestTypeID {get;set;}
+        [ForeignKey(nameof(RadiologyTestTypeID))]
         public RadiologyTestType? RadiologyTestType {get;set;}
         public DateTime RequestDate {get;set;} = DateTime.UtcNow;
         [MaxLength(50)]

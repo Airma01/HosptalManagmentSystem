@@ -11,7 +11,7 @@ namespace HospitalSys.Models.PatientManagment
         public int VisitID {get;set;}
         [ForeignKey(nameof(VisitID))]
         public PatientVisit? PatientVisit{get;set;}
-        public int NurseID {get;set;}
+        public int? NurseID {get;set;}
         [ForeignKey(nameof(NurseID))]
         public Nurse? Nurse {get;set;}
         public int TriageDepartmentID {get;set;}

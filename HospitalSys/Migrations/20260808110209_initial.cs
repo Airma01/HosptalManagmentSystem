@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HospitalSys.Migrations
 {
     /// <inheritdoc />
-    public partial class AddUserRolesTable : Migration
+    public partial class initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -300,7 +300,8 @@ namespace HospitalSys.Migrations
                     MedicineID = table.Column<int>(type: "integer", nullable: false),
                     QuantityAvailable = table.Column<float>(type: "real", nullable: false),
                     ExpiryDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    BatchNumber = table.Column<string>(type: "text", nullable: false)
+                    BatchNumber = table.Column<string>(type: "text", nullable: false),
+                    Source = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -807,7 +808,7 @@ namespace HospitalSys.Migrations
                     TriageId = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     VisitID = table.Column<int>(type: "integer", nullable: false),
-                    NurseID = table.Column<int>(type: "integer", nullable: false),
+                    NurseID = table.Column<int>(type: "integer", nullable: true),
                     TriageDepartmentID = table.Column<int>(type: "integer", nullable: false),
                     ClinicalDepartmentID = table.Column<int>(type: "integer", nullable: false),
                     Temprature = table.Column<double>(type: "double precision", nullable: false),
@@ -830,8 +831,7 @@ namespace HospitalSys.Migrations
                         name: "FK_Triages_Nurses_NurseID",
                         column: x => x.NurseID,
                         principalTable: "Nurses",
-                        principalColumn: "NurseID",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "NurseID");
                     table.ForeignKey(
                         name: "FK_Triages_PatientVists_VisitID",
                         column: x => x.VisitID,

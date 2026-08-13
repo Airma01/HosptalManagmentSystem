@@ -23,10 +23,13 @@ namespace HospitalSys.Models
         public int DoctorID {get;set;}
         [Required]
         public int UserID {get;set;}
+        [ForeignKey(nameof(UserID))]
         public Users? Users {get;set;}
+         
          [Required]
         [MaxLength(200)]
         public int ClinicalDepartmentID {get;set;}
+        [ForeignKey(nameof(ClinicalDepartmentID))]
         public ClinicalDepartment? ClinicalDepartment {get;set;}
         public string LicenseNumber {get;set;} = "";
 

@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../../Config/API';
 
-// Map roles to login & auth_me endpoints (adjust if your backend routes differ)
+// Map roles to login & auth_me endpoints
 const roleConfig = {
   Doctor: {
     login: '/Hospital/doctor/DoctorAuth/doctor_login',
     me: '/Hospital/doctor/DoctorAuth/auth_me',
-    redirect: '/dashboard/doctor',
+    redirect: '/doctor',
   },
   Receptionist: {
     login: '/receptionist/ReceptionistAuth/receptionist_login',
@@ -18,6 +18,18 @@ const roleConfig = {
     login: '/Hospital/nurse/NurseAuth/nurse_login',
     me: '/Hospital/nurse/NurseAuth/auth_me',
     redirect: '/nurse',
+  },
+  // 🆕 CSM (Central Store Manager)
+  CSM: {
+    login: '/Hospital/CSM/CSMAuth/CSM_login',
+    me: '/Hospital/CSM/CSMAuth/auth_me',
+    redirect: '/csm',
+  },
+  // 🆕 Pharmacist
+  Pharmacist: {
+    login: '/Hospital/Pharmacist/PharmacistAuth/pharmacist_login',
+    me: '/Hospital/Pharmacist/PharmacistAuth/auth_me',
+    redirect: '/pharmacy',
   },
 };
 
@@ -48,14 +60,14 @@ export default function Login() {
     }
 
     try {
-      // 1️⃣ Login – the backend will set the HttpOnly cookie
+      // 1️⃣ Login – sets the HttpOnly cookie
       await API.post(config.login, { username, password });
 
-      // 2️⃣ Fetch authenticated user info (the cookie is sent automatically)
+      // 2️⃣ Fetch authenticated user info (cookie is sent automatically)
       const meRes = await API.get(config.me);
       const userData = meRes.data;
 
-      // 3️⃣ Store user info in localStorage (for page refresh persistence)
+      // 3️⃣ Store user info in localStorage
       localStorage.setItem('user', JSON.stringify(userData));
       localStorage.setItem('role', selectedRole);
 
@@ -73,9 +85,6 @@ export default function Login() {
     }
   };
 
-  // ------------------------------------------------------------------
-  // UI (unchanged – same as before)
-  // ------------------------------------------------------------------
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 p-4">
       <div className="w-full max-w-md bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl p-8 md:p-10 border border-white/30 transition-all duration-300 hover:shadow-3xl">
@@ -140,6 +149,8 @@ export default function Login() {
                 <option value="Doctor">👨‍⚕️ Doctor</option>
                 <option value="Receptionist">📋 Receptionist</option>
                 <option value="Nurse">🩺 Nurse</option>
+                <option value="CSM">🏢 CSM (Central Store Manager)</option>
+                <option value="Pharmacist">💊 Pharmacist</option>
               </select>
               <span className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

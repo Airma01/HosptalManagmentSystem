@@ -8,7 +8,7 @@ namespace HospitalSys.Models.Pharmacy.CentralStore
     {
         [Key]
         public int CentralTransferID {get;set;}
-        public int CentralRequestID {get;set;}
+        public int? CentralRequestID {get;set;}
         [ForeignKey(nameof(CentralRequestID))]
         public CentralStoreRequest? CentralStoreRequest {get;set;}
         public int CentralPharmacyID {get;set;}

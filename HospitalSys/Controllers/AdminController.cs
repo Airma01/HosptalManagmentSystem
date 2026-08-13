@@ -81,7 +81,7 @@ namespace HospitalSys.Controllers
         }
 
        [HttpPost("add_user")]
-[AuthorizeRole("Admin")]
+      [AuthorizeRole("Admin")]
 public async Task<IActionResult> AddUser([FromBody] RegisterUserDto userDto)
 {
     // Validate required fields
@@ -127,7 +127,7 @@ public async Task<IActionResult> AddUser([FromBody] RegisterUserDto userDto)
         await _context.Users.AddAsync(user);
         await _context.SaveChangesAsync(); // user.UserID generated
 
-        // Insert into UserRoles
+       
         var userRoles = userDto.RoleIDs.Select(roleId => new UserRole
         {
             UserID = user.UserID,
@@ -464,6 +464,24 @@ public async Task<IActionResult> AddUser([FromBody] RegisterUserDto userDto)
             }
         }
 
+      [HttpGet("get_unadded_cs_manager")]
+public async Task<IActionResult> GetUnaddedCSManger()
+{
+    var unassigned = await _context.MainPharmacyManagers
+        .Include(m => m.Users)
+        .Where(m => m.Users.UserRole.Any(ur => ur.Role.RoleName == "CSM")
+                    && !_context.CentralStoreManagers.Any(csm => csm.ManagerID == m.ManagerID)) // <- compare with ManagerID
+        .Select(m => new
+        {
+            m.ManagerID, // <- the PRIMARY KEY of MainPharmacyManagers
+            m.UserID,    // <- still useful for display
+            FullName = m.Users.FirstName + " " + m.Users.FatherName,
+            m.Users.Username
+        })
+        .ToListAsync();
+
+    return Ok(unassigned);
+}
         [HttpPost("add_pharmacy_manager")]
         [AuthorizeRole("Admin")]
          public async Task<IActionResult> AddMainPhramacyManager([FromBody] RegisterMainPharmacyMangerDto PharmacyMangerDto)
@@ -474,6 +492,7 @@ public async Task<IActionResult> AddUser([FromBody] RegisterUserDto userDto)
                 {
                     UserID = PharmacyMangerDto.UserID
                 };
+                
                 await _context.MainPharmacyManagers.AddAsync(manager);
                 await _context.SaveChangesAsync();
                 return Ok("Phramcy manager Registered Successfully");
@@ -484,28 +503,104 @@ public async Task<IActionResult> AddUser([FromBody] RegisterUserDto userDto)
                 throw;
             }
         }
-        [HttpPost("add_manager_to_central")]
+      [HttpPost("add_manager_to_central")]
+[AuthorizeRole("Admin")]
+public async Task<IActionResult> AddCentralPharmacyManager([FromBody] RegisterCentralStoreManagerDto dto)
+{
+    try
+    {
+        // 1. Check if manager exists in MainPharmacyManagers
+        var managerExists = await _context.MainPharmacyManagers
+            .AnyAsync(m => m.ManagerID == dto.ManagerID);
+        // if (!managerExists)
+        //     return BadRequest("Manager is not registered as a main pharmacy manager. Please register them first.");
+
+        // 2. Check if central pharmacy exists
+        var pharmacyExists = await _context.CentralStorePharmacies
+            .AnyAsync(p => p.CentralPharmacyID == dto.CentralPharmacyID);
+        if (!pharmacyExists)
+            return BadRequest("Central pharmacy not found.");
+
+        // 3. Check for duplicate assignment
+        var alreadyAssigned = await _context.CentralStoreManagers
+            .AnyAsync(csm => csm.ManagerID == dto.ManagerID 
+                            && csm.CentralPharmacyID == dto.CentralPharmacyID);
+        if (alreadyAssigned)
+            return BadRequest("Manager already assigned to this pharmacy.");
+
+        // 4. Create assignment
+        var assignment = new CentralStoreManager
+        {
+            CentralPharmacyID = dto.CentralPharmacyID,
+            ManagerID = dto.ManagerID,
+            IsCurrent = dto.IsCurrent,
+            IsActive = true // if needed
+        };
+        _context.CentralStoreManagers.Add(assignment);
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Manager assigned successfully." });
+    }
+    catch (Exception ex)
+    {
+        var inner = ex.InnerException?.Message ?? ex.Message;
+        return StatusCode(500, new { message = "An error occurred.", error = inner });
+    }
+}
         [AuthorizeRole("Admin")]
-         public async Task<IActionResult> AddCentralPhramacyManager([FromBody] RegisterCentralStoreManagerDto CentralStoreManagerDto)
+
+      [HttpGet("get_unassigned_main_pharmacy_manager")]
+        public async Task<IActionResult> GetUnassignedMainPharmacyManager()
         {
             try
             {
-                var centralStoreManager = new CentralStoreManager
-                {
-                    CentralPharmacyID = CentralStoreManagerDto.CentralPharmacyID,
-                    ManagerID = CentralStoreManagerDto.ManagerID,
-                    IsCurrent = CentralStoreManagerDto.IsCurrent
-                };
-                await _context.CentralStoreManagers.AddAsync(centralStoreManager);
-                await _context.SaveChangesAsync();
-                return Ok("Mangers Added Successfully To Central Store");
+                // Get all users with role "CSM" who are NOT assigned to any central pharmacy manager
+                var unassignedManagers = await _context.Users
+                    .Include(u => u.UserRole)
+                        .ThenInclude(ur => ur.Role)
+                    .Where(u => u.UserRole.Any(ur => ur.Role.RoleName == "CSM")
+                                && !_context.CentralStoreManagers.Any(csm => csm.ManagerID == u.UserID))
+                    .Select(u => new
+                    {
+                        u.UserID,
+                        u.FirstName,
+                        u.FatherName,
+                        u.Username,
+                        Roles = u.UserRole.Select(ur => ur.Role.RoleName).ToList()
+                    })
+                    .ToListAsync();
+
+                return Ok(unassignedManagers);
             }
             catch (Exception ex)
             {
-                return StatusCode(500,ex.Message);
-                throw;
+                return StatusCode(500, ex.Message);
             }
         }
+        [HttpGet("get_central_pharmacy_managers/{centralPharmacyId}")]
+public async Task<IActionResult> GetCentralPharmacyManagers(int centralPharmacyId)
+{
+    try
+    {
+        var managers = await _context.CentralStoreManagers
+            .Include(csm => csm.MainPharmacyManager)
+                .ThenInclude(mpm => mpm.Users)
+            .Where(csm => csm.CentralPharmacyID == centralPharmacyId)
+            .Select(csm => new
+            {
+                csm.CentralStoreManagerID,
+                ManagerID = csm.ManagerID,
+                FullName = csm.MainPharmacyManager.Users.FirstName + " " + csm.MainPharmacyManager.Users.FatherName,
+                csm.IsCurrent
+            })
+            .ToListAsync();
+        return Ok(managers);
+    }
+    catch (Exception ex)
+    {
+        return StatusCode(500, ex.Message);
+    }
+}
         [HttpPost("add_manager_to_aid")]
         [AuthorizeRole("Admin")]
        public async Task<IActionResult> AddAidPharmacyManager([FromBody] RegisterAidStoreManagerDto AidStoreManagerDto)

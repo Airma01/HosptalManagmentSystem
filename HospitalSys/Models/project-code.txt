@@ -1,0 +1,1671 @@
+﻿==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Cashier.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.BillingAndPayment;
+
+namespace HospitalSys.Models
+{
+    public class Cashier
+    {
+        [Key]
+        public int CashierID {get;set;}
+        public int UserID {get;set;}
+        [ForeignKey(nameof(UserID))]
+        public Users? Users {get;set;}
+
+        public List<Bill> Bill {get;set;} = new();
+        public List<PaymentHospital> PaymentHospital {get;set;} = new();
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Doctor.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.Consultation_M;
+using HospitalSys.Models.HospitalStruct;
+using HospitalSys.Models.Inpatient;
+using HospitalSys.Models.Laboratory;
+using HospitalSys.Models.PatientManagment;
+using HospitalSys.Models.Pharmacy.Common;
+using HospitalSys.Models.Radiology;
+
+namespace HospitalSys.Models
+{
+    public class Doctor
+    {
+        // public Doctor(){
+        // Appointment = new List<Appointment>();
+        // Consultation = new List<Consultation>();
+        // MedicalRecord = new List<MedicalRecord>();
+        // Prescription = new List<Prescription> ();
+        // }
+        [Key]
+        [Required]
+        public int DoctorID {get;set;}
+        [Required]
+        public int UserID {get;set;}
+        [ForeignKey(nameof(UserID))]
+        public Users? Users {get;set;}
+         
+         [Required]
+        [MaxLength(200)]
+        public int ClinicalDepartmentID {get;set;}
+        [ForeignKey(nameof(ClinicalDepartmentID))]
+        public ClinicalDepartment? ClinicalDepartment {get;set;}
+        public string LicenseNumber {get;set;} = "";
+
+        public List<Appointment> Appointment {get;set;} = new();
+        public List<Consultation> Consultation {get;set;} = new();
+        public List<MedicalRecord> MedicalRecord {get;set;} = new();
+        public List<Prescription> Prescription {get;set;} = new();
+        public List<Admission> Admission {get;set;} = new();
+        public List<LaboratoryTest> LaboratoryTest {get;set;} = new();
+        public List<RadiologyRequest> RadiologyRequest {get;set;} = new();
+
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\LaboratoryCashier.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.BillingAndPayment;
+
+namespace HospitalSys.Models
+{
+    public class LaboratoryCashier
+    {
+        [Key]
+        public int LaboratoryCashierID {get;set;}
+        public int UserID {get;set;}
+        [ForeignKey(nameof(UserID))]
+        public Users? Users {get;set;}
+        public List<LaboratoryPayment> LaboratoryPayments {get;set;} = new();
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\LaboratoryTechnician.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.Laboratory;
+
+namespace HospitalSys.Models
+{
+    public class LaboratoryTechnician
+    {
+        [Key]
+        public int TechnicianID {get;set;}
+        public int UserID {get;set;}
+        [ForeignKey(nameof(UserID))]
+        public Users? Users {get;set;}
+        public List<LaboratoryResult> LaboratoryResult {get;set;} = new();
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\MainPharmacyManager.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.Pharmacy.AidStore;
+using HospitalSys.Models.Pharmacy.CentralStore;
+
+namespace HospitalSys.Models
+{
+    public class MainPharmacyManager
+    {
+        [Key]
+       public int ManagerID {get;set;}
+       public int UserID {get;set;}
+       [ForeignKey(nameof(UserID))]
+       public Users? Users {get;set;}
+
+       public List<CentralStoreManager> CentralStoreManager {get;set;} = new();
+       public List<AidStoreManager> AidStoreManager {get;set;} = new();
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Nurse.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.HospitalStruct;
+using HospitalSys.Models.PatientManagment;
+namespace HospitalSys.Models
+{
+    public class Nurse
+    {
+        [Key]
+        [Required]
+        public int NurseID {get;set;}
+         [Required]
+        public int UserID {get;set;}
+        [ForeignKey(nameof(UserID))]
+        public Users? Users {get;set;}
+        public int ClinicalDepartmentID {get;set;}
+        [ForeignKey(nameof(ClinicalDepartmentID))]
+        public ClinicalDepartment? ClinicalDepartment {get;set;}
+
+        public List<Triage> Triage {get;set;} = new();
+
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Pharmacist.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.Pharmacy.AidStore;
+using HospitalSys.Models.Pharmacy.Branch;
+using HospitalSys.Models.Pharmacy.CentralStore;
+using HospitalSys.Models.Pharmacy.Common;
+
+namespace HospitalSys.Models
+{
+    public class Pharmacist
+    {
+        [Key]
+        public int PharmacistID {get;set;}
+        public int UserID {get;set;}
+        [ForeignKey(nameof(UserID))]
+        public Users? Users {get;set;}
+        public int BranchPharmacyID {get;set;}
+        [ForeignKey(nameof(BranchPharmacyID))]
+        public BranchPharmacy? BranchPharmacy {get;set;}
+        public List<DispenseMedicine> DispenseMedicine {get;set;} = new();
+        public List<CentralStoreRequest> CentralStoreRequest {get;set;} = new();
+        public List<AidStoreRequest> AidStoreRequest {get;set;} = new();
+        
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\PharmacyCashier.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.BillingAndPayment;
+using HospitalSys.Models.Pharmacy.Branch;
+
+namespace HospitalSys.Models
+{
+    public class PharmacyCashier
+    {
+        [Key]
+        public int PharmacyCashierID {get;set;}
+        public int UserID {get;set;}
+        [ForeignKey(nameof(UserID))]
+        public Users? Users {get;set;}
+        public int BranchPharmacyID {get;set;}
+        [ForeignKey(nameof(BranchPharmacyID))]
+        public BranchPharmacy? BranchPharmacy {get;set;}
+
+        public List<PharmacyPayment> PharmacyPayment {get;set;} = new();
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\RadiologyCashier.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.BillingAndPayment;
+
+namespace HospitalSys.Models
+{
+    public class RadiologyCashier
+    {
+        [Key]
+      public int RadiologyCashierID {get;set;}
+      public int UserID {get;set;}
+      [ForeignKey(nameof(UserID))]
+      public Users? Users {get;set;}
+
+      public List<RadiologyPayment> RadiologyPayment {get;set;} = new();  
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\RadiologyTechnician.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.Radiology;
+
+namespace HospitalSys.Models
+{
+    public class RadiologyTechnician
+    {
+        [Key]
+        public int RadiologyTechnicianID {get;set;}
+        public int UserID {get;set;}
+        [ForeignKey(nameof(UserID))]
+        public Users? Users {get;set;}
+
+        public List<RadiologyResult> RadiologyResult {get;set;} = new();
+
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Receptionist.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace HospitalSys.Models
+{
+    public class Receptionist
+    {
+        [Key]
+        public int ReceptionistID {get;set;}
+        public int UserID {get;set;}
+        [ForeignKey(nameof(UserID))]
+        public Users? Users {get;set;}
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Role.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+
+namespace HospitalSys.Models
+{
+    public class Role
+    {
+        [Key]
+        public int RoleID {get;set;}
+        [MaxLength(200)]
+        [Required]
+        public string RoleName {get;set;} = "";
+        public List<UserRole> UserRole {get;set;} = new List<UserRole>();
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\SuperAdmin.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+
+namespace HospitalSys.Models
+{
+    public enum AdminRole
+    {
+        Admin
+    }
+    public class SuperAdmins
+    {
+        [Key]
+        public int ID {get;set;}
+        [MaxLength(100)]
+        public string Username {get;set;} = "";
+        [MaxLength(200)] 
+        public string HashPassword {get;set;} = "";
+        [MaxLength(50)]
+        public AdminRole AdminRole {get;set;}
+
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\UserRole.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace HospitalSys.Models
+{
+    public class UserRole
+    {
+        [Key]
+        public int UserRoleID {get;set;}
+        public int UserID {get;set;}
+        [ForeignKey(nameof(UserID))]
+        public Users? Users {get;set;}
+        public int RoleID {get;set;}
+        [ForeignKey(nameof(RoleID))]
+        public Role? Role {get;set;}
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Users.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.Pharmacy.AidStore;
+using HospitalSys.Models.Pharmacy.CentralStore;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.VisualBasic;
+
+namespace HospitalSys.Models
+{
+    public enum Gender
+    {
+        Male,
+        Female
+    }
+    public class Users
+    {
+        [Key]
+        [Required]
+        public int UserID {get;set;}
+        [MaxLength(100)]
+        [Required]
+        public string FirstName{get;set;} = "";
+        [MaxLength(100)]
+        [Required]
+        public string FatherName{get;set;} = "";  
+         [Required]
+        public Gender Gender {get;set;}
+        [MaxLength(20)]
+         [Required]
+         
+        public string Phone {get;set;} = ""; 
+        [MaxLength(100)]
+        public string Email{get;set;} = "";
+        [MaxLength(100)]
+         [Required]
+        public string Username{get;set;} = "";
+       
+        [MaxLength(250)]
+         [Required]
+        public string HashPassword {get;set;} = "";
+        // public int RoleID {get;set;}
+        // [ForeignKey(nameof(RoleID))]
+        // public Role? Role {get;set;}
+
+        public bool IsActive {get;set;} = true;
+        public DateTime Created_at {get;set;} = DateTime.UtcNow;
+
+        
+        public List<Doctor> Doctor {get;set;} = new();
+        public List<Nurse> Nurse {get;set;} = new();
+        public List<Receptionist> Receptionist {get;set;} = new();
+        public List<Pharmacist> Pharmacist {get;set;} = new();
+        public List<LaboratoryTechnician> LaboratoryTechnician {get;set;} = new();
+        public List<RadiologyTechnician> RadiologyTechnician {get;set;} = new();
+        public List<Cashier> Cashier {get;set;} = new();
+        public List<PharmacyCashier> PharmacyCashier {get;set;} = new();
+        // public List<CentralStorePharmacy> CentralStorePharmacy {get;set;} = new();
+        // public List<AidStorePharmacy> AidStorePharmacy {get;set;} = new();
+        public List<RadiologyCashier> RadiologyCashier {get;set;} = new();
+        public List<LaboratoryCashier> LaboratoryCashier {get;set;} = new();
+        public List<MainPharmacyManager> MainPharmacyManager {get;set;} = new();
+        public List<UserRole> UserRole {get;set;} = new List<UserRole>();
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\BIllingAndPayment\BIll.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.PatientManagment;
+
+namespace HospitalSys.Models.BillingAndPayment
+{
+    public class Bill
+    {
+        [Key]
+        public int BillID {get;set;}
+        public int PatientID {get;set;}
+        [ForeignKey(nameof(PatientID))]
+        public Patient? Patient {get;set;}
+        public int VisitID {get;set;}
+        [ForeignKey(nameof(VisitID))]
+        public PatientVisit? PatientVisit {get;set;}
+        public int CashierID {get;set;}
+        [ForeignKey(nameof(CashierID))]
+        public Cashier? Cashier {get;set;}
+        public double TotalAmount {get;set;}
+        public DateTime BillDate {get;set;} = DateTime.UtcNow;
+        public string Status {get;set;} = "";
+
+        public List<BillItem> BillItem {get;set;} = new();
+        public List<PaymentHospital> PaymentHospital {get;set;} = new();
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\BIllingAndPayment\BillItem.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace HospitalSys.Models.BillingAndPayment
+{
+    public class BillItem
+    {
+        [Key]
+        public int BillItemID {get;set;}
+        public int BillID {get;set;}
+        [ForeignKey(nameof(BillID))]
+        public Bill? Bill {get;set;}
+        public string ServiceName {get;set;} = "";
+        public int Quantity {get;set;}
+        public decimal UnitPrice {get;set;}
+        public decimal TotalPrice {get;set;}
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\BIllingAndPayment\LaboratoryPayment.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.Laboratory;
+
+namespace HospitalSys.Models.BillingAndPayment
+{
+    public class LaboratoryPayment
+    {
+        [Key]
+        public int LaboratoryPaymentID {get;set;}
+        public int TestID {get;set;}
+        [ForeignKey(nameof(TestID))]
+        public LaboratoryTest? LaboratoryTest {get;set;}
+        public int LaboratoryCashierID {get;set;}
+        [ForeignKey(nameof(LaboratoryCashierID))]
+        public LaboratoryCashier? LaboratoryCashier {get;set;}
+        public decimal AmountPaid {get;set;}
+        public string PaymentMethod {get;set;} = "";
+        public DateTime PaymentDate {get;set;} = DateTime.UtcNow;
+        public string PaymentStatus {get;set;} = "";
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\BIllingAndPayment\PaymentHospital.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace HospitalSys.Models.BillingAndPayment
+{
+    public class PaymentHospital
+    {
+        [Key]
+        public int PaymentID {get;set;}
+        public int BillID {get;set;}
+        [ForeignKey(nameof(BillID))]
+        public Bill? Bill {get;set;}
+        public int CashierID {get;set;}
+        [ForeignKey(nameof(CashierID))]
+        public Cashier? Cashier {get;set;}
+        public decimal AmountPaid {get;set;}
+        public string PaymentMethod {get;set;} = "";
+        public DateTime PaymentDate {get;set;} = DateTime.UtcNow;
+        public string PaymentStatus {get;set;} = "";
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\BIllingAndPayment\PharmacyPayment.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.Pharmacy.Common;
+
+namespace HospitalSys.Models.BillingAndPayment
+{
+    public class PharmacyPayment
+    {
+        [Key]
+        public int PharmacyPaymentID {get;set;}
+        public int PrescriptionID {get;set;}
+        [ForeignKey(nameof(PrescriptionID))]
+        public Prescription? Prescription {get;set;}
+        public int PharmacyCashierID {get;set;}
+        [ForeignKey(nameof(PharmacyCashierID))]
+        public PharmacyCashier? PharmacyCashier {get;set;}
+        public decimal AmountPaid {get;set;}
+        public string PaymentMethod {get;set;} = "";
+        public DateTime PaymentDate {get;set;}
+        public string PaymentStatus {get;set;} = "";
+        
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\BIllingAndPayment\RadiologyPayment.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.Radiology;
+
+namespace HospitalSys.Models.BillingAndPayment
+{
+    public class RadiologyPayment
+    {
+         [Key]
+        public int RadiologyPaymentID {get;set;}
+        public int RadiologyRequestID {get;set;}
+        [ForeignKey(nameof(RadiologyRequestID))]
+        public RadiologyRequest? RadiologyRequest {get;set;}
+        public int RadiologyCashierID {get;set;}
+        [ForeignKey(nameof(RadiologyCashierID))]
+        public RadiologyCashier? RadiologyCashier {get;set;}
+        public decimal AmountPaid {get;set;}
+        public string PaymentMethod {get;set;} = "";
+        public DateTime PaymentDate {get;set;} = DateTime.UtcNow;
+        public string PaymentStatus {get;set;} = "";
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Consultation_M\Consultation.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.Laboratory;
+using HospitalSys.Models.PatientManagment;
+using HospitalSys.Models.Pharmacy.Common;
+using HospitalSys.Models.Radiology;
+
+namespace HospitalSys.Models.Consultation_M
+{
+    public class Consultation
+    {
+        [Key]
+        public int ConsultationID {get;set;}
+        public int VisitID {get;set;}
+        [ForeignKey(nameof(VisitID))]
+        public PatientVisit? PatientVisit {get;set;}
+        public int DoctorID {get;set;}
+        [ForeignKey(nameof(DoctorID))]
+        public Doctor? Doctor {get;set;}
+        public DateTime ConsultationDate {get;set;} = DateTime.UtcNow;
+        public string ChiefComplaint {get;set;} = "";
+        public string Diagnosis {get;set;} = "";
+        public string TreatmentPlan {get;set;} = "";
+
+        public List<MedicalRecord> MedicalRecord {get;set;} = new();
+        public List<Prescription> Prescription {get;set;} = new();
+        public List<LaboratoryTest> LaboratoryTest {get;set;} = new();
+        public List<RadiologyRequest> RadiologyRequest {get;set;} = new();
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Consultation_M\MedicalRecord.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.PatientManagment;
+
+namespace HospitalSys.Models.Consultation_M
+{
+    public class MedicalRecord
+    {
+        [Key]
+        public int MedicalRecordID {get;set;}
+        public int ConsultationID {get;set;}
+        [ForeignKey(nameof(ConsultationID))]
+        public Consultation? Consultation {get;set;}
+        public int PatientID {get;set;}
+        [ForeignKey(nameof(PatientID))]
+        public Patient? Patient {get;set;}
+        public int DoctorID {get;set;}
+        [ForeignKey(nameof(DoctorID))]
+        public Doctor? Doctor {get;set;}
+        public DateTime RecordTime {get;set;} =DateTime.UtcNow;
+
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\HospitalStruct\Bed.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.Inpatient;
+
+namespace HospitalSys.Models.HospitalStruct
+{
+    public class Bed
+    {
+        [Key]
+        public int BedID {get;set;}
+        public int RoomID {get;set;}
+        [ForeignKey(nameof(RoomID))]
+        public Room? Room {get;set;}
+        [MaxLength(200)]
+        public string BedNumber {get;set;} = "";
+
+        public string Status {get;set;} = "";
+
+        public List<Admission> Admission {get;set;} = new();
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\HospitalStruct\ClinicalDepartment.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using HospitalSys.Models.PatientManagment;
+
+namespace HospitalSys.Models.HospitalStruct
+{
+    public class ClinicalDepartment
+    {
+        [Key]
+        public int ClinicalDepartmentID {get;set;}
+        [MaxLength(100)]
+        public string DepartmentName {get;set;} = "";
+        [MaxLength(250)]
+        public string Description {get;set;} = "";
+
+        public List<Doctor> Doctor {get;set;} = new();
+        public List<Nurse> Nurse{get;set;} = new();
+        public List<Triage> Triage {get;set;} = new();
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\HospitalStruct\Room.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace HospitalSys.Models.HospitalStruct
+{
+    public class Room
+    {
+        [Key]
+        public int RoomID {get;set;}
+        public int WardID {get;set;}
+        [ForeignKey(nameof(WardID))]
+        public Ward? Ward {get;set;}
+        [MaxLength(200)]
+        public string RoomNumber {get;set;} = "";
+        [MaxLength(100)]
+        public string RoomType {get;set;} = "";
+
+        public List<Bed> Bed {get;set;} = new();
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\HospitalStruct\TriageDepartment.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using HospitalSys.Models.PatientManagment;
+
+namespace HospitalSys.Models.HospitalStruct
+{
+    public class TriageDepartment
+    {
+        [Key]
+        public int TriageDepartmentID {get;set;}
+        [MaxLength(100)]
+        public string DepartmentName {get;set;} = "";
+        [MaxLength(250)]
+        public string Description {get;set;} = "";
+
+        public List<Triage> Triage {get;set;} = new();
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\HospitalStruct\ward.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+
+namespace HospitalSys.Models.HospitalStruct
+{
+    public class Ward
+    {
+        [Key]
+        public int WardID {get;set;}
+        [MaxLength(100)]
+        public string WardName {get;set;} = "";
+        public int Capacity {get;set;}
+
+        public List<Room> Room {get;set;} = new();
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Inpatient\Admission.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.HospitalStruct;
+using HospitalSys.Models.PatientManagment;
+
+namespace HospitalSys.Models.Inpatient
+{
+    public class Admission
+    {
+        [Key]
+        public int AdmissionID {get;set;}
+        public int PatientID {get;set;}
+        [ForeignKey(nameof(PatientID))]
+        public Patient? Patient {get;set;}
+        public int BedID {get;set;}
+        [ForeignKey(nameof(BedID))]
+        public Bed? Bed {get;set;}
+        public int DoctorID {get;set;}
+        [ForeignKey(nameof(DoctorID))]
+        public Doctor? Doctor {get;set;}
+        public DateTime AdmissionDate {get;set;} = DateTime.UtcNow;
+        public DateTime DischargeDate {get;set;}
+        public string Status {get;set;} = "";
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Laboratory\LaboratoryResult.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace HospitalSys.Models.Laboratory
+{
+    public class LaboratoryResult
+    {
+        [Key]
+        public int ResultID { get; set; }
+        public int TestID {get;set;}
+        [ForeignKey(nameof(TestID))]
+        public LaboratoryTest? LaboratoryTest {get;set;}
+        public int TechnicianID {get;set;}
+        [ForeignKey(nameof(TechnicianID))]
+        public LaboratoryTechnician? LaboratoryTechnician {get;set;}
+        public string ResultDescription {get;set;} = "";
+        public DateTime ResultDate { get; set; } = DateTime.UtcNow;
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Laboratory\LaboratorySection.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+
+namespace HospitalSys.Models.Laboratory
+{
+    public class LaboratorySection
+    {
+        [Key]
+        public int LaboratorySectionID {get;set;}
+        [MaxLength(100)]
+        public string SectionName {get;set;} = "";
+        public string Description {get;set;} = "";
+
+        public List<LaboratoryTestType> LaboratoryTestType {get;set;} = new();
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Laboratory\LaboratoryTest.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.BillingAndPayment;
+using HospitalSys.Models.Consultation_M;
+using HospitalSys.Models.PatientManagment;
+
+namespace HospitalSys.Models.Laboratory
+{
+    public class LaboratoryTest
+    {
+        [Key]
+        public int TestID {get;set;}
+        public int ConsultationID {get;set;}
+        [ForeignKey(nameof(ConsultationID))]
+        public Consultation? Consultation {get;set;}
+        [Required]
+        public int PatientID {get;set;}
+        [ForeignKey(nameof(PatientID))]
+        public Patient? Patient {get;set;}
+        [Required]
+        public int DoctorID {get;set;}
+        [ForeignKey(nameof(DoctorID))]
+        public Doctor? Doctor {get;set;}
+         [Required]
+        public int LaboratoryTestTypeID {get;set;}
+        [ForeignKey(nameof(LaboratoryTestTypeID))]
+        public LaboratoryTestType? LaboratoryTestType {get;set;}
+        public DateTime RequestDate {get;set;} = DateTime.UtcNow;
+        [MaxLength(50)]
+        public string Status {get;set;} = "";
+
+        public List<LaboratoryResult> LaboratoryResult {get;set;} = new();
+        public List<LaboratoryPayment> LaboratoryPayments {get;set;} = new();
+
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Laboratory\LaboratoryTestType.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace HospitalSys.Models.Laboratory
+{
+    public class LaboratoryTestType
+    {
+        [Key]
+        public int LaboratoryTestTypeID {get;set;}
+        public int LaboratorySectionID {get;set;}
+        [ForeignKey(nameof(LaboratorySectionID))]
+        public LaboratorySection? LaboratorySection {get;set;}
+        public string TestName {get;set;} = "";
+        public decimal Price {get;set;}
+        public double NormalRange {get;set;}
+        public string Description {get;set;} = "";
+        public List<LaboratoryTest> LaboratoryTest {get;set;} = new();
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\PatientManagment\Appointment.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace HospitalSys.Models.PatientManagment
+{
+    public class Appointment
+    {
+        [Key]
+        public int AppointmentID {get;set;}
+        public int PatientID {get;set;}
+        [ForeignKey(nameof(PatientID))]
+        public Patient? Patient {get;set;}
+        public int DoctorID {get;set;}
+        [ForeignKey(nameof(DoctorID))]
+        public Doctor? Doctor {get;set;}
+        public DateTime AppointmentDate {get;set;} 
+        [MaxLength(100)]
+        public string Status {get;set;} = "";
+        public string Reason {get;set;} = "";
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\PatientManagment\Patient.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using HospitalSys.Models.BillingAndPayment;
+using HospitalSys.Models.Consultation_M;
+using HospitalSys.Models.Inpatient;
+using HospitalSys.Models.Laboratory;
+using HospitalSys.Models.Pharmacy.Common;
+using HospitalSys.Models.Radiology;
+
+namespace HospitalSys.Models.PatientManagment
+{
+    public enum Gender
+    {
+        Male,
+        Female
+    }
+    public class Patient{
+        [Key]
+        public int PatientID {get;set;}
+        [MaxLength(100)]
+        public string FirstName {get;set;} = "";
+        [MaxLength(100)]
+        public string LastName {get;set;} = "";
+        public Gender Gender {get;set;}
+        public DateTime DateOfBirth {get;set;}
+        [MaxLength(20)]
+        public string Phone {get;set;} = "";
+        [MaxLength(100)]
+        public string Address {get;set;} = "";
+        [MaxLength(100)]
+        public string EmergencyContact {get;set;} = "";
+        public DateTime Created_at {get;set;} = DateTime.UtcNow;
+        public List<PatientVisit> PatientVisit {get;set;} = new();
+        public List<Appointment> Appointment {get;set;} = new();
+        public List<MedicalRecord> MedicalRecord {get;set;} = new();
+        public List<Prescription> Prescription {get;set;} = new();
+        public List<Bill> Bill {get;set;} = new();
+        public List<Admission> Admission {get;set;} = new();
+        public List<LaboratoryTest> LaboratoryTest {get;set;} = new();
+        public List<RadiologyRequest> RadiologyRequest {get;set;} = new();
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\PatientManagment\PatientVisit.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.BillingAndPayment;
+using HospitalSys.Models.Consultation_M;
+
+namespace HospitalSys.Models.PatientManagment
+{
+    public class PatientVisit{
+
+        [Key]
+        public int VisitID {get;set;}
+        public int PatientID {get;set;}
+        [ForeignKey(nameof(PatientID))]
+        public Patient? Patient {get;set;}
+        public DateTime VisitDate {get;set;}
+        public string VisitType {get;set;} = "";
+        public string Status {get;set;} = "";
+        public DateTime Created_at {get;set;} = DateTime.UtcNow;
+
+        public List<Triage> Triage {get;set;} = new();
+        public List<Consultation> Consultation {get;set;} = new();
+        public List<Bill> Bill {get;set;} = new();
+        
+
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\PatientManagment\Triage.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.HospitalStruct;
+
+namespace HospitalSys.Models.PatientManagment
+{
+    public class Triage{
+
+        [Key]
+        public int TriageId {get;set;}
+        public int VisitID {get;set;}
+        [ForeignKey(nameof(VisitID))]
+        public PatientVisit? PatientVisit{get;set;}
+        public int? NurseID {get;set;}
+        [ForeignKey(nameof(NurseID))]
+        public Nurse? Nurse {get;set;}
+        public int TriageDepartmentID {get;set;}
+        [ForeignKey(nameof(TriageDepartmentID))]
+        public TriageDepartment? TriageDepartment {get;set;}
+        public int ClinicalDepartmentID {get;set;}
+        [ForeignKey(nameof(ClinicalDepartmentID))]
+        public ClinicalDepartment? ClinicalDepartment {get;set;}
+        public double Temprature {get;set;}
+        public double BloodPressure {get;set;}
+        public double HeartRate {get;set;}
+        public double RespiratotyRate {get;set;}
+        public double Weight {get;set;}
+        public string Notes {get;set;} = "";
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Pharmacy\AidStore\AidStoreInventory.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.Pharmacy.Common;
+
+namespace HospitalSys.Models.Pharmacy.AidStore
+{
+    public class AidStoreInventory
+    {
+        [Key]
+        public int AidInventoryID {get;set;}
+        public int AidPharmacyID {get;set;}
+        [ForeignKey(nameof(AidPharmacyID))]
+        public AidStorePharmacy? AidStorePharmacy {get;set;}
+        public int MedicineID {get;set;}
+        [ForeignKey(nameof(MedicineID))]
+        public Medicine? Medicine {get;set;}
+        public float QuantityAvailable {get;set;}
+        public DateTime ExpiryDate {get;set;}
+        public string BatchNumber {get;set;} = "";
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Pharmacy\AidStore\AidStoreManager.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace HospitalSys.Models.Pharmacy.AidStore
+{
+    public class AidStoreManager
+    {
+        [Key]
+        public int AidStoreManagerID {get;set;}
+        public int AidPharmacyID {get;set;}
+        [ForeignKey(nameof(AidPharmacyID))]
+        public AidStorePharmacy? AidStorePharmacy {get;set;}
+        public int ManagerID {get;set;}
+        [ForeignKey(nameof(ManagerID))]
+        public MainPharmacyManager? MainPharmacyManager {get;set;}      
+        public bool IsCurrent {get;set;} //it's explain if he former manager or 
+        public bool IsActive {get;set;} = true;
+
+        public List<AidStoreTransfer> AidStoreTransfer {get;set;} = new();
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Pharmacy\AidStore\AidStorePharmacy.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace HospitalSys.Models.Pharmacy.AidStore
+{
+    public class AidStorePharmacy
+    {
+        [Key]
+        public int AidPharmacyID {get;set;}
+        public string Name {get;set;} = "";
+        public string Location {get;set;} = "";
+       
+
+        public List<AidStoreInventory> AidStoreInventory {get;set;} = new();
+        public List<AidStoreTransfer> AidStoreTransfer {get;set;} = new();
+        public List<AidStoreManager> AidStoreManager {get;set;} = new();
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Pharmacy\AidStore\AidStoreRequest.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.Pharmacy.Branch;
+
+namespace HospitalSys.Models.Pharmacy.AidStore
+{
+    public class AidStoreRequest
+    {
+        [Key]
+        public int AidRequestID {get;set;}
+        public int BranchPharmacyID {get;set;}
+        [ForeignKey(nameof(BranchPharmacyID))]
+        public BranchPharmacy? BranchPharmacy {get;set;}
+        public int RequestedByPharmacistID {get;set;}
+        [ForeignKey(nameof(RequestedByPharmacistID))]
+        public Pharmacist? Pharmacist {get;set;}
+        public DateTime RequestDate {get;set;}
+        public string Status {get;set;} = "";
+
+        public List<AidStoreRequestDetail> AidStoreRequestDetail {get;set;} = new();
+        public List<AidStoreTransfer> AidStoreTransfer {get;set;} = new();
+    
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Pharmacy\AidStore\AidStoreRequestDetail.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.Pharmacy.Common;
+
+namespace HospitalSys.Models.Pharmacy.AidStore
+{
+    public class AidStoreRequestDetail
+    {
+        [Key]
+        public int AidRequestDetailID {get;set;}
+        public int AidRequestID {get;set;}
+        [ForeignKey(nameof(AidRequestID))]
+        public AidStoreRequest? AidStoreRequest {get;set;}
+        public int MedicineID {get;set;}
+        [ForeignKey(nameof(MedicineID))]
+        public Medicine? Medicine {get;set;}
+        public int RequestedQuantity {get;set;}
+        public int ApprovedQuantity {get;set;}
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Pharmacy\AidStore\AidStoreTransfer.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.Pharmacy.Branch;
+
+namespace HospitalSys.Models.Pharmacy.AidStore
+{
+    public class AidStoreTransfer
+    {
+        [Key]
+        public int AidTransferID {get;set;}
+        public int AidRequestID {get;set;}
+        [ForeignKey(nameof(AidRequestID))]
+        public AidStoreRequest? AidStoreRequest {get;set;}
+        public int AidPharmacyID {get;set;}
+        [ForeignKey(nameof(AidPharmacyID))]
+        public AidStorePharmacy? AidStorePharmacy {get;set;}
+        public int BranchPharmacyID {get;set;}
+        [ForeignKey(nameof(BranchPharmacyID))]
+        public BranchPharmacy? BranchPharmacy {get;set;}
+         public int AidStoreManagerID {get;set;}
+        [ForeignKey(nameof(AidStoreManagerID))]
+        public AidStoreManager? AidStoreManager {get;set;}
+        public DateTime TransferDate {get;set;}
+        public string Status {get;set;} = "";
+
+        public List<AidStoreTransferDetail> CentralStoreTransferDetail {get;set;} =new();
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Pharmacy\AidStore\AidStoreTransferDetail.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.Pharmacy.Common;
+
+namespace HospitalSys.Models.Pharmacy.AidStore
+{
+    public class AidStoreTransferDetail
+    {
+     [Key]
+     public int AidTransferDetailID {get;set;}
+     public int AidTransferID {get;set;}
+     [ForeignKey(nameof(AidTransferID))]
+     public AidStoreTransfer? AidStoreTransfer {get;set;}
+     public int MedicineID {get;set;}
+     [ForeignKey(nameof(MedicineID))]
+     public Medicine? Medicine {get;set;}
+     public int  QuantityTransferred {get;set;}
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Pharmacy\Branch\BranchInventory.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.Pharmacy.Common;
+
+namespace HospitalSys.Models.Pharmacy.Branch
+{
+    public class BranchInventory
+    {
+        [Key]
+        public int BranchInventoryID {get;set;}
+        public int BranchPharmacyID {get;set;}
+        [ForeignKey(nameof(BranchPharmacyID))]
+        public BranchPharmacy? BranchPharmacy {get;set;}
+        public int MedicineID {get;set;}
+        [ForeignKey(nameof(MedicineID))]
+        public Medicine? Medicine {get;set;}
+        public int QuantityAvailable {get;set;}
+        public DateTime ExpiryDate {get;set;}
+        public string BatchNumber {get;set;} = "";
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Pharmacy\Branch\BranchPharmacy.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using HospitalSys.Models.Pharmacy.AidStore;
+using HospitalSys.Models.Pharmacy.CentralStore;
+using HospitalSys.Models.Pharmacy.Common;
+
+namespace HospitalSys.Models.Pharmacy.Branch
+{
+    public class BranchPharmacy
+    {
+        [Key]
+        public int BranchPharmacyID {get;set;}
+        public string BranchName {get;set;} = "";
+        public string Location {get;set;} = "";
+        public List<DispenseMedicine> DispenseMedicine {get;set;} = new();
+        public List<Pharmacist> Pharmacist {get;set;} = new();
+        public List<PharmacyCashier> PharmacyCashier {get;set;} = new();
+        public List<Prescription> Prescription {get;set;} = new();
+        public List<CentralStoreRequest> CentralStoreRequest {get;set;} = new();
+        public List<CentralStoreTransfer> CentralStoreTransfer {get;set;} = new();
+        public List<AidStoreRequest> AidStoreRequest {get;set;} = new();
+        public List<AidStoreTransfer> AidStoreTransfer {get;set;} = new();
+        public List<BranchInventory> BranchInventory {get;set;} = new();
+
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Pharmacy\CentralStore\CentralStoreInventory.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.Pharmacy.Common;
+
+namespace HospitalSys.Models.Pharmacy.CentralStore
+{
+    public class CentralStoreInventory
+    {
+        [Key]
+        public int CentralInventoryID {get;set;}
+        public int CentralPharmacyID {get;set;}
+        [ForeignKey(nameof(CentralPharmacyID))]
+        public CentralStorePharmacy? CentralStorePharmacy {get;set;}
+        public int MedicineID {get;set;}
+        [ForeignKey(nameof(MedicineID))]
+        public Medicine? Medicine {get;set;}
+        public float QuantityAvailable {get;set;}
+        public DateTime ExpiryDate {get;set;}
+        public string BatchNumber {get;set;} = "";
+        public string Source { get; set; } = "";  // Renamed from FromWhere
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Pharmacy\CentralStore\CentralStoreManager.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace HospitalSys.Models.Pharmacy.CentralStore
+{
+ public class CentralStoreManager
+ {
+    [Key]
+    public int CentralStoreManagerID {get;set;}
+    [Required]
+    public int CentralPharmacyID {get;set;}
+    [ForeignKey(nameof(CentralPharmacyID))]
+    public CentralStorePharmacy? CentralStorePharmacy{get;set;}
+    [Required]
+    public int ManagerID {get;set;}
+    [ForeignKey(nameof(ManagerID))]
+    public MainPharmacyManager? MainPharmacyManager {get;set;}
+    public bool IsCurrent {get;set;} //it's explain if he former manager or 
+    public bool IsActive {get;set;} = true;
+
+    public List<CentralStoreTransfer> CentralStoreTransfer {get;set;} = new();
+
+ }   
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Pharmacy\CentralStore\CentralStorePharmacy.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace HospitalSys.Models.Pharmacy.CentralStore
+{
+    public class CentralStorePharmacy
+    {
+        [Key]
+        public int CentralPharmacyID {get;set;}
+        public string Name {get;set;} = "";
+        public string Location {get;set;} = "";
+        
+
+        public List<CentralStoreInventory> CentralStoreInventory {get;set;} = new();
+        public List<CentralStoreTransfer> CentralStoreTransfer {get;set;} = new();
+        public List<CentralStoreManager> CentralStoreManagers {get;set;} = new();
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Pharmacy\CentralStore\CentralStoreRequest.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.Pharmacy.Branch;
+
+namespace HospitalSys.Models.Pharmacy.CentralStore
+{
+    public class CentralStoreRequest
+    {
+        [Key]
+        public int CentralRequestID {get;set;}
+        public int BranchPharmacyID {get;set;}
+        [ForeignKey(nameof(BranchPharmacyID))]
+        public BranchPharmacy? BranchPharmacy {get;set;}
+        public int RequestedByPharmacistID {get;set;}
+        [ForeignKey(nameof(RequestedByPharmacistID))]
+        public Pharmacist? Pharmacist {get;set;}
+        public DateTime RequestDate {get;set;}
+        public string Status {get;set;} = "";
+
+        public List<CentralStoreRequestDetail> CentralStoreRequestDetail {get;set;} = new();
+        public List<CentralStoreTransfer> CentralStoreTransfer {get;set;} = new();
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Pharmacy\CentralStore\CentralStoreRequestDetail.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.Pharmacy.Common;
+
+namespace HospitalSys.Models.Pharmacy.CentralStore
+{
+    public class CentralStoreRequestDetail
+    {
+        [Key]
+        public int CentralRequestDetailID {get;set;}
+        public int CentralRequestID {get;set;}
+        [ForeignKey(nameof(CentralRequestID))]
+        public CentralStoreRequest? CentralStoreRequest {get;set;}
+        public int MedicineID {get;set;}
+        [ForeignKey(nameof(MedicineID))]
+        public Medicine? Medicine {get;set;}
+        public int RequestedQuantity {get;set;}
+        public int ApprovedQuantity {get;set;}
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Pharmacy\CentralStore\CentralStoreTransfer.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.Pharmacy.Branch;
+
+namespace HospitalSys.Models.Pharmacy.CentralStore
+{
+    public class CentralStoreTransfer
+    {
+        [Key]
+        public int CentralTransferID {get;set;}
+        public int CentralRequestID {get;set;}
+        [ForeignKey(nameof(CentralRequestID))]
+        public CentralStoreRequest? CentralStoreRequest {get;set;}
+        public int CentralPharmacyID {get;set;}
+        [ForeignKey(nameof(CentralPharmacyID))]
+        public CentralStorePharmacy? CentralStorePharmacy {get;set;}
+        public int BranchPharmacyID {get;set;}
+        [ForeignKey(nameof(BranchPharmacyID))]
+        public BranchPharmacy? BranchPharmacy {get;set;}
+        public int CentralStoreManagerID {get;set;}
+        [ForeignKey(nameof(CentralStoreManagerID))]
+        public CentralStoreManager? CentralStoreManager {get;set;}
+        public DateTime TransferDate {get;set;}
+        public string Status {get;set;} = "";
+
+        public List<CentralStoreTransferDetail> CentralStoreTransferDetail {get;set;} =new();
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Pharmacy\CentralStore\CentralStoreTransferDetail.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.Pharmacy.Common;
+
+namespace HospitalSys.Models.Pharmacy.CentralStore
+{
+    public class CentralStoreTransferDetail
+    {
+     [Key]
+     public int CentralTransferDetailID {get;set;}
+     public int CentralTransferID {get;set;}
+     [ForeignKey(nameof(CentralTransferID))]
+     public CentralStoreTransfer? CentralStoreTransfer {get;set;}
+     public int MedicineID {get;set;}
+     [ForeignKey(nameof(MedicineID))]
+     public Medicine? Medicine {get;set;}
+     public int  QuantityTransferred {get;set;}
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Pharmacy\Common\DispenseMedicine.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.Pharmacy.Branch;
+
+namespace HospitalSys.Models.Pharmacy.Common
+{
+    public class DispenseMedicine
+    {
+        [Key]
+        public int DispenseID {get;set;}
+        public int PrescriptionID {get;set;}
+        [ForeignKey(nameof(PrescriptionID))]
+        public Prescription? Prescription {get;set;}
+        public int BranchPharmacyID {get;set;}
+        [ForeignKey(nameof(BranchPharmacyID))]
+        public BranchPharmacy? BranchPharmacy {get;set;}
+        public int PharmacistID {get;set;}
+        [ForeignKey(nameof(PharmacistID))]
+        public Pharmacist? Pharmacist {get;set;}
+        public DateTime DispenceDate {get;set;} = DateTime.UtcNow;
+
+        public List<DispenseMedicineDetail> DispenseMedicineDetails {get;set;} = new();
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Pharmacy\Common\DispenseMedicineDetail.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace HospitalSys.Models.Pharmacy.Common
+{
+    public class DispenseMedicineDetail
+    {
+        [Key]
+        public int DispenseDetailID {get;set;}
+        public int DispenseID {get;set;}
+        [ForeignKey(nameof(DispenseID))]
+        public DispenseMedicine? DispenseMedicine {get;set;}
+        public int MedicineID {get;set;}
+        [ForeignKey(nameof(MedicineID))]
+        public Medicine? Medicine {get;set;}
+        public float QuantityDispenced {get;set;}
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Pharmacy\Common\Medicine.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using HospitalSys.Models.Pharmacy.AidStore;
+using HospitalSys.Models.Pharmacy.Branch;
+using HospitalSys.Models.Pharmacy.CentralStore;
+
+namespace HospitalSys.Models.Pharmacy.Common
+{
+    public class Medicine{
+
+        [Key]
+        public int MedicineID {get;set;}
+        [MaxLength(200)]
+        public string MedicineName {get;set;} = "";
+        [MaxLength(200)]
+        public string GenericName {get;set;} = "";
+        public decimal UnitPrice {get;set;}
+        [MaxLength(200)]
+        public string UnitOfMeasure {get;set;} = "";
+        
+        public List<PrescriptionDetail> PrescriptionDetail {get;set;} = new();
+        public List<DispenseMedicineDetail> DispenseMedicineDetail {get;set;} =new();
+        public List<CentralStoreInventory> CentralStoreInventory {get;set;} = new();
+        public List<CentralStoreRequestDetail> CentralStoreRequestDetail {get;set;} = new();
+        public List<CentralStoreTransfer> CentralStoreTransfer {get;set;} = new();
+        public List<AidStoreInventory> AidStoreInventory {get;set;} = new();
+        public List<AidStoreRequestDetail> AidStoreRequestDetail {get;set;} = new();
+        public List<BranchInventory> BranchInventory {get;set;} = new();
+
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Pharmacy\Common\Prescription.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.BillingAndPayment;
+using HospitalSys.Models.Consultation_M;
+using HospitalSys.Models.PatientManagment;
+using HospitalSys.Models.Pharmacy.Branch;
+
+namespace HospitalSys.Models.Pharmacy.Common
+{
+    public class Prescription
+    {
+       [Key]
+       public int PrescriptionID {get;set;} 
+       public int ConsultationID {get;set;}
+       [ForeignKey(nameof(ConsultationID))]
+       public Consultation? Consultation {get;set;}
+       public int DoctorID {get;set;}
+       [ForeignKey(nameof(DoctorID))]
+       public Doctor? Doctor {get;set;}
+       public int PatientID {get;set;}
+       [ForeignKey(nameof(PatientID))]
+       public Patient? Patient {get;set;}
+       public int BranchPharmacyID {get;set;}
+       [ForeignKey(nameof(BranchPharmacyID))]
+       public BranchPharmacy? BranchPharmacy {get;set;}
+       public DateTime PrescriptionDate {get;set;} = DateTime.UtcNow;
+
+       public List<PrescriptionDetail> PrescriptionDetail {get;set;} = new();
+       public List<DispenseMedicine> DispenseMedicine {get;set;} = new();
+       public List<PharmacyPayment> PharmacyPayment {get;set;} = new();
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Pharmacy\Common\PrescriptionDetail.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace HospitalSys.Models.Pharmacy.Common
+{
+    public class PrescriptionDetail
+    {
+        [Key]
+        public int PrescriptionDetailID {get;set;}
+        public int PrescriptionID {get;set;}
+        [ForeignKey(nameof(PrescriptionID))]
+        public Prescription? Prescription {get;set;}
+        public int MedicineID {get;set;}
+        [ForeignKey(nameof(MedicineID))]
+        public Medicine? Medicine {get;set;}
+        public string Dosage {get;set;} = "";
+        public decimal Frequency {get;set;}
+        public decimal Duration {get;set;}
+        public decimal Quantity {get;set;}
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Radiology\RadiologyDepartment.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+
+namespace HospitalSys.Models.Radiology
+{
+    public class RadiologyDepartment
+    {
+        [Key]
+        public int RadiologyDepartmentID {get;set;}
+        public string DepartmentName {get;set;} = "";
+        public string Description {get;set;} = "";
+
+        public List<RadiologyTestType> RadiologyTestType {get;set;} = new();
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Radiology\RadiologyRequest.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using HospitalSys.Models.BillingAndPayment;
+using HospitalSys.Models.Consultation_M;
+using HospitalSys.Models.Laboratory;
+using HospitalSys.Models.PatientManagment;
+
+namespace HospitalSys.Models.Radiology
+{
+    public class RadiologyRequest
+    {
+        [Key]
+        public int RadiologyRequestID {get;set;}
+        public int ConsultationID {get;set;}
+        [ForeignKey(nameof(ConsultationID))]
+        public Consultation? Consultation {get;set;}
+        public int PatientID {get;set;}
+        [ForeignKey(nameof(PatientID))]
+        public Patient? Patient {get;set;}
+        public int DoctorID {get;set;}
+        [ForeignKey(nameof(DoctorID))]
+        public Doctor? Doctor {get;set;}
+        public int RadiologyTestTypeID {get;set;}
+        [ForeignKey(nameof(RadiologyTestTypeID))]
+        public RadiologyTestType? RadiologyTestType {get;set;}
+        public DateTime RequestDate {get;set;} = DateTime.UtcNow;
+        [MaxLength(50)]
+        public string Status {get;set;} = "";
+
+        public List<RadiologyResult> RadiologyResult {get;set;} = new();
+        public List<RadiologyPayment> RadiologyPayment {get;set;} = new();
+
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Radiology\RadiologyResult.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace HospitalSys.Models.Radiology
+{
+    public class RadiologyResult
+    {
+        [Key]
+        public int RadiologyResultID { get; set; }
+        public int RadiologyRequestID {get;set;}
+        [ForeignKey(nameof(RadiologyRequestID))]
+        public RadiologyRequest? RadiologyRequest {get;set;}
+        public int RadiologyTechnicianID {get;set;}
+        [ForeignKey(nameof(RadiologyTechnicianID))]
+        public RadiologyTechnician? RadiologyTechnician {get;set;}
+        public string ResultDescription {get;set;} = "";
+        public DateTime ResultDate { get; set; } = DateTime.UtcNow;
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\Radiology\RadiologyTestType.cs
+==================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace HospitalSys.Models.Radiology
+{
+    public class RadiologyTestType
+    {
+        [Key]
+        public int RadiologyTestTypeID {get;set;}
+        public int RadiologyDepartmentID {get;set;}
+        [ForeignKey(nameof(RadiologyDepartmentID))]
+        public RadiologyDepartment? RadiologyDepartment {get;set;}
+        public string TestName {get;set;} = "";
+        public decimal Price {get;set;}
+        public string Description {get;set;} = "";
+        public List<RadiologyRequest> RadiologyRequest {get;set;} = new();
+    }
+}
+
+==================================================
+FILE: C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\models\student\student.cs
+==================================================
+

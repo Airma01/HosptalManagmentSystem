@@ -16,6 +16,7 @@ const AdminNav = () => {
     if (path === "/admin/dashboard") return "dashboard";
 
     const segments = path.split("/");
+    // For paths like /admin/dashboard/central-pharmacy, return "central-pharmacy"
     return segments[segments.length - 1] || "dashboard";
   };
 
@@ -24,10 +25,7 @@ const AdminNav = () => {
   const handleLogout = async () => {
     try {
       await API.post("/Hospital/Admin_auth/logout");
-
-      navigate("/admin/login", {
-        replace: true,
-      });
+      navigate("/admin/login", { replace: true });
     } catch (error) {
       console.error(error);
     }
@@ -76,11 +74,19 @@ const AdminNav = () => {
       icon: "bi-box-seam-fill",
       id: "inventory",
     },
+    // 🆕 Central Pharmacy
     {
-      name: "Pharmacy",
-      path: "/admin/dashboard/pharmacy",
-      icon: "bi-capsule-fill",
-      id: "pharmacy",
+      name: "Central Pharmacy",
+      path: "/admin/dashboard/central-pharmacy",
+      icon: "bi-building",
+      id: "central-pharmacy",
+    },
+    // 🆕 Branch Pharmacy
+    {
+      name: "Branch Pharmacy",
+      path: "/admin/dashboard/branch-pharmacy",
+      icon: "bi-shop",
+      id: "branch-pharmacy",
     },
     {
       name: "Admins",

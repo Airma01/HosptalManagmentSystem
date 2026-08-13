@@ -8,4 +8,5 @@ namespace HospitalSys.Dto
         public string Password {get;set;} = "";    
         public AdminRole AdminRole {get;set;}
     }
+    
 }

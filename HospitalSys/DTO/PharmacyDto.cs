@@ -1,5 +1,33 @@
+
 namespace HospitalSys.Dto
 {
+    public class PharmacistLoginDto
+    {
+        public string username { get; set; } = "";
+        public string Password { get; set; } = "";
+    }
+    public class CSMLoginDto
+    {
+        public string username { get; set; } = "";
+        public string Password { get; set; } = "";
+    }
+    public class PharmacistCookieDto
+{
+    public string username { get; set; } = "";
+    public int UserID { get; set; }
+    public int PharmacistID { get; set; }
+    public int BranchPharmacyID { get; set; }
+    public string Fullname { get; set; } = "";
+    public string RoleName { get; set; } = "";
+}
+    public class CSMtCookieDto
+    {
+        public string username {get;set;} = "";
+        public string Fullname {get;set;} = "";
+        public string RoleName {get;set;} = "";
+        public int UserID {get;set;}
+        public int ManagerID {get;set;}
+    }
     public class CreateNewBranchDto
     {
         public string BranchName {get;set;} = "";
@@ -51,12 +79,12 @@ namespace HospitalSys.Dto
     {
             public int UserID {get;set;}
     }
-    public class RegisterCentralStoreManagerDto
-    {
-        public int CentralPharmacyID {get;set;}
-        public int ManagerID {get;set;}
-        public bool IsCurrent {get;set;} //it's explain if he former manager or 
-    }
+   public class RegisterCentralStoreManagerDto
+{
+    public int CentralPharmacyID { get; set; }
+    public int ManagerID { get; set; }
+    public bool IsCurrent { get; set; }
+}
     public class RegisterAidStoreManagerDto
     {
         public int AidPharmacyID {get;set;}

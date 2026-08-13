@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace HospitalSys.Dto
 {
     public class RegisterDoctorDto
@@ -20,6 +22,8 @@ namespace HospitalSys.Dto
         public List<string> RoleName {get;set;} = new List<string>();
 
         public int DepartmentID {get;set;}
+        public int DoctorID {get;set;}
+        public string DepartmentName {get;set;} = "";
     }
 
    public class ConsultationUpdateDto
@@ -37,6 +41,15 @@ namespace HospitalSys.Dto
         public string TreatmentPlan {get;set;} = "";
 
     }
+    public class MedicalRecordDto
+{
+    [Required]
+    public int ConsultationID { get; set; }
+    [Required]
+    public int PatientID { get; set; }
+    [Required]
+    public int DoctorID { get; set; }
+}
     // DTO
 public class DoctorDto
 {

@@ -22,21 +22,32 @@ const CreateTriage = () => {
     notes: '',
   });
 
+  // Fetch authenticated user and triage departments
   useEffect(() => {
-    const fetchDepartments = async () => {
+    const fetchData = async () => {
       setLoading(true);
       try {
-        // GET /Hospital/Triage/triage_departments
-        const response = await API.get('/Hospital/Triage/triage_departments');
-        setDepartments(response.data || []);
+        // 1. Get authenticated user (Nurse)
+        const authRes = await API.get('/Hospital/nurse/NurseAuth/auth_me');
+        const userData = authRes.data;
+
+        // 2. Pre‑fill nurse ID in form
+        setFormData((prev) => ({
+          ...prev,
+          nurseID: userData.nurseID || '',
+        }));
+
+        // 3. Fetch triage departments
+        const deptRes = await API.get('/Hospital/Triage/triage_departments');
+        setDepartments(deptRes.data || []);
       } catch (err) {
-        console.error('Error fetching departments:', err);
-        setMessage('Failed to load departments.');
+        console.error('Error loading data:', err);
+        setMessage('Failed to load data. Please refresh.');
       } finally {
         setLoading(false);
       }
     };
-    fetchDepartments();
+    fetchData();
   }, []);
 
   const handleChange = (e) => {
@@ -60,7 +71,7 @@ const CreateTriage = () => {
     }
   };
 
-  if (loading) return <div>Loading departments...</div>;
+  if (loading) return <div>Loading...</div>;
 
   return (
     <div className="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-lg">
@@ -84,6 +95,7 @@ const CreateTriage = () => {
             onChange={handleChange}
             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
+            readOnly={!!formData.nurseID} // read‑only if we have it
           />
           <select
             name="triageDepartmentID"
