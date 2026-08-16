@@ -48,6 +48,9 @@ namespace HospitalSys.Data
             .Property(u=>u.AdminRole)
             .HasConversion<string>();
 
+            modelBuilder.Entity<CentralStoreRequest>()
+            .Property(u=>u.Status)
+            .HasConversion<string>();
             modelBuilder.Entity<Patient>()
             .HasIndex(p => p.Phone);
 

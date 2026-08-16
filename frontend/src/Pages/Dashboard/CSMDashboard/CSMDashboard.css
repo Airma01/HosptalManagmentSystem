@@ -1,0 +1,4 @@
+/* CSMDashboard.css – only for overrides that Tailwind cannot handle */
+.csm-dashboard {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}

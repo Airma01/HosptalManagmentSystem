@@ -1,5 +1,5 @@
 using HospitalSys.Data;
-using HospitalSys.Dto;
+using HospitalSys.Branch.Dto;
 using HospitalSys.Models;
 using HospitalSys.Models.Pharmacy.Branch;
 using HospitalSys.Models.Pharmacy.CentralStore;
@@ -155,26 +155,26 @@ namespace HospitalSys.Controllers
         }
 
         [HttpGet("GetAllMedicines")]
-    public async Task<IActionResult> GetAllMedicines()
+public async Task<IActionResult> GetAllMedicines()
+{
+    try
     {
-        try
-        {
-            var medicines = await _context.Medicines
-                .Select(m => new {
-                    m.MedicineID,
-                    m.MedicineName,
-                    m.UnitOfMeasure,
-                    m.UnitPrice,
-                    m.GenericName
-                })
-                .ToListAsync();
-            return Ok(medicines);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var medicines = await _context.Medicines
+            .Select(m => new {
+                m.MedicineID,
+                m.MedicineName,
+                m.UnitOfMeasure,
+                m.UnitPrice,
+                m.GenericName
+            })
+            .ToListAsync();
+        return Ok(medicines);
     }
+    catch (Exception ex)
+    {
+        return BadRequest(new { message = ex.Message });
+    }
+}
 
         [HttpGet("GetMedicineStock/{medicineId}")]
         public async Task<IActionResult> GetMedicineStock(int medicineId)

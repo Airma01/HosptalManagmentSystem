@@ -23,7 +23,7 @@ const roleConfig = {
   CSM: {
     login: '/Hospital/CSM/CSMAuth/CSM_login',
     me: '/Hospital/CSM/CSMAuth/auth_me',
-    redirect: '/csm',
+    redirect: '/csm/dashboard',
   },
   // 🆕 Pharmacist
   Pharmacist: {

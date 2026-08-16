@@ -1,125 +1,158 @@
-import React, { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import {
+  getDashboardSummary,
+  getDashboardStats,
+  getLowStockMedicines,
+  getExpiringMedicines,
+  getInventoryValue,
+  getBranchAlerts,
+} from "./Services/dashboardService";
+import DashboardHeader from "./Components/DashboardHeader";
+import SummaryCards from "./Components/SummaryCards";
+import DashboardStats from "./Components/DashboardStats";
+import LowStockTable from "./Components/LowStockTable";
+import ExpiringMedicineTable from "./Components/ExpiringMedicineTable";
+import BranchAlertsTable from "./Components/BranchAlertsTable";
+import InventoryValueChart from "./Components/InventoryValueChart";
+import RecentTransfers from "./Components/RecentTransfers";
+import LoadingSpinner from "./Shared/LoadingSpinner";
+import ErrorMessage from "./Shared/ErrorMessage";
+import EmptyState from "./Shared/EmptyState";
+import "./CSMDashboard.css";
 
 const CSMDashboard = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [summary, setSummary] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [lowStock, setLowStock] = useState([]);
+  const [expiring, setExpiring] = useState([]);
+  const [inventoryValue, setInventoryValue] = useState([]);
+  const [branchAlerts, setBranchAlerts] = useState([]);
+  const [recentTransfers, setRecentTransfers] = useState([]);
 
-  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const [
+        summaryData,
+        statsData,
+        lowStockData,
+        expiringData,
+        invValueData,
+        alertsData,
+      ] = await Promise.all([
+        getDashboardSummary(),
+        getDashboardStats(),
+        getLowStockMedicines(),
+        getExpiringMedicines(30),
+        getInventoryValue(),
+        getBranchAlerts(),
+      ]);
+
+      setSummary(summaryData);
+      setStats(statsData);
+      setLowStock(lowStockData || []);
+      setExpiring(expiringData || []);
+      setInventoryValue(invValueData || []);
+      setBranchAlerts(alertsData || []);
+
+      // We could also fetch recent transfers separately if needed
+      // For now, we leave it empty or fetch from transfer endpoint if available
+      // In future, we can use getRecentTransfers() from transferService
+      setRecentTransfers([]);
+    } catch (err) {
+      console.error("Dashboard load error:", err);
+      setError(err.response?.data?.message || "Failed to load dashboard data.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <ErrorMessage message={error} onRetry={loadData} />
+      </div>
+    );
+  }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-100">
-      {/* ========== SIDEBAR ========== */}
-      <aside
-        className={`
-          fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-          lg:relative lg:translate-x-0 lg:flex-shrink-0
-          flex flex-col
-        `}
-      >
-        {/* Sidebar Header */}
-        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
-          <span className="text-xl font-bold text-indigo-600">🏢 CSM</span>
-          {/* Close button - Tailwind only */}
-          <button
-            onClick={toggleSidebar}
-            className="lg:hidden p-2 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors duration-200"
-          >
-            <i className="bi bi-x-lg"></i> {/* Bootstrap Icon */}
-          </button>
+    <div className="csm-dashboard p-4 md:p-6 max-w-7xl mx-auto">
+      <DashboardHeader />
+
+      {/* Summary Cards */}
+      <div className="mb-6">
+        <SummaryCards summary={summary} />
+      </div>
+
+      {/* Stats Cards */}
+      <div className="mb-6">
+        <DashboardStats stats={stats} />
+      </div>
+
+      {/* Two-column layout: Low Stock & Expiring */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="bg-white rounded-lg shadow p-4">
+          <h2 className="text-lg font-semibold mb-3">Low Stock Medicines</h2>
+          {lowStock.length === 0 ? (
+            <EmptyState message="No low stock items." />
+          ) : (
+            <LowStockTable items={lowStock} />
+          )}
         </div>
-
-        {/* Navigation Links */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          <NavLink
-            to="/csm/pharmacy-info"
-            className={({ isActive }) =>
-              `flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors duration-200 ${
-                isActive
-                  ? 'bg-indigo-50 text-indigo-700'
-                  : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-              }`
-            }
-          >
-            <i className="bi bi-clipboard-data mr-3 text-lg"></i> {/* Bootstrap Icon */}
-            Pharmacy Info
-          </NavLink>
-
-          <NavLink
-            to="/csm/inventory"
-            className={({ isActive }) =>
-              `flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors duration-200 ${
-                isActive
-                  ? 'bg-indigo-50 text-indigo-700'
-                  : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-              }`
-            }
-          >
-            <i className="bi bi-box-seam mr-3 text-lg"></i> {/* Bootstrap Icon */}
-            Inventory
-          </NavLink>
-
-          <NavLink
-            to="/csm/add-inventory"
-            className={({ isActive }) =>
-              `flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors duration-200 ${
-                isActive
-                  ? 'bg-indigo-50 text-indigo-700'
-                  : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-              }`
-            }
-          >
-            <i className="bi bi-plus-circle mr-3 text-lg"></i> {/* Bootstrap Icon */}
-            Add Medicine
-          </NavLink>
-        </nav>
-
-        {/* Sidebar Footer - Logout (Tailwind only) */}
-        <div className="p-4 border-t border-gray-200">
-          <button
-            onClick={() => {/* handle logout */}}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors duration-200 border border-red-200"
-          >
-            <i className="bi bi-box-arrow-right"></i> {/* Bootstrap Icon */}
-            Logout
-          </button>
+        <div className="bg-white rounded-lg shadow p-4">
+          <h2 className="text-lg font-semibold mb-3">Expiring Soon (30 days)</h2>
+          {expiring.length === 0 ? (
+            <EmptyState message="No expiring medicines." />
+          ) : (
+            <ExpiringMedicineTable items={expiring} />
+          )}
         </div>
-      </aside>
+      </div>
 
-      {/* ========== MAIN CONTENT ========== */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Top header with toggle button and user info */}
-        <header className="bg-white shadow-sm px-4 py-3 flex items-center justify-between border-b border-gray-200">
-          <div className="flex items-center gap-3">
-            {/* Hamburger toggle button - Tailwind only */}
-            <button
-              onClick={toggleSidebar}
-              className="p-2 rounded-md text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors duration-200 lg:hidden"
-            >
-              <i className="bi bi-list text-xl"></i> {/* Bootstrap Icon */}
-            </button>
-            <h2 className="text-xl font-semibold text-gray-800">
-              CSM Dashboard
-            </h2>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-600">
-              Welcome, {user?.fullName || 'CSM'}
-            </span>
-            {/* Avatar - Tailwind only */}
-            <div className="w-9 h-9 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-sm font-medium">
-              {user?.fullName?.charAt(0) || 'C'}
-            </div>
-          </div>
-        </header>
+      {/* Branch Alerts & Inventory Value */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="bg-white rounded-lg shadow p-4">
+          <h2 className="text-lg font-semibold mb-3">Branch Alerts</h2>
+          {branchAlerts.length === 0 ? (
+            <EmptyState message="No branch alerts." />
+          ) : (
+            <BranchAlertsTable items={branchAlerts} />
+          )}
+        </div>
+        <div className="bg-white rounded-lg shadow p-4">
+          <h2 className="text-lg font-semibold mb-3">Inventory Value by Medicine</h2>
+          {inventoryValue.length === 0 ? (
+            <EmptyState message="No inventory data." />
+          ) : (
+            <InventoryValueChart items={inventoryValue} />
+          )}
+        </div>
+      </div>
 
-        {/* Page content */}
-        <main className="flex-1 p-6 overflow-y-auto">
-          <div className="bg-white rounded-lg shadow-md p-4">
-            <Outlet />
-          </div>
-        </main>
+      {/* Recent Transfers (placeholder) */}
+      <div className="bg-white rounded-lg shadow p-4 mb-6">
+        <h2 className="text-lg font-semibold mb-3">Recent Transfers</h2>
+        {recentTransfers.length === 0 ? (
+          <EmptyState message="No recent transfers." />
+        ) : (
+          <RecentTransfers items={recentTransfers} />
+        )}
       </div>
     </div>
   );

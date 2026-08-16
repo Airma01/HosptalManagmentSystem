@@ -1269,8 +1269,17 @@ namespace HospitalSys.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("CentralRequestID"));
 
+                    b.Property<DateTime?>("ApprovalDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("ApprovedByManagerID")
+                        .HasColumnType("integer");
+
                     b.Property<int>("BranchPharmacyID")
                         .HasColumnType("integer");
+
+                    b.Property<string>("RejectionReason")
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("RequestDate")
                         .HasColumnType("timestamp with time zone");
@@ -1334,7 +1343,7 @@ namespace HospitalSys.Migrations
                     b.Property<int>("CentralPharmacyID")
                         .HasColumnType("integer");
 
-                    b.Property<int>("CentralRequestID")
+                    b.Property<int?>("CentralRequestID")
                         .HasColumnType("integer");
 
                     b.Property<int>("CentralStoreManagerID")
@@ -2553,9 +2562,7 @@ namespace HospitalSys.Migrations
 
                     b.HasOne("HospitalSys.Models.Pharmacy.CentralStore.CentralStoreRequest", "CentralStoreRequest")
                         .WithMany("CentralStoreTransfer")
-                        .HasForeignKey("CentralRequestID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("CentralRequestID");
 
                     b.HasOne("HospitalSys.Models.Pharmacy.CentralStore.CentralStoreManager", "CentralStoreManager")
                         .WithMany("CentralStoreTransfer")

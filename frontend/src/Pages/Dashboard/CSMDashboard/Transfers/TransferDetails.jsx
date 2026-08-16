@@ -1,65 +1,174 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { getTransferDetails } from "../services/centralStoreService";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { BsArrowLeft, BsTruck, BsPencil, BsTrash } from "react-icons/bs";
+import { getTransferById, cancelTransfer } from "../Services/transferService";
+import LoadingSpinner from "../Shared/LoadingSpinner";
+import ErrorMessage from "../Shared/ErrorMessage";
+import StatusBadge from "../Shared/StatusBadge";
+import ConfirmDialog from "../Shared/ConfirmDialog";
 
 const TransferDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [transfer, setTransfer] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [transfer, setTransfer] = useState(null);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+
+  const loadTransfer = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getTransferById(id);
+      setTransfer(data);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to load transfer details.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetch = async () => {
-      try {
-        const data = await getTransferDetails(id);
-        setTransfer(data);
-      } catch (err) {
-        setError(err.response?.data?.message || "Failed to load transfer.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetch();
+    if (id) loadTransfer();
   }, [id]);
 
-  if (loading) return <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div></div>;
-  if (error) return <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded">{error}</div>;
-  if (!transfer) return <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded">Transfer not found.</div>;
+  const handleCancel = async () => {
+    try {
+      await cancelTransfer({
+        centralTransferID: parseInt(id),
+        cancellationReason: "Cancelled by CSM",
+      });
+      setShowCancelConfirm(false);
+      await loadTransfer();
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to cancel transfer.");
+    }
+  };
+
+  const canCancel = transfer?.status === "Pending" || transfer?.status === "Dispatched";
+  const canDispatch = transfer?.status === "Pending";
+  const canUpdateStatus = ["Dispatched", "InTransit", "Received"].includes(transfer?.status);
+
+  if (loading) return <LoadingSpinner />;
+  if (error) return <ErrorMessage message={error} onRetry={loadTransfer} />;
+  if (!transfer) return <ErrorMessage message="Transfer not found." />;
 
   return (
-    <>
-      <h4 className="text-xl font-semibold mb-4">Transfer Details</h4>
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <p><strong>Transfer ID:</strong> {transfer.centralTransferID}</p>
-        <p><strong>Central Request ID:</strong> {transfer.centralRequestID || "N/A"}</p>
-        <p><strong>Branch:</strong> {transfer.branchName}</p>
-        <p><strong>Date:</strong> {new Date(transfer.transferDate).toLocaleString()}</p>
-        <p><strong>Status:</strong> <span className={`px-2 py-1 text-xs font-semibold rounded-full ${transfer.status === "Completed" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}`}>{transfer.status}</span></p>
-        <h5 className="font-semibold mt-4 mb-2">Items</h5>
+    <div className="p-4 max-w-4xl mx-auto">
+      <div className="flex items-center gap-4 mb-6">
+        <button
+          onClick={() => navigate("/csm/transfer")}
+          className="text-gray-600 hover:text-gray-900 flex items-center gap-1"
+        >
+          <BsArrowLeft /> Back
+        </button>
+        <h1 className="text-2xl font-bold text-gray-800">
+          Transfer #{transfer.centralTransferID}
+        </h1>
+        <StatusBadge status={transfer.status} />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div className="bg-white shadow rounded-lg p-6 space-y-3">
+          <h2 className="font-semibold text-gray-700 border-b pb-2">Transfer Information</h2>
+          <div>
+            <label className="text-sm font-medium text-gray-500">Request ID</label>
+            <p className="text-gray-900">
+              {transfer.centralRequestID ? (
+                <Link
+                  to={`/csm/request/${transfer.centralRequestID}`}
+                  className="text-blue-600 hover:underline"
+                >
+                  #{transfer.centralRequestID}
+                </Link>
+              ) : (
+                "N/A"
+              )}
+            </p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-500">Branch</label>
+            <p className="text-gray-900">{transfer.branchName}</p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-500">Transfer Date</label>
+            <p className="text-gray-900">{new Date(transfer.transferDate).toLocaleString()}</p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-500">Manager</label>
+            <p className="text-gray-900">{transfer.managerName}</p>
+          </div>
+        </div>
+
+        <div className="bg-white shadow rounded-lg p-6 space-y-3">
+          <h2 className="font-semibold text-gray-700 border-b pb-2">Actions</h2>
+          {canDispatch && (
+            <Link
+              to={`/csm/transfer/dispatch/${transfer.centralTransferID}`}
+              className="block w-full px-4 py-2 bg-green-600 text-white text-center rounded-lg hover:bg-green-700 transition"
+            >
+              <BsTruck className="inline mr-2" /> Dispatch Transfer
+            </Link>
+          )}
+          {canUpdateStatus && (
+            <Link
+              to={`/csm/transfer/update-status/${transfer.centralTransferID}`}
+              className="block w-full px-4 py-2 bg-blue-600 text-white text-center rounded-lg hover:bg-blue-700 transition"
+            >
+              <BsPencil className="inline mr-2" /> Update Status
+            </Link>
+          )}
+          {canCancel && (
+            <button
+              onClick={() => setShowCancelConfirm(true)}
+              className="block w-full px-4 py-2 bg-red-600 text-white text-center rounded-lg hover:bg-red-700 transition"
+            >
+              <BsTrash className="inline mr-2" /> Cancel Transfer
+            </button>
+          )}
+          {!canDispatch && !canUpdateStatus && !canCancel && (
+            <p className="text-sm text-gray-500">No actions available for this transfer.</p>
+          )}
+          <Link
+            to={`/csm/transfer/track/${transfer.centralTransferID}`}
+            className="block w-full px-4 py-2 bg-purple-600 text-white text-center rounded-lg hover:bg-purple-700 transition"
+          >
+            <BsTruck className="inline mr-2" /> Track Transfer
+          </Link>
+        </div>
+      </div>
+
+      {/* Items Table */}
+      <div className="bg-white shadow rounded-lg overflow-hidden">
+        <h2 className="font-semibold text-gray-700 p-4 border-b">Transfer Items</h2>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Medicine</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Medicine</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {transfer.details && transfer.details.map((d, idx) => (
+              {transfer.items.map((item, idx) => (
                 <tr key={idx}>
-                  <td className="px-4 py-2 whitespace-nowrap text-sm">{d.medicineName}</td>
-                  <td className="px-4 py-2 whitespace-nowrap text-sm">{d.quantityTransferred}</td>
+                  <td className="px-4 py-3 text-sm text-gray-900">{item.medicineName || `Medicine ID: ${item.medicineID}`}</td>
+                  <td className="px-4 py-3 text-sm text-gray-700">{item.quantityTransferred}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </div>
-      <button className="mt-4 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-lg transition-colors" onClick={() => navigate("/csm/transfers")}>
-        Back to Transfers
-      </button>
-    </>
+
+      <ConfirmDialog
+        isOpen={showCancelConfirm}
+        title="Cancel Transfer"
+        message="Are you sure you want to cancel this transfer? This action cannot be undone."
+        onConfirm={handleCancel}
+        onCancel={() => setShowCancelConfirm(false)}
+      />
+    </div>
   );
 };
 

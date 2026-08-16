@@ -30,30 +30,71 @@ import {
 } from './pages/Dashboard/DoctorDashboard';
 import CSMProtectRoute from './ProtectRoute/CSMProtectRoute';
 
-// CSM Dashboard imports (barrel)
+// ===== CSM Imports =====
 import {
   CSMDashboard,
-  PharmacyInfo,
-  InventoryList,
-  AddInventory,
-  UpdateInventory,
-  LowStockMedicines,
-  ExpiredMedicines,
   MedicineList,
-  AddMedicine,
-  MedicineDetails,
+  CreateMedicine,
   EditMedicine,
-  PendingRequests,
+  MedicineDetails,
+  MedicineSearch,
+  InventoryList,
+  InventoryDetails,
+  CreateInventory,
+  EditInventory,
+  AdjustStock,
+  InventoryHistory,
+  LowStock,
+  ExpiringMedicines,
+  ExpiredMedicines,
+  InventoryValue,
+  ReceivePurchasedMedicine,
+  ReceiveAidStoreTransfer,
+  RequestList,
   RequestDetails,
+  RequestReview,
+  ApproveRequest,
+  PartialApproveRequest,
+  RejectRequest,
+  CancelRequest,
+  RequestAvailability,
   TransferList,
   CreateTransfer,
   TransferDetails,
-  StockReport,
+  DispatchTransfer,
+  TransferTracking,
+  UpdateTransferStatus,
+  CancelTransfer,
+  TransferHistory,
+  BranchList,
+  BranchDetails,
+  BranchInventory,
+  BranchRequests,
+  BranchTransfers,
+  BranchConsumption,
+  BranchLowStock,
+  LowStockMonitoring,
+  ExpiryMonitoring,
+  ExpiredMedicinesMonitor,
+  NearExpiryMedicines,
+  CriticalStock,
+  ReplenishmentSuggestions,
+  MedicineMovement,
+  InventoryAudit,
+  InventoryReport,
+  BranchInventoryReport,
+  RequestReport,
   TransferReport,
-  RequestReport
-} from './Pages/Dashboard/CSMDashboard';
+  ExpiryReport,
+  ConsumptionReport,
+  InventoryValueReport,
+  StockMovementReport,
+} from "./Pages/Dashboard/CSMDashboard";
 
-// ===== Pharmacy Dashboard Imports (aliased) =====
+// ===== CSM Layout =====
+import CSMLayout from "./Pages/Dashboard/CSMDashboard/CSMLayout";
+
+// ===== Pharmacy Dashboard Imports =====
 import PharmacistProtectRoute from './ProtectRoute/PharmacistProtectRoute';
 import PharmacistDashboardLayout from './Pages/Dashboard/PharmacyDashboard/PharmacistDashboardLayout';
 import PharmacyDashboard from './Pages/Dashboard/PharmacyDashboard/Dashboard';
@@ -101,13 +142,15 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* Public routes */}
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="Bishoftu/login" element={<Login />} />
 
+        {/* Admin routes */}
         <Route path="/admin/dashboard/*" element={<AdminDashboard />} />
         <Route path="/admin/dashboard/users/add" element={<AddUser />} />
 
-        {/* Nurse routes */}
+        {/* Nurse routes – protected */}
         <Route element={<NurseProtectRoute />}>
           <Route path="/nurse" element={<NurseDashboard />}>
             <Route index element={<Navigate to="triage" replace />} />
@@ -120,7 +163,7 @@ function App() {
           </Route>
         </Route>
 
-        {/* Receptionist routes */}
+        {/* Receptionist routes – protected */}
         <Route element={<ReceptionistProtectRouter />}>
           <Route path="/receptionist" element={<ReceptionistDashboard />}>
             <Route index element={<Navigate to="patients" replace />} />
@@ -131,7 +174,7 @@ function App() {
           </Route>
         </Route>
 
-        {/* Doctor routes */}
+        {/* Doctor routes – protected */}
         <Route path="/doctor" element={<DoctorDashboard />}>
           <Route index element={<Navigate to="consultations" replace />} />
           <Route path="consultations" element={<ConsultationList />} />
@@ -144,32 +187,89 @@ function App() {
           <Route path="patient/:patientId" element={<PatientDetail />} />
         </Route>
 
-        {/* CSM routes */}
+        {/* ===== CSM routes – protected with sidebar ===== */}
         <Route element={<CSMProtectRoute />}>
-          <Route path="/csm" element={<CSMDashboard />}>
-            <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<PharmacyInfo />} />
-            <Route path="medicines" element={<MedicineList />} />
-            <Route path="medicines/add" element={<AddMedicine />} />
-            <Route path="medicines/:id" element={<MedicineDetails />} />
-            <Route path="medicines/edit/:id" element={<EditMedicine />} />
-            <Route path="inventory" element={<InventoryList />} />
-            <Route path="inventory/add" element={<AddInventory />} />
-            <Route path="inventory/update/:id" element={<UpdateInventory />} />
-            <Route path="inventory/low-stock" element={<LowStockMedicines />} />
-            <Route path="inventory/expired" element={<ExpiredMedicines />} />
-            <Route path="requests" element={<PendingRequests />} />
-            <Route path="requests/:id" element={<RequestDetails />} />
-            <Route path="transfers" element={<TransferList />} />
-            <Route path="transfers/create" element={<CreateTransfer />} />
-            <Route path="transfers/:id" element={<TransferDetails />} />
-            <Route path="reports/stock" element={<StockReport />} />
-            <Route path="reports/transfers" element={<TransferReport />} />
-            <Route path="reports/requests" element={<RequestReport />} />
+          <Route element={<CSMLayout />}>
+            <Route path="/csm" element={<Navigate to="/csm/dashboard" replace />} />
+
+            {/* Dashboard */}
+            <Route path="/csm/dashboard" element={<CSMDashboard />} />
+
+            {/* Medicine Management */}
+            <Route path="/csm/medicine" element={<MedicineList />} />
+            <Route path="/csm/medicine/create" element={<CreateMedicine />} />
+            <Route path="/csm/medicine/edit/:id" element={<EditMedicine />} />
+            <Route path="/csm/medicine/:id" element={<MedicineDetails />} />
+            <Route path="/csm/medicine/search" element={<MedicineSearch />} />
+
+            {/* Inventory Management */}
+            <Route path="/csm/inventory" element={<InventoryList />} />
+            <Route path="/csm/inventory/create" element={<CreateInventory />} />
+            <Route path="/csm/inventory/edit/:id" element={<EditInventory />} />
+            <Route path="/csm/inventory/adjust/:id" element={<AdjustStock />} />
+            <Route path="/csm/inventory/:id" element={<InventoryDetails />} />
+            <Route path="/csm/inventory/history" element={<InventoryHistory />} />
+            <Route path="/csm/inventory/low-stock" element={<LowStock />} />
+            <Route path="/csm/inventory/expiring" element={<ExpiringMedicines />} />
+            <Route path="/csm/inventory/expired" element={<ExpiredMedicines />} />
+            <Route path="/csm/inventory/value" element={<InventoryValue />} />
+            <Route path="/csm/inventory/receive-purchased" element={<ReceivePurchasedMedicine />} />
+            <Route path="/csm/inventory/receive-aidstore" element={<ReceiveAidStoreTransfer />} />
+
+            {/* Request Management */}
+            <Route path="/csm/request" element={<RequestList />} />
+            <Route path="/csm/request/:id" element={<RequestDetails />} />
+            <Route path="/csm/request/review/:id" element={<RequestReview />} />
+            <Route path="/csm/request/approve/:id" element={<ApproveRequest />} />
+            <Route path="/csm/request/partial-approve/:id" element={<PartialApproveRequest />} />
+            <Route path="/csm/request/reject/:id" element={<RejectRequest />} />
+            <Route path="/csm/request/cancel/:id" element={<CancelRequest />} />
+            <Route path="/csm/request/availability/:id" element={<RequestAvailability />} />
+
+            {/* Transfer Management */}
+            <Route path="/csm/transfer" element={<TransferList />} />
+            <Route path="/csm/transfer/create" element={<CreateTransfer />} />
+            <Route path="/csm/transfer/:id" element={<TransferDetails />} />
+            <Route path="/csm/transfer/dispatch/:id" element={<DispatchTransfer />} />
+            <Route path="/csm/transfer/track/:id" element={<TransferTracking />} />
+            <Route path="/csm/transfer/update-status/:id" element={<UpdateTransferStatus />} />
+            <Route path="/csm/transfer/cancel/:id" element={<CancelTransfer />} />
+            <Route path="/csm/transfer/history" element={<TransferHistory />} />
+
+            {/* Branch Management */}
+            <Route path="/csm/branch" element={<BranchList />} />
+            <Route path="/csm/branch/:id" element={<BranchDetails />} />
+            <Route path="/csm/branch/:id/inventory" element={<BranchInventory />} />
+            <Route path="/csm/branch/:id/requests" element={<BranchRequests />} />
+            <Route path="/csm/branch/:id/transfers" element={<BranchTransfers />} />
+            <Route path="/csm/branch/:id/consumption" element={<BranchConsumption />} />
+            <Route path="/csm/branch/low-stock" element={<BranchLowStock />} />
+
+            {/* Monitoring */}
+            <Route path="/csm/monitoring" element={<LowStockMonitoring />} />
+            <Route path="/csm/monitoring/low-stock" element={<LowStockMonitoring />} />
+            <Route path="/csm/monitoring/expiry" element={<ExpiryMonitoring />} />
+            <Route path="/csm/monitoring/expired" element={<ExpiredMedicinesMonitor />} />
+            <Route path="/csm/monitoring/near-expiry" element={<NearExpiryMedicines />} />
+            <Route path="/csm/monitoring/critical" element={<CriticalStock />} />
+            <Route path="/csm/monitoring/replenishment" element={<ReplenishmentSuggestions />} />
+            <Route path="/csm/monitoring/movement/:medicineId" element={<MedicineMovement />} />
+            <Route path="/csm/monitoring/audit" element={<InventoryAudit />} />
+
+            {/* Reports */}
+            <Route path="/csm/report" element={<InventoryReport />} />
+            <Route path="/csm/report/inventory" element={<InventoryReport />} />
+            <Route path="/csm/report/branch-inventory/:branchId?" element={<BranchInventoryReport />} />
+            <Route path="/csm/report/requests" element={<RequestReport />} />
+            <Route path="/csm/report/transfers" element={<TransferReport />} />
+            <Route path="/csm/report/expiry" element={<ExpiryReport />} />
+            <Route path="/csm/report/consumption" element={<ConsumptionReport />} />
+            <Route path="/csm/report/inventory-value" element={<InventoryValueReport />} />
+            <Route path="/csm/report/stock-movement" element={<StockMovementReport />} />
           </Route>
         </Route>
 
-        {/* ===== Pharmacist routes – base path: /pharmacy ===== */}
+        {/* ===== Pharmacist routes – protected ===== */}
         <Route element={<PharmacistProtectRoute />}>
           <Route path="/pharmacy" element={<PharmacistDashboardLayout />}>
             <Route index element={<Navigate to="dashboard" replace />} />
@@ -217,6 +317,7 @@ function App() {
           </Route>
         </Route>
 
+        {/* Fallback routes */}
         <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
       </Routes>

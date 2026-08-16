@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
-namespace HospitalSys.Dto
+namespace HospitalSys.Branch.Dto
 {
     // ===================== Dashboard DTOs =====================
     public class DashboardDto
