@@ -11,10 +11,10 @@ namespace HospitalSys.Models.Pharmacy.Common
     {
        [Key]
        public int PrescriptionID {get;set;} 
-       public int ConsultationID {get;set;}
+       public int? ConsultationID {get;set;}
        [ForeignKey(nameof(ConsultationID))]
        public Consultation? Consultation {get;set;}
-       public int DoctorID {get;set;}
+       public int? DoctorID {get;set;}
        [ForeignKey(nameof(DoctorID))]
        public Doctor? Doctor {get;set;}
        public int PatientID {get;set;}

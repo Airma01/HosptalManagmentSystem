@@ -22,6 +22,565 @@ namespace HospitalSys.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("FamilyMember", b =>
+                {
+                    b.Property<long>("FamilyMemberId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("FamilyMemberId"));
+
+                    b.Property<long>("FamilyId")
+                        .HasColumnType("bigint");
+
+                    b.Property<bool>("IsHeadOfHousehold")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("JoinedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LeftDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("PatientId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Relationship")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("FamilyMemberId");
+
+                    b.HasIndex("FamilyId");
+
+                    b.HasIndex("PatientId");
+
+                    b.ToTable("FamilyMembers");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.AdultMedicalCare.AsthmaManagement", b =>
+                {
+                    b.Property<int>("AsthmaManagementID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("AsthmaManagementID"));
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Allergies")
+                        .HasColumnType("text");
+
+                    b.Property<string>("AsthmaControlStatus")
+                        .HasColumnType("text");
+
+                    b.Property<string>("AsthmaSeverity")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("DiagnosisDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ExacerbationHistory")
+                        .HasColumnType("text");
+
+                    b.Property<string>("HospitalizationHistory")
+                        .HasColumnType("text");
+
+                    b.Property<string>("InhalerTechniqueEducation")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("LastFollowUpDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ManagementPlan")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("NextFollowUpDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PatientID")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("RecordedByUserID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Symptoms")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TreatmentStatus")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Triggers")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("AsthmaManagementID");
+
+                    b.HasIndex("PatientID");
+
+                    b.ToTable("AsthmaManagements");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.AdultMedicalCare.DiabetesManagement", b =>
+                {
+                    b.Property<int>("DiabetesManagementID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("DiabetesManagementID"));
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Complications")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DiabetesType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("DiagnosisDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DiagnosisMethod")
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("LastFastingBloodGlucose")
+                        .HasColumnType("numeric");
+
+                    b.Property<DateTime?>("LastFollowUpDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal?>("LastHbA1c")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("LastRandomBloodGlucose")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("LifestyleAdvice")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ManagementPlan")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("NextFollowUpDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PatientID")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("RecordedByUserID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("RiskFactors")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Symptoms")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TreatmentStatus")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("DiabetesManagementID");
+
+                    b.HasIndex("PatientID");
+
+                    b.ToTable("DiabetesManagements");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.AdultMedicalCare.HIVCare", b =>
+                {
+                    b.Property<int>("HIVCareID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("HIVCareID"));
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("AdherenceStatus")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CareStatus")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ClinicalStage")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Complications")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CounselingProvided")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DiagnosisDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("EnrollmentDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FollowUpPlan")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("LastFollowUpDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("ManagedByUserID")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("NextFollowUpDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<string>("OpportunisticConditions")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Outcome")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PatientID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TreatmentResponse")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("TreatmentStartDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("TreatmentStatus")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("HIVCareID");
+
+                    b.HasIndex("PatientID");
+
+                    b.ToTable("HIVCares");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.AdultMedicalCare.HepatitisManagement", b =>
+                {
+                    b.Property<int>("HepatitisManagementID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("HepatitisManagementID"));
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Complications")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("DiagnosisDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DiagnosticMethod")
+                        .HasColumnType("text");
+
+                    b.Property<string>("DiseaseStatus")
+                        .HasColumnType("text");
+
+                    b.Property<string>("HepatitisType")
+                        .HasColumnType("text");
+
+                    b.Property<string>("LaboratoryMonitoringPlan")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("LastFollowUpDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LiverCondition")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("ManagedByUserID")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("NextFollowUpDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Outcome")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PatientID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Symptoms")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TreatmentPlan")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TreatmentStatus")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("HepatitisManagementID");
+
+                    b.HasIndex("PatientID");
+
+                    b.ToTable("HepatitisManagements");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.AdultMedicalCare.HypertensionManagement", b =>
+                {
+                    b.Property<int>("HypertensionManagementID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("HypertensionManagementID"));
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("CardiovascularRisk")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Complications")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("DiagnosisDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DiagnosisMethod")
+                        .HasColumnType("text");
+
+                    b.Property<string>("HypertensionType")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("LastFollowUpDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LifestyleAdvice")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ManagementPlan")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("NextFollowUpDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PatientID")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("RecordedByUserID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("RiskFactors")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TargetBloodPressure")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TreatmentStatus")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("HypertensionManagementID");
+
+                    b.HasIndex("PatientID");
+
+                    b.ToTable("HypertensionManagements");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.AdultMedicalCare.MentalHealthCare", b =>
+                {
+                    b.Property<int>("MentalHealthCareID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("MentalHealthCareID"));
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("boolean");
+
+                    b.Property<int?>("AssessedByUserID")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("AssessmentDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CounselingProvided")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FollowUpPlan")
+                        .HasColumnType("text");
+
+                    b.Property<string>("MentalHealthDiagnosis")
+                        .HasColumnType("text");
+
+                    b.Property<string>("MentalStatusExamination")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("NextFollowUpDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PatientID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("PresentingConcern")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PsychosocialFactors")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ReferralRequired")
+                        .HasColumnType("text");
+
+                    b.Property<string>("RiskAssessment")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SafetyPlan")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Symptoms")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TreatmentPlan")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("MentalHealthCareID");
+
+                    b.HasIndex("PatientID");
+
+                    b.ToTable("MentalHealthCares");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.AdultMedicalCare.TuberculosisManagement", b =>
+                {
+                    b.Property<int>("TuberculosisManagementID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("TuberculosisManagementID"));
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("ActualTreatmentEndDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AdherenceStatus")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Complications")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ContactTracingStatus")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("DiagnosisDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DiagnosticMethod")
+                        .HasColumnType("text");
+
+                    b.Property<string>("DrugResistanceStatus")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ExpectedTreatmentEndDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LastFollowUpDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("ManagedByUserID")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("NextFollowUpDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Outcome")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PatientID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SiteOfTB")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Symptoms")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TBType")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TreatmentRegimen")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TreatmentResponse")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("TreatmentStartDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("TreatmentStatus")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("TuberculosisManagementID");
+
+                    b.HasIndex("PatientID");
+
+                    b.ToTable("TuberculosisManagements");
+                });
+
             modelBuilder.Entity("HospitalSys.Models.BillingAndPayment.Bill", b =>
                 {
                     b.Property<int>("BillID")
@@ -236,7 +795,7 @@ namespace HospitalSys.Migrations
 
                     b.HasIndex("RadiologyRequestID");
 
-                    b.ToTable("RadiologyPayment");
+                    b.ToTable("RadiologyPayments");
                 });
 
             modelBuilder.Entity("HospitalSys.Models.Cashier", b =>
@@ -257,6 +816,845 @@ namespace HospitalSys.Migrations
                     b.ToTable("Cashiers");
                 });
 
+            modelBuilder.Entity("HospitalSys.Models.ChildHealth.DevelopmentAssessment", b =>
+                {
+                    b.Property<int>("DevelopmentAssessmentID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("DevelopmentAssessmentID"));
+
+                    b.Property<string>("ActionTaken")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("AgeInMonths")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("AssessedByUserID")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("AssessmentDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CognitiveDevelopment")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ConcernIdentified")
+                        .HasColumnType("text");
+
+                    b.Property<string>("DevelopmentStatus")
+                        .HasColumnType("text");
+
+                    b.Property<string>("DevelopmentalMilestones")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FineMotor")
+                        .HasColumnType("text");
+
+                    b.Property<string>("GrossMotor")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Language")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PatientID")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("PatientVisitID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ReferralRequired")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SocialDevelopment")
+                        .HasColumnType("text");
+
+                    b.HasKey("DevelopmentAssessmentID");
+
+                    b.HasIndex("PatientID");
+
+                    b.HasIndex("PatientVisitID");
+
+                    b.ToTable("DevelopmentAssessments");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.ChildHealth.GrowthMonitoring", b =>
+                {
+                    b.Property<int>("GrowthMonitoringID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("GrowthMonitoringID"));
+
+                    b.Property<string>("ActionTaken")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("AgeInMonths")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal?>("BMI")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("CounselingProvided")
+                        .HasColumnType("text");
+
+                    b.Property<string>("GrowthInterpretation")
+                        .HasColumnType("text");
+
+                    b.Property<string>("GrowthStatus")
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("HeadCircumferenceCm")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("HeightCm")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("HeightForAge")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("LengthCm")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("MUACCm")
+                        .HasColumnType("numeric");
+
+                    b.Property<DateTime>("MeasurementDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PatientID")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("PatientVisitID")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("RecordedByUserID")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal?>("WeightForAge")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("WeightForHeight")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("WeightKg")
+                        .HasColumnType("numeric");
+
+                    b.HasKey("GrowthMonitoringID");
+
+                    b.HasIndex("PatientID");
+
+                    b.HasIndex("PatientVisitID");
+
+                    b.ToTable("GrowthMonitorings");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.ChildHealth.IMNCIEncounter", b =>
+                {
+                    b.Property<int>("IMNCIEncounterID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IMNCIEncounterID"));
+
+                    b.Property<int?>("AgeInMonths")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("AnemiaClassification")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("AssessedByUserID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("CoughClassification")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CounselingProvided")
+                        .HasColumnType("text");
+
+                    b.Property<string>("DiarrheaClassification")
+                        .HasColumnType("text");
+
+                    b.Property<string>("EarProblemClassification")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("EncounterDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FeedingAssessment")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FeverClassification")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FollowUpPlan")
+                        .HasColumnType("text");
+
+                    b.Property<string>("GeneralDangerSigns")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ImmunizationStatus")
+                        .HasColumnType("text");
+
+                    b.Property<string>("MainSymptoms")
+                        .HasColumnType("text");
+
+                    b.Property<string>("MalnutritionClassification")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PatientID")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PatientVisitID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ReferralDecision")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TreatmentPlan")
+                        .HasColumnType("text");
+
+                    b.HasKey("IMNCIEncounterID");
+
+                    b.HasIndex("PatientID");
+
+                    b.HasIndex("PatientVisitID");
+
+                    b.ToTable("IMNCIEncounters");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.ChildHealth.Immunization", b =>
+                {
+                    b.Property<int>("ImmunizationID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ImmunizationID"));
+
+                    b.Property<int?>("AdministeredByUserID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("AdministrationSite")
+                        .HasColumnType("text");
+
+                    b.Property<string>("AdverseEvent")
+                        .HasColumnType("text");
+
+                    b.Property<string>("BatchNumber")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Dose")
+                        .HasColumnType("text");
+
+                    b.Property<string>("DoseNumber")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ExpiryDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PatientID")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("PatientVisitID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Route")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("VaccinationDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("VaccinationReason")
+                        .HasColumnType("text");
+
+                    b.Property<string>("VaccineCode")
+                        .HasColumnType("text");
+
+                    b.Property<string>("VaccineName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("ImmunizationID");
+
+                    b.HasIndex("PatientID");
+
+                    b.HasIndex("PatientVisitID");
+
+                    b.ToTable("Immunizations");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.ChildHealth.NeonatalCare", b =>
+                {
+                    b.Property<int>("NeonatalCareID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("NeonatalCareID"));
+
+                    b.Property<int?>("AgeInDays")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("AssessmentDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("BreastfeedingStatus")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("ChildBirthID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("CordCondition")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CounselingProvided")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FeedingStatus")
+                        .HasColumnType("text");
+
+                    b.Property<string>("GeneralCondition")
+                        .HasColumnType("text");
+
+                    b.Property<string>("HeadCircumference")
+                        .HasColumnType("text");
+
+                    b.Property<string>("HeartRate")
+                        .HasColumnType("text");
+
+                    b.Property<string>("JaundiceStatus")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Length")
+                        .HasColumnType("text");
+
+                    b.Property<string>("NeonatalProblems")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<string>("OxygenSaturation")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PatientID")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("PatientVisitID")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("RecordedByUserID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ReferralRequired")
+                        .HasColumnType("text");
+
+                    b.Property<string>("RespiratoryRate")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("ResuscitationRequired")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Temperature")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Treatment")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Weight")
+                        .HasColumnType("text");
+
+                    b.HasKey("NeonatalCareID");
+
+                    b.HasIndex("ChildBirthID");
+
+                    b.HasIndex("PatientID");
+
+                    b.HasIndex("PatientVisitID");
+
+                    b.ToTable("NeonatalCares");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.ChildHealth.NutritionAssessment", b =>
+                {
+                    b.Property<int>("NutritionAssessmentID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("NutritionAssessmentID"));
+
+                    b.Property<string>("Appetite")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("AssessedByUserID")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("AssessmentDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal?>("BMI")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("BreastfeedingStatus")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CounselingProvided")
+                        .HasColumnType("text");
+
+                    b.Property<string>("DietaryHistory")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Edema")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FeedingHistory")
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("HeightCm")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("MUACCm")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("MalnutritionClassification")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<string>("NutritionalStatus")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PatientID")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("PatientVisitID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ReferralRequired")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TreatmentPlan")
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("WeightKg")
+                        .HasColumnType("numeric");
+
+                    b.HasKey("NutritionAssessmentID");
+
+                    b.HasIndex("PatientID");
+
+                    b.HasIndex("PatientVisitID");
+
+                    b.ToTable("NutritionAssessments");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.CommunityHealth.CommunityScreening", b =>
+                {
+                    b.Property<int>("CommunityScreeningID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("CommunityScreeningID"));
+
+                    b.Property<string>("ActionTaken")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("HealthWorkerID")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("HouseholdID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("PatientID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ReferralRequired")
+                        .HasColumnType("text");
+
+                    b.Property<string>("RiskIdentified")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("ScreeningDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ScreeningLocation")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ScreeningResult")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ScreeningType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Symptoms")
+                        .HasColumnType("text");
+
+                    b.HasKey("CommunityScreeningID");
+
+                    b.HasIndex("HouseholdID");
+
+                    b.ToTable("CommunityScreenings");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.CommunityHealth.DefaulterTracing", b =>
+                {
+                    b.Property<int>("DefaulterTracingID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("DefaulterTracingID"));
+
+                    b.Property<string>("ActionTaken")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ContactMethod")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ContactResult")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ExpectedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("HealthWorkerID")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("HouseholdID")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("IdentificationDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("NextFollowUpDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("PatientID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ReasonForDefaulting")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ServiceType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("TracingDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("TracingOutcome")
+                        .HasColumnType("text");
+
+                    b.HasKey("DefaulterTracingID");
+
+                    b.HasIndex("HouseholdID");
+
+                    b.HasIndex("PatientID");
+
+                    b.ToTable("DefaulterTracings");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.CommunityHealth.HomeVisit", b =>
+                {
+                    b.Property<int>("HomeVisitID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("HomeVisitID"));
+
+                    b.Property<string>("FollowUpRequired")
+                        .HasColumnType("text");
+
+                    b.Property<string>("HealthEducationProvided")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("HealthWorkerID")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("HouseholdID")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("NextVisitDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Observations")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProblemsIdentified")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ReferralsMade")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ServicesProvided")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("VisitDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("VisitPurpose")
+                        .HasColumnType("text");
+
+                    b.HasKey("HomeVisitID");
+
+                    b.HasIndex("HouseholdID");
+
+                    b.ToTable("HomeVisits");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.CommunityHealth.Household", b =>
+                {
+                    b.Property<int>("HouseholdID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("HouseholdID"));
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("HeadOfHousehold")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("HouseholdNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("HouseholdType")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Kebele")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<decimal?>("Latitude")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("Longitude")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("NumberOfMembers")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Region")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("RegisteredDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ToiletFacility")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Village")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("WaterSource")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Woreda")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Zone")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("HouseholdID");
+
+                    b.ToTable("Households");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.CommunityHealth.HouseholdMember", b =>
+                {
+                    b.Property<int>("HouseholdMemberID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("HouseholdMemberID"));
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("EducationLevel")
+                        .HasColumnType("text");
+
+                    b.Property<int>("HouseholdID")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsHouseholdHead")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("JoinedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Occupation")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("PatientID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("RelationshipToHead")
+                        .HasColumnType("text");
+
+                    b.Property<string>("VulnerabilityStatus")
+                        .HasColumnType("text");
+
+                    b.HasKey("HouseholdMemberID");
+
+                    b.HasIndex("HouseholdID");
+
+                    b.HasIndex("PatientID");
+
+                    b.ToTable("HouseholdMembers");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.CommunityHealth.OutreachActivity", b =>
+                {
+                    b.Property<int>("OutreachActivityID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("OutreachActivityID"));
+
+                    b.Property<DateTime>("ActivityDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ActivityName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ActivityType")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Location")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("OrganizedByUserID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Outcome")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("PeopleReached")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("PeopleReferred")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("PeopleScreened")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ServicesProvided")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("TargetPopulation")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("TargetPopulationCount")
+                        .HasColumnType("integer");
+
+                    b.HasKey("OutreachActivityID");
+
+                    b.ToTable("OutreachActivities");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.Consultation_M.Allergy", b =>
+                {
+                    b.Property<int>("AllergyID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("AllergyID"));
+
+                    b.Property<string>("Allergen")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("OnsetDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("PatientID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Reaction")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Severity")
+                        .HasColumnType("text");
+
+                    b.HasKey("AllergyID");
+
+                    b.HasIndex("PatientID");
+
+                    b.ToTable("Allergies");
+                });
+
             modelBuilder.Entity("HospitalSys.Models.Consultation_M.Consultation", b =>
                 {
                     b.Property<int>("ConsultationID")
@@ -265,22 +1663,27 @@ namespace HospitalSys.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ConsultationID"));
 
+                    b.Property<string>("Assessment")
+                        .HasColumnType("text");
+
                     b.Property<string>("ChiefComplaint")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ClinicalNotes")
                         .HasColumnType("text");
 
                     b.Property<DateTime>("ConsultationDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("Diagnosis")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<int>("DoctorID")
                         .HasColumnType("integer");
 
-                    b.Property<string>("TreatmentPlan")
+                    b.Property<string>("HistoryOfPresentIllness")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("TreatmentPlan")
                         .HasColumnType("text");
 
                     b.Property<int>("VisitID")
@@ -295,35 +1698,214 @@ namespace HospitalSys.Migrations
                     b.ToTable("Consultations");
                 });
 
-            modelBuilder.Entity("HospitalSys.Models.Consultation_M.MedicalRecord", b =>
+            modelBuilder.Entity("HospitalSys.Models.Consultation_M.Diagnosis", b =>
                 {
-                    b.Property<int>("MedicalRecordID")
+                    b.Property<int>("DiagnosisID")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("MedicalRecordID"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("DiagnosisID"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CodingSystem")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<int>("ConsultationID")
                         .HasColumnType("integer");
 
-                    b.Property<int>("DoctorID")
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("DiagnosisType")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsPrimary")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("DiagnosisID");
+
+                    b.HasIndex("ConsultationID");
+
+                    b.ToTable("Diagnoses");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.Consultation_M.FamilyMedicalHistory", b =>
+                {
+                    b.Property<int>("FamilyMedicalHistoryID")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("FamilyMedicalHistoryID"));
+
+                    b.Property<string>("ConditionName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
 
                     b.Property<int>("PatientID")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime>("RecordTime")
+                    b.Property<string>("Relative")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("FamilyMedicalHistoryID");
+
+                    b.HasIndex("PatientID");
+
+                    b.ToTable("FamilyMedicalHistories");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.Consultation_M.MedicalHistory", b =>
+                {
+                    b.Property<int>("MedicalHistoryID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("MedicalHistoryID"));
+
+                    b.Property<string>("ConditionName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DiagnosedDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.HasKey("MedicalRecordID");
+                    b.Property<int?>("DoctorID")
+                        .HasColumnType("integer");
 
-                    b.HasIndex("ConsultationID");
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PatientID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Status")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Treatment")
+                        .HasColumnType("text");
+
+                    b.HasKey("MedicalHistoryID");
 
                     b.HasIndex("DoctorID");
 
                     b.HasIndex("PatientID");
 
-                    b.ToTable("MedicalRecords");
+                    b.ToTable("MedicalHistories");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.Consultation_M.PhysicalExamination", b =>
+                {
+                    b.Property<int>("PhysicalExaminationID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("PhysicalExaminationID"));
+
+                    b.Property<int>("ConsultationID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ExaminationArea")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Findings")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.HasKey("PhysicalExaminationID");
+
+                    b.HasIndex("ConsultationID");
+
+                    b.ToTable("PhysicalExaminations");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.Consultation_M.ProblemList", b =>
+                {
+                    b.Property<int>("ProblemListID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ProblemListID"));
+
+                    b.Property<string>("Code")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CodingSystem")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("OnsetDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("PatientID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ProblemName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ResolvedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("ProblemListID");
+
+                    b.HasIndex("PatientID");
+
+                    b.ToTable("ProblemLists");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.Consultation_M.SocialHistory", b =>
+                {
+                    b.Property<int>("SocialHistoryID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("SocialHistoryID"));
+
+                    b.Property<string>("AlcoholUse")
+                        .HasColumnType("text");
+
+                    b.Property<string>("LivingSituation")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Occupation")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PatientID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("PhysicalActivity")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SmokingStatus")
+                        .HasColumnType("text");
+
+                    b.HasKey("SocialHistoryID");
+
+                    b.HasIndex("PatientID");
+
+                    b.ToTable("SocialHistories");
                 });
 
             modelBuilder.Entity("HospitalSys.Models.Doctor", b =>
@@ -352,6 +1934,35 @@ namespace HospitalSys.Migrations
                     b.HasIndex("UserID");
 
                     b.ToTable("Doctors");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.Family.Family", b =>
+                {
+                    b.Property<long>("FamilyId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("FamilyId"));
+
+                    b.Property<string>("Address")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FamilyName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FamilyNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("HouseholdPhone")
+                        .HasColumnType("text");
+
+                    b.HasKey("FamilyId");
+
+                    b.ToTable("Families");
                 });
 
             modelBuilder.Entity("HospitalSys.Models.HospitalStruct.Bed", b =>
@@ -693,6 +2304,787 @@ namespace HospitalSys.Migrations
                     b.ToTable("MainPharmacyManagers");
                 });
 
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.ANCVisit", b =>
+                {
+                    b.Property<int>("ANCVisitID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ANCVisitID"));
+
+                    b.Property<string>("ChiefComplaint")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CounselingProvided")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Edema")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FetalCondition")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FetalHeartRate")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FundalHeight")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("GestationalAgeWeeks")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("MaternalCondition")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PatientVisitID")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PregnancyID")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("RecordedByUserID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TreatmentPlan")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("VisitDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("ANCVisitID");
+
+                    b.HasIndex("PatientVisitID");
+
+                    b.HasIndex("PregnancyID");
+
+                    b.ToTable("ANCVisits");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.BirthPreparedness", b =>
+                {
+                    b.Property<int>("BirthPreparednessID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("BirthPreparednessID"));
+
+                    b.Property<DateTime>("AssessmentDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("BirthCompanionIdentified")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("BloodDonorIdentified")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("CounselingProvided")
+                        .HasColumnType("text");
+
+                    b.Property<string>("DeliveryFacility")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("DeliveryFacilityIdentified")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("EmergencyContactIdentified")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("EmergencyPlan")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("FinancialPreparation")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PregnancyID")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("PreparedByUserID")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("TransportArranged")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("TransportPlan")
+                        .HasColumnType("text");
+
+                    b.HasKey("BirthPreparednessID");
+
+                    b.HasIndex("PregnancyID");
+
+                    b.ToTable("BirthPreparednessPlans");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.ChildBirth", b =>
+                {
+                    b.Property<int>("ChildBirthID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ChildBirthID"));
+
+                    b.Property<string>("ApgarScore")
+                        .HasColumnType("text");
+
+                    b.Property<string>("BirthCondition")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("BirthDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("BirthLength")
+                        .HasColumnType("text");
+
+                    b.Property<string>("BirthWeight")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("ChildPatientID")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("DeliveryID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("HeadCircumference")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ResuscitationRequired")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Sex")
+                        .HasColumnType("text");
+
+                    b.HasKey("ChildBirthID");
+
+                    b.HasIndex("ChildPatientID");
+
+                    b.HasIndex("DeliveryID");
+
+                    b.ToTable("ChildBirths");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.Delivery", b =>
+                {
+                    b.Property<int>("DeliveryID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("DeliveryID"));
+
+                    b.Property<string>("BloodLoss")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("DeliveryDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeliveryLocation")
+                        .HasColumnType("text");
+
+                    b.Property<string>("DeliveryMode")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("DeliveryNotes")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("LaborRecordID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("MaternalCondition")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("NumberOfBabies")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("PlacentaCondition")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PregnancyID")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("RecordedByUserID")
+                        .HasColumnType("integer");
+
+                    b.HasKey("DeliveryID");
+
+                    b.HasIndex("LaborRecordID");
+
+                    b.HasIndex("PregnancyID");
+
+                    b.ToTable("Deliveries");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.DeliveryComplication", b =>
+                {
+                    b.Property<int>("DeliveryComplicationID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("DeliveryComplicationID"));
+
+                    b.Property<string>("ComplicationType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("DeliveryID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Management")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Outcome")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("ReferralRequired")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Severity")
+                        .HasColumnType("text");
+
+                    b.HasKey("DeliveryComplicationID");
+
+                    b.HasIndex("DeliveryID");
+
+                    b.ToTable("DeliveryComplications");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.FamilyPlanning", b =>
+                {
+                    b.Property<int>("FamilyPlanningID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("FamilyPlanningID"));
+
+                    b.Property<string>("CounselingProvided")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DiscontinuationDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Method")
+                        .HasColumnType("text");
+
+                    b.Property<string>("MethodType")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PatientID")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("PregnancyID")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("ProvidedByUserID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ReasonForDiscontinuation")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SideEffects")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("StartDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("VisitDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("FamilyPlanningID");
+
+                    b.HasIndex("PatientID");
+
+                    b.HasIndex("PregnancyID");
+
+                    b.ToTable("FamilyPlannings");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.HighRiskPregnancy", b =>
+                {
+                    b.Property<int>("HighRiskPregnancyID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("HighRiskPregnancyID"));
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("FollowUpFrequency")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("IdentificationDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("ManagedByUserID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ManagementPlan")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Outcome")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PregnancyID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ReferralPlan")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ResolvedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RiskLevel")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("RiskReason")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SpecialistRequired")
+                        .HasColumnType("text");
+
+                    b.HasKey("HighRiskPregnancyID");
+
+                    b.HasIndex("PregnancyID");
+
+                    b.ToTable("HighRiskPregnancies");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.LaborRecord", b =>
+                {
+                    b.Property<int>("LaborRecordID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("LaborRecordID"));
+
+                    b.Property<DateTime>("AdmissionDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CervicalDilation")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ContractionPattern")
+                        .HasColumnType("text");
+
+                    b.Property<string>("DeliveryPlan")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FetalHeartRate")
+                        .HasColumnType("text");
+
+                    b.Property<string>("LaborManagement")
+                        .HasColumnType("text");
+
+                    b.Property<string>("LaborProgress")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("LaborStartDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("MembraneRuptureDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("MembraneStatus")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PregnancyID")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("RecordedByUserID")
+                        .HasColumnType("integer");
+
+                    b.HasKey("LaborRecordID");
+
+                    b.HasIndex("PregnancyID");
+
+                    b.ToTable("LaborRecords");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.PNCVisit", b =>
+                {
+                    b.Property<int>("PNCVisitID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("PNCVisitID"));
+
+                    b.Property<string>("BleedingStatus")
+                        .HasColumnType("text");
+
+                    b.Property<string>("BreastfeedingStatus")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CounselingProvided")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("DaysAfterDelivery")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("DeliveryID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("FamilyPlanningCounseling")
+                        .HasColumnType("text");
+
+                    b.Property<string>("MaternalCondition")
+                        .HasColumnType("text");
+
+                    b.Property<string>("MentalHealthAssessment")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PatientVisitID")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PregnancyID")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("RecordedByUserID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TreatmentPlan")
+                        .HasColumnType("text");
+
+                    b.Property<string>("UterusCondition")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("VisitDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("PNCVisitID");
+
+                    b.HasIndex("DeliveryID");
+
+                    b.HasIndex("PatientVisitID");
+
+                    b.HasIndex("PregnancyID");
+
+                    b.ToTable("PNCVisits");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.Pregnancy", b =>
+                {
+                    b.Property<int>("PregnancyID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("PregnancyID"));
+
+                    b.Property<int?>("Abortions")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("ExpectedDeliveryDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("Gravida")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("LastMenstrualPeriod")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("LivingChildren")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("Para")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PatientID")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("RegistrationDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("PregnancyID");
+
+                    b.HasIndex("PatientID");
+
+                    b.ToTable("Pregnancies");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.PregnancyLaboratoryOrder", b =>
+                {
+                    b.Property<int>("PregnancyLaboratoryOrderID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("PregnancyLaboratoryOrderID"));
+
+                    b.Property<int?>("ANCVisitID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ClinicalReason")
+                        .HasColumnType("text");
+
+                    b.Property<int>("LaboratoryTestTypeID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("OrderDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("OrderedByUserID")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PregnancyID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("PregnancyLaboratoryOrderID");
+
+                    b.HasIndex("ANCVisitID");
+
+                    b.HasIndex("LaboratoryTestTypeID");
+
+                    b.HasIndex("PregnancyID");
+
+                    b.ToTable("PregnancyLaboratoryOrders");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.PregnancyMedication", b =>
+                {
+                    b.Property<int>("PregnancyMedicationID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("PregnancyMedicationID"));
+
+                    b.Property<string>("Dosage")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Frequency")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Indication")
+                        .HasColumnType("text");
+
+                    b.Property<int>("MedicineID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PregnancyID")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("PrescribedByUserID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Route")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("PregnancyMedicationID");
+
+                    b.HasIndex("MedicineID");
+
+                    b.HasIndex("PregnancyID");
+
+                    b.ToTable("PregnancyMedications");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.PregnancyRegistration", b =>
+                {
+                    b.Property<int>("PregnancyRegistrationID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("PregnancyRegistrationID"));
+
+                    b.Property<string>("CurrentPregnancyHistory")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("GestationalAgeWeeks")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PatientID")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PregnancyID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("PreviousPregnancyHistory")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("RecordedByUserID")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("RegistrationDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RegistrationReason")
+                        .HasColumnType("text");
+
+                    b.HasKey("PregnancyRegistrationID");
+
+                    b.HasIndex("PatientID");
+
+                    b.HasIndex("PregnancyID");
+
+                    b.ToTable("PregnancyRegistrations");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.PregnancyRiskAssessment", b =>
+                {
+                    b.Property<int>("PregnancyRiskAssessmentID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("PregnancyRiskAssessmentID"));
+
+                    b.Property<int?>("ANCVisitID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ActionTaken")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("AssessedByUserID")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("AssessmentDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsHighRisk")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PregnancyID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ReferralRequired")
+                        .HasColumnType("text");
+
+                    b.Property<string>("RiskCategory")
+                        .HasColumnType("text");
+
+                    b.Property<string>("RiskDescription")
+                        .HasColumnType("text");
+
+                    b.Property<string>("RiskFactor")
+                        .HasColumnType("text");
+
+                    b.HasKey("PregnancyRiskAssessmentID");
+
+                    b.HasIndex("ANCVisitID");
+
+                    b.HasIndex("PregnancyID");
+
+                    b.ToTable("PregnancyRiskAssessments");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.PregnancyUltrasound", b =>
+                {
+                    b.Property<int>("PregnancyUltrasoundID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("PregnancyUltrasoundID"));
+
+                    b.Property<int?>("ANCVisitID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("AmnioticFluid")
+                        .HasColumnType("text");
+
+                    b.Property<string>("EstimatedFetalWeight")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("ExaminationDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FetalHeartRate")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FetalNumber")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FetalPresentation")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Findings")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("GestationalAgeWeeks")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Impression")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PlacentaLocation")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PregnancyID")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("RequestedByUserID")
+                        .HasColumnType("integer");
+
+                    b.HasKey("PregnancyUltrasoundID");
+
+                    b.HasIndex("ANCVisitID");
+
+                    b.HasIndex("PregnancyID");
+
+                    b.ToTable("PregnancyUltrasounds");
+                });
+
             modelBuilder.Entity("HospitalSys.Models.Nurse", b =>
                 {
                     b.Property<int>("NurseID")
@@ -777,6 +3169,10 @@ namespace HospitalSys.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<string>("FaydaFIN")
+                        .HasMaxLength(12)
+                        .HasColumnType("character varying(12)");
+
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -791,12 +3187,23 @@ namespace HospitalSys.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<string>("MRN")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
                     b.Property<string>("Phone")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
                     b.HasKey("PatientID");
+
+                    b.HasIndex("FaydaFIN")
+                        .IsUnique();
+
+                    b.HasIndex("MRN")
+                        .IsUnique();
 
                     b.HasIndex("Phone");
 
@@ -834,7 +3241,7 @@ namespace HospitalSys.Migrations
 
                     b.HasIndex("VisitDate");
 
-                    b.ToTable("PatientVists");
+                    b.ToTable("PatientVisits");
                 });
 
             modelBuilder.Entity("HospitalSys.Models.PatientManagment.Triage", b =>
@@ -1499,10 +3906,10 @@ namespace HospitalSys.Migrations
                     b.Property<int>("BranchPharmacyID")
                         .HasColumnType("integer");
 
-                    b.Property<int>("ConsultationID")
+                    b.Property<int?>("ConsultationID")
                         .HasColumnType("integer");
 
-                    b.Property<int>("DoctorID")
+                    b.Property<int?>("DoctorID")
                         .HasColumnType("integer");
 
                     b.Property<int>("PatientID")
@@ -1758,6 +4165,294 @@ namespace HospitalSys.Migrations
                     b.ToTable("Receptionists");
                 });
 
+            modelBuilder.Entity("HospitalSys.Models.ReferralManagement.AmbulanceRequest", b =>
+                {
+                    b.Property<int>("AmbulanceRequestID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("AmbulanceRequestID"));
+
+                    b.Property<string>("AmbulanceNumber")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ArrivalTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Destination")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DispatchTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DriverName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PatientCondition")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PickupLocation")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("PickupTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Reason")
+                        .HasColumnType("text");
+
+                    b.Property<int>("ReferralID")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("RequestDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("RequestedByUserID")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("RequiresMedicalStaff")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("RequiresOxygen")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("SpecialRequirements")
+                        .HasColumnType("text");
+
+                    b.Property<string>("StaffName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("AmbulanceRequestID");
+
+                    b.HasIndex("ReferralID");
+
+                    b.ToTable("AmbulanceRequests");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.ReferralManagement.CounterReferral", b =>
+                {
+                    b.Property<int>("CounterReferralID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("CounterReferralID"));
+
+                    b.Property<DateTime>("CounterReferralDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CurrentCondition")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FinalDiagnosis")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FollowUpFacility")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FollowUpInstructions")
+                        .HasColumnType("text");
+
+                    b.Property<string>("MedicationInstructions")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProceduresPerformed")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Reason")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Recommendations")
+                        .HasColumnType("text");
+
+                    b.Property<int>("ReferralID")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("ReturnedByUserID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TreatmentProvided")
+                        .HasColumnType("text");
+
+                    b.HasKey("CounterReferralID");
+
+                    b.HasIndex("ReferralID");
+
+                    b.ToTable("CounterReferrals");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.ReferralManagement.Referral", b =>
+                {
+                    b.Property<int>("ReferralID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ReferralID"));
+
+                    b.Property<string>("ClinicalSummary")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("CreatedByUserID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("DestinationFacility")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Diagnosis")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ExpectedArrivalDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PatientID")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PatientVisitID")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("ReceivingDepartmentID")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("ReceivingDoctorID")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("ReferralDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ReferralReason")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ReferralType")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("ReferringDepartmentID")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("ReferringDoctorID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Urgency")
+                        .HasColumnType("text");
+
+                    b.HasKey("ReferralID");
+
+                    b.HasIndex("PatientID");
+
+                    b.HasIndex("PatientVisitID");
+
+                    b.ToTable("Referrals");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.ReferralManagement.ReferralFeedback", b =>
+                {
+                    b.Property<int>("ReferralFeedbackID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ReferralFeedbackID"));
+
+                    b.Property<string>("Assessment")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Diagnosis")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("FeedbackDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FollowUpRecommendation")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("FurtherCareRequired")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("InvestigationResults")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PatientConditionOnArrival")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PatientOutcome")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProceduresPerformed")
+                        .HasColumnType("text");
+
+                    b.Property<int>("ReferralID")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("SubmittedByUserID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TreatmentProvided")
+                        .HasColumnType("text");
+
+                    b.HasKey("ReferralFeedbackID");
+
+                    b.HasIndex("ReferralID");
+
+                    b.ToTable("ReferralFeedbacks");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.ReferralManagement.ReferralService", b =>
+                {
+                    b.Property<int>("ReferralServiceID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ReferralServiceID"));
+
+                    b.Property<string>("DepartmentName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Priority")
+                        .HasColumnType("text");
+
+                    b.Property<int>("ReferralID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ServiceDescription")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ServiceName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("ReferralServiceID");
+
+                    b.HasIndex("ReferralID");
+
+                    b.ToTable("ReferralServices");
+                });
+
             modelBuilder.Entity("HospitalSys.Models.Role", b =>
                 {
                     b.Property<int>("RoleID")
@@ -1822,7 +4517,8 @@ namespace HospitalSys.Migrations
 
                     b.HasIndex("RoleID");
 
-                    b.HasIndex("UserID");
+                    b.HasIndex("UserID", "RoleID")
+                        .IsUnique();
 
                     b.ToTable("UserRoles");
                 });
@@ -1881,6 +4577,102 @@ namespace HospitalSys.Migrations
                         .IsUnique();
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("FamilyMember", b =>
+                {
+                    b.HasOne("HospitalSys.Models.Family.Family", "Family")
+                        .WithMany("FamilyMember")
+                        .HasForeignKey("FamilyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HospitalSys.Models.PatientManagment.Patient", "Patient")
+                        .WithMany("FamilyMember")
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Family");
+
+                    b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.AdultMedicalCare.AsthmaManagement", b =>
+                {
+                    b.HasOne("HospitalSys.Models.PatientManagment.Patient", "Patient")
+                        .WithMany("AsthmaManagement")
+                        .HasForeignKey("PatientID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.AdultMedicalCare.DiabetesManagement", b =>
+                {
+                    b.HasOne("HospitalSys.Models.PatientManagment.Patient", "Patient")
+                        .WithMany("DiabetesManagement")
+                        .HasForeignKey("PatientID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.AdultMedicalCare.HIVCare", b =>
+                {
+                    b.HasOne("HospitalSys.Models.PatientManagment.Patient", "Patient")
+                        .WithMany("HIVCare")
+                        .HasForeignKey("PatientID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.AdultMedicalCare.HepatitisManagement", b =>
+                {
+                    b.HasOne("HospitalSys.Models.PatientManagment.Patient", "Patient")
+                        .WithMany("HepatitisManagement")
+                        .HasForeignKey("PatientID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.AdultMedicalCare.HypertensionManagement", b =>
+                {
+                    b.HasOne("HospitalSys.Models.PatientManagment.Patient", "Patient")
+                        .WithMany("HypertensionManagement")
+                        .HasForeignKey("PatientID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.AdultMedicalCare.MentalHealthCare", b =>
+                {
+                    b.HasOne("HospitalSys.Models.PatientManagment.Patient", "Patient")
+                        .WithMany("MentalHealthCare")
+                        .HasForeignKey("PatientID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.AdultMedicalCare.TuberculosisManagement", b =>
+                {
+                    b.HasOne("HospitalSys.Models.PatientManagment.Patient", "Patient")
+                        .WithMany("TuberculosisManagement")
+                        .HasForeignKey("PatientID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Patient");
                 });
 
             modelBuilder.Entity("HospitalSys.Models.BillingAndPayment.Bill", b =>
@@ -2002,10 +4794,183 @@ namespace HospitalSys.Migrations
                     b.HasOne("HospitalSys.Models.Users", "Users")
                         .WithMany("Cashier")
                         .HasForeignKey("UserID")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Users");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.ChildHealth.DevelopmentAssessment", b =>
+                {
+                    b.HasOne("HospitalSys.Models.PatientManagment.Patient", "Patient")
+                        .WithMany("DevelopmentAssessment")
+                        .HasForeignKey("PatientID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HospitalSys.Models.PatientManagment.PatientVisit", "PatientVisit")
+                        .WithMany("DevelopmentAssessment")
+                        .HasForeignKey("PatientVisitID");
+
+                    b.Navigation("Patient");
+
+                    b.Navigation("PatientVisit");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.ChildHealth.GrowthMonitoring", b =>
+                {
+                    b.HasOne("HospitalSys.Models.PatientManagment.Patient", "Patient")
+                        .WithMany("GrowthMonitoring")
+                        .HasForeignKey("PatientID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HospitalSys.Models.PatientManagment.PatientVisit", "PatientVisit")
+                        .WithMany("GrowthMonitoring")
+                        .HasForeignKey("PatientVisitID");
+
+                    b.Navigation("Patient");
+
+                    b.Navigation("PatientVisit");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.ChildHealth.IMNCIEncounter", b =>
+                {
+                    b.HasOne("HospitalSys.Models.PatientManagment.Patient", "Patient")
+                        .WithMany("IMNCIEncounter")
+                        .HasForeignKey("PatientID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HospitalSys.Models.PatientManagment.PatientVisit", "PatientVisit")
+                        .WithMany("IMNCIEncounter")
+                        .HasForeignKey("PatientVisitID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Patient");
+
+                    b.Navigation("PatientVisit");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.ChildHealth.Immunization", b =>
+                {
+                    b.HasOne("HospitalSys.Models.PatientManagment.Patient", "Patient")
+                        .WithMany("Immunization")
+                        .HasForeignKey("PatientID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HospitalSys.Models.PatientManagment.PatientVisit", "PatientVisit")
+                        .WithMany("Immunization")
+                        .HasForeignKey("PatientVisitID");
+
+                    b.Navigation("Patient");
+
+                    b.Navigation("PatientVisit");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.ChildHealth.NeonatalCare", b =>
+                {
+                    b.HasOne("HospitalSys.Models.MaternalChildHealth.ChildBirth", "ChildBirth")
+                        .WithMany("NeonatalCare")
+                        .HasForeignKey("ChildBirthID");
+
+                    b.HasOne("HospitalSys.Models.PatientManagment.Patient", "Patient")
+                        .WithMany("NeonatalCare")
+                        .HasForeignKey("PatientID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HospitalSys.Models.PatientManagment.PatientVisit", "PatientVisit")
+                        .WithMany("NeonatalCare")
+                        .HasForeignKey("PatientVisitID");
+
+                    b.Navigation("ChildBirth");
+
+                    b.Navigation("Patient");
+
+                    b.Navigation("PatientVisit");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.ChildHealth.NutritionAssessment", b =>
+                {
+                    b.HasOne("HospitalSys.Models.PatientManagment.Patient", "Patient")
+                        .WithMany("NutritionAssessment")
+                        .HasForeignKey("PatientID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HospitalSys.Models.PatientManagment.PatientVisit", "PatientVisit")
+                        .WithMany("NutritionAssessment")
+                        .HasForeignKey("PatientVisitID");
+
+                    b.Navigation("Patient");
+
+                    b.Navigation("PatientVisit");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.CommunityHealth.CommunityScreening", b =>
+                {
+                    b.HasOne("HospitalSys.Models.CommunityHealth.Household", "Household")
+                        .WithMany("Screenings")
+                        .HasForeignKey("HouseholdID");
+
+                    b.Navigation("Household");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.CommunityHealth.DefaulterTracing", b =>
+                {
+                    b.HasOne("HospitalSys.Models.CommunityHealth.Household", "Household")
+                        .WithMany()
+                        .HasForeignKey("HouseholdID");
+
+                    b.HasOne("HospitalSys.Models.PatientManagment.Patient", "Patient")
+                        .WithMany()
+                        .HasForeignKey("PatientID");
+
+                    b.Navigation("Household");
+
+                    b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.CommunityHealth.HomeVisit", b =>
+                {
+                    b.HasOne("HospitalSys.Models.CommunityHealth.Household", "Household")
+                        .WithMany("HomeVisits")
+                        .HasForeignKey("HouseholdID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Household");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.CommunityHealth.HouseholdMember", b =>
+                {
+                    b.HasOne("HospitalSys.Models.CommunityHealth.Household", "Household")
+                        .WithMany("Members")
+                        .HasForeignKey("HouseholdID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HospitalSys.Models.PatientManagment.Patient", "Patient")
+                        .WithMany()
+                        .HasForeignKey("PatientID");
+
+                    b.Navigation("Household");
+
+                    b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.Consultation_M.Allergy", b =>
+                {
+                    b.HasOne("HospitalSys.Models.PatientManagment.Patient", "Patient")
+                        .WithMany("Allergy")
+                        .HasForeignKey("PatientID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Patient");
                 });
 
             modelBuilder.Entity("HospitalSys.Models.Consultation_M.Consultation", b =>
@@ -2027,29 +4992,72 @@ namespace HospitalSys.Migrations
                     b.Navigation("PatientVisit");
                 });
 
-            modelBuilder.Entity("HospitalSys.Models.Consultation_M.MedicalRecord", b =>
+            modelBuilder.Entity("HospitalSys.Models.Consultation_M.Diagnosis", b =>
                 {
                     b.HasOne("HospitalSys.Models.Consultation_M.Consultation", "Consultation")
-                        .WithMany("MedicalRecord")
+                        .WithMany("Diagnose")
                         .HasForeignKey("ConsultationID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("HospitalSys.Models.Doctor", "Doctor")
-                        .WithMany("MedicalRecord")
-                        .HasForeignKey("DoctorID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.Navigation("Consultation");
+                });
 
+            modelBuilder.Entity("HospitalSys.Models.Consultation_M.FamilyMedicalHistory", b =>
+                {
                     b.HasOne("HospitalSys.Models.PatientManagment.Patient", "Patient")
-                        .WithMany("MedicalRecord")
+                        .WithMany("FamilyMedicalHistories")
                         .HasForeignKey("PatientID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Consultation");
+                    b.Navigation("Patient");
+                });
 
-                    b.Navigation("Doctor");
+            modelBuilder.Entity("HospitalSys.Models.Consultation_M.MedicalHistory", b =>
+                {
+                    b.HasOne("HospitalSys.Models.Doctor", null)
+                        .WithMany("MedicalHistory")
+                        .HasForeignKey("DoctorID");
+
+                    b.HasOne("HospitalSys.Models.PatientManagment.Patient", "Patient")
+                        .WithMany("MedicalHistory")
+                        .HasForeignKey("PatientID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.Consultation_M.PhysicalExamination", b =>
+                {
+                    b.HasOne("HospitalSys.Models.Consultation_M.Consultation", "Consultation")
+                        .WithMany("PhysicalExaminations")
+                        .HasForeignKey("ConsultationID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Consultation");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.Consultation_M.ProblemList", b =>
+                {
+                    b.HasOne("HospitalSys.Models.PatientManagment.Patient", "Patient")
+                        .WithMany("ProblemList")
+                        .HasForeignKey("PatientID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.Consultation_M.SocialHistory", b =>
+                {
+                    b.HasOne("HospitalSys.Models.PatientManagment.Patient", "Patient")
+                        .WithMany("SocialHistory")
+                        .HasForeignKey("PatientID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Patient");
                 });
@@ -2192,7 +5200,7 @@ namespace HospitalSys.Migrations
                     b.HasOne("HospitalSys.Models.Users", "Users")
                         .WithMany("LaboratoryCashier")
                         .HasForeignKey("UserID")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Users");
@@ -2203,7 +5211,7 @@ namespace HospitalSys.Migrations
                     b.HasOne("HospitalSys.Models.Users", "Users")
                         .WithMany("LaboratoryTechnician")
                         .HasForeignKey("UserID")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Users");
@@ -2214,10 +5222,257 @@ namespace HospitalSys.Migrations
                     b.HasOne("HospitalSys.Models.Users", "Users")
                         .WithMany("MainPharmacyManager")
                         .HasForeignKey("UserID")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Users");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.ANCVisit", b =>
+                {
+                    b.HasOne("HospitalSys.Models.PatientManagment.PatientVisit", "PatientVisit")
+                        .WithMany("ANCVisit")
+                        .HasForeignKey("PatientVisitID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HospitalSys.Models.MaternalChildHealth.Pregnancy", "Pregnancy")
+                        .WithMany("ANCVisits")
+                        .HasForeignKey("PregnancyID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PatientVisit");
+
+                    b.Navigation("Pregnancy");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.BirthPreparedness", b =>
+                {
+                    b.HasOne("HospitalSys.Models.MaternalChildHealth.Pregnancy", "Pregnancy")
+                        .WithMany("BirthPreparednessPlans")
+                        .HasForeignKey("PregnancyID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Pregnancy");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.ChildBirth", b =>
+                {
+                    b.HasOne("HospitalSys.Models.PatientManagment.Patient", "ChildPatient")
+                        .WithMany()
+                        .HasForeignKey("ChildPatientID");
+
+                    b.HasOne("HospitalSys.Models.MaternalChildHealth.Delivery", "Delivery")
+                        .WithMany("ChildBirths")
+                        .HasForeignKey("DeliveryID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ChildPatient");
+
+                    b.Navigation("Delivery");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.Delivery", b =>
+                {
+                    b.HasOne("HospitalSys.Models.MaternalChildHealth.LaborRecord", "LaborRecord")
+                        .WithMany("Deliveries")
+                        .HasForeignKey("LaborRecordID");
+
+                    b.HasOne("HospitalSys.Models.MaternalChildHealth.Pregnancy", "Pregnancy")
+                        .WithMany()
+                        .HasForeignKey("PregnancyID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("LaborRecord");
+
+                    b.Navigation("Pregnancy");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.DeliveryComplication", b =>
+                {
+                    b.HasOne("HospitalSys.Models.MaternalChildHealth.Delivery", "Delivery")
+                        .WithMany("Complications")
+                        .HasForeignKey("DeliveryID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Delivery");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.FamilyPlanning", b =>
+                {
+                    b.HasOne("HospitalSys.Models.PatientManagment.Patient", "Patient")
+                        .WithMany("FamilyPlanningRecords")
+                        .HasForeignKey("PatientID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HospitalSys.Models.MaternalChildHealth.Pregnancy", "Pregnancy")
+                        .WithMany("FamilyPlanningRecords")
+                        .HasForeignKey("PregnancyID");
+
+                    b.Navigation("Patient");
+
+                    b.Navigation("Pregnancy");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.HighRiskPregnancy", b =>
+                {
+                    b.HasOne("HospitalSys.Models.MaternalChildHealth.Pregnancy", "Pregnancy")
+                        .WithMany("HighRiskPregnancies")
+                        .HasForeignKey("PregnancyID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Pregnancy");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.LaborRecord", b =>
+                {
+                    b.HasOne("HospitalSys.Models.MaternalChildHealth.Pregnancy", "Pregnancy")
+                        .WithMany("LaborRecords")
+                        .HasForeignKey("PregnancyID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Pregnancy");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.PNCVisit", b =>
+                {
+                    b.HasOne("HospitalSys.Models.MaternalChildHealth.Delivery", "Delivery")
+                        .WithMany()
+                        .HasForeignKey("DeliveryID");
+
+                    b.HasOne("HospitalSys.Models.PatientManagment.PatientVisit", "PatientVisit")
+                        .WithMany("PNCVisit")
+                        .HasForeignKey("PatientVisitID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HospitalSys.Models.MaternalChildHealth.Pregnancy", "Pregnancy")
+                        .WithMany("PNCVisits")
+                        .HasForeignKey("PregnancyID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Delivery");
+
+                    b.Navigation("PatientVisit");
+
+                    b.Navigation("Pregnancy");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.Pregnancy", b =>
+                {
+                    b.HasOne("HospitalSys.Models.PatientManagment.Patient", "Patient")
+                        .WithMany("Pregnancies")
+                        .HasForeignKey("PatientID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.PregnancyLaboratoryOrder", b =>
+                {
+                    b.HasOne("HospitalSys.Models.MaternalChildHealth.ANCVisit", "ANCVisit")
+                        .WithMany()
+                        .HasForeignKey("ANCVisitID");
+
+                    b.HasOne("HospitalSys.Models.Laboratory.LaboratoryTestType", "LaboratoryTestType")
+                        .WithMany()
+                        .HasForeignKey("LaboratoryTestTypeID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HospitalSys.Models.MaternalChildHealth.Pregnancy", "Pregnancy")
+                        .WithMany("LaboratoryOrders")
+                        .HasForeignKey("PregnancyID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ANCVisit");
+
+                    b.Navigation("LaboratoryTestType");
+
+                    b.Navigation("Pregnancy");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.PregnancyMedication", b =>
+                {
+                    b.HasOne("HospitalSys.Models.Pharmacy.Common.Medicine", "Medicine")
+                        .WithMany()
+                        .HasForeignKey("MedicineID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HospitalSys.Models.MaternalChildHealth.Pregnancy", "Pregnancy")
+                        .WithMany("Medications")
+                        .HasForeignKey("PregnancyID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Medicine");
+
+                    b.Navigation("Pregnancy");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.PregnancyRegistration", b =>
+                {
+                    b.HasOne("HospitalSys.Models.PatientManagment.Patient", "Patient")
+                        .WithMany("PregnancyRegistrations")
+                        .HasForeignKey("PatientID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HospitalSys.Models.MaternalChildHealth.Pregnancy", "Pregnancy")
+                        .WithMany("Registrations")
+                        .HasForeignKey("PregnancyID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Patient");
+
+                    b.Navigation("Pregnancy");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.PregnancyRiskAssessment", b =>
+                {
+                    b.HasOne("HospitalSys.Models.MaternalChildHealth.ANCVisit", "ANCVisit")
+                        .WithMany("RiskAssessments")
+                        .HasForeignKey("ANCVisitID");
+
+                    b.HasOne("HospitalSys.Models.MaternalChildHealth.Pregnancy", "Pregnancy")
+                        .WithMany("RiskAssessments")
+                        .HasForeignKey("PregnancyID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ANCVisit");
+
+                    b.Navigation("Pregnancy");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.PregnancyUltrasound", b =>
+                {
+                    b.HasOne("HospitalSys.Models.MaternalChildHealth.ANCVisit", "ANCVisit")
+                        .WithMany()
+                        .HasForeignKey("ANCVisitID");
+
+                    b.HasOne("HospitalSys.Models.MaternalChildHealth.Pregnancy", "Pregnancy")
+                        .WithMany("Ultrasounds")
+                        .HasForeignKey("PregnancyID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ANCVisit");
+
+                    b.Navigation("Pregnancy");
                 });
 
             modelBuilder.Entity("HospitalSys.Models.Nurse", b =>
@@ -2231,7 +5486,7 @@ namespace HospitalSys.Migrations
                     b.HasOne("HospitalSys.Models.Users", "Users")
                         .WithMany("Nurse")
                         .HasForeignKey("UserID")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("ClinicalDepartment");
@@ -2313,7 +5568,7 @@ namespace HospitalSys.Migrations
                     b.HasOne("HospitalSys.Models.Users", "Users")
                         .WithMany("Pharmacist")
                         .HasForeignKey("UserID")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("BranchPharmacy");
@@ -2658,15 +5913,11 @@ namespace HospitalSys.Migrations
 
                     b.HasOne("HospitalSys.Models.Consultation_M.Consultation", "Consultation")
                         .WithMany("Prescription")
-                        .HasForeignKey("ConsultationID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("ConsultationID");
 
                     b.HasOne("HospitalSys.Models.Doctor", "Doctor")
                         .WithMany("Prescription")
-                        .HasForeignKey("DoctorID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("DoctorID");
 
                     b.HasOne("HospitalSys.Models.PatientManagment.Patient", "Patient")
                         .WithMany("Prescription")
@@ -2713,7 +5964,7 @@ namespace HospitalSys.Migrations
                     b.HasOne("HospitalSys.Models.Users", "Users")
                         .WithMany("PharmacyCashier")
                         .HasForeignKey("UserID")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("BranchPharmacy");
@@ -2791,7 +6042,7 @@ namespace HospitalSys.Migrations
                     b.HasOne("HospitalSys.Models.Users", "Users")
                         .WithMany("RadiologyCashier")
                         .HasForeignKey("UserID")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Users");
@@ -2802,7 +6053,7 @@ namespace HospitalSys.Migrations
                     b.HasOne("HospitalSys.Models.Users", "Users")
                         .WithMany("RadiologyTechnician")
                         .HasForeignKey("UserID")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Users");
@@ -2813,10 +6064,73 @@ namespace HospitalSys.Migrations
                     b.HasOne("HospitalSys.Models.Users", "Users")
                         .WithMany("Receptionist")
                         .HasForeignKey("UserID")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Users");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.ReferralManagement.AmbulanceRequest", b =>
+                {
+                    b.HasOne("HospitalSys.Models.ReferralManagement.Referral", "Referral")
+                        .WithMany("AmbulanceRequests")
+                        .HasForeignKey("ReferralID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Referral");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.ReferralManagement.CounterReferral", b =>
+                {
+                    b.HasOne("HospitalSys.Models.ReferralManagement.Referral", "Referral")
+                        .WithMany("CounterReferrals")
+                        .HasForeignKey("ReferralID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Referral");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.ReferralManagement.Referral", b =>
+                {
+                    b.HasOne("HospitalSys.Models.PatientManagment.Patient", "Patient")
+                        .WithMany("Referral")
+                        .HasForeignKey("PatientID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HospitalSys.Models.PatientManagment.PatientVisit", "PatientVisit")
+                        .WithMany("Referral")
+                        .HasForeignKey("PatientVisitID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Patient");
+
+                    b.Navigation("PatientVisit");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.ReferralManagement.ReferralFeedback", b =>
+                {
+                    b.HasOne("HospitalSys.Models.ReferralManagement.Referral", "Referral")
+                        .WithMany("Feedbacks")
+                        .HasForeignKey("ReferralID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Referral");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.ReferralManagement.ReferralService", b =>
+                {
+                    b.HasOne("HospitalSys.Models.ReferralManagement.Referral", "Referral")
+                        .WithMany("ReferralServices")
+                        .HasForeignKey("ReferralID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Referral");
                 });
 
             modelBuilder.Entity("HospitalSys.Models.UserRole", b =>
@@ -2852,11 +6166,22 @@ namespace HospitalSys.Migrations
                     b.Navigation("PaymentHospital");
                 });
 
+            modelBuilder.Entity("HospitalSys.Models.CommunityHealth.Household", b =>
+                {
+                    b.Navigation("HomeVisits");
+
+                    b.Navigation("Members");
+
+                    b.Navigation("Screenings");
+                });
+
             modelBuilder.Entity("HospitalSys.Models.Consultation_M.Consultation", b =>
                 {
+                    b.Navigation("Diagnose");
+
                     b.Navigation("LaboratoryTest");
 
-                    b.Navigation("MedicalRecord");
+                    b.Navigation("PhysicalExaminations");
 
                     b.Navigation("Prescription");
 
@@ -2873,11 +6198,16 @@ namespace HospitalSys.Migrations
 
                     b.Navigation("LaboratoryTest");
 
-                    b.Navigation("MedicalRecord");
+                    b.Navigation("MedicalHistory");
 
                     b.Navigation("Prescription");
 
                     b.Navigation("RadiologyRequest");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.Family.Family", b =>
+                {
+                    b.Navigation("FamilyMember");
                 });
 
             modelBuilder.Entity("HospitalSys.Models.HospitalStruct.Bed", b =>
@@ -2943,6 +6273,53 @@ namespace HospitalSys.Migrations
                     b.Navigation("CentralStoreManager");
                 });
 
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.ANCVisit", b =>
+                {
+                    b.Navigation("RiskAssessments");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.ChildBirth", b =>
+                {
+                    b.Navigation("NeonatalCare");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.Delivery", b =>
+                {
+                    b.Navigation("ChildBirths");
+
+                    b.Navigation("Complications");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.LaborRecord", b =>
+                {
+                    b.Navigation("Deliveries");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.MaternalChildHealth.Pregnancy", b =>
+                {
+                    b.Navigation("ANCVisits");
+
+                    b.Navigation("BirthPreparednessPlans");
+
+                    b.Navigation("FamilyPlanningRecords");
+
+                    b.Navigation("HighRiskPregnancies");
+
+                    b.Navigation("LaborRecords");
+
+                    b.Navigation("LaboratoryOrders");
+
+                    b.Navigation("Medications");
+
+                    b.Navigation("PNCVisits");
+
+                    b.Navigation("Registrations");
+
+                    b.Navigation("RiskAssessments");
+
+                    b.Navigation("Ultrasounds");
+                });
+
             modelBuilder.Entity("HospitalSys.Models.Nurse", b =>
                 {
                     b.Navigation("Triage");
@@ -2952,26 +6329,88 @@ namespace HospitalSys.Migrations
                 {
                     b.Navigation("Admission");
 
+                    b.Navigation("Allergy");
+
                     b.Navigation("Appointment");
+
+                    b.Navigation("AsthmaManagement");
 
                     b.Navigation("Bill");
 
+                    b.Navigation("DevelopmentAssessment");
+
+                    b.Navigation("DiabetesManagement");
+
+                    b.Navigation("FamilyMedicalHistories");
+
+                    b.Navigation("FamilyMember");
+
+                    b.Navigation("FamilyPlanningRecords");
+
+                    b.Navigation("GrowthMonitoring");
+
+                    b.Navigation("HIVCare");
+
+                    b.Navigation("HepatitisManagement");
+
+                    b.Navigation("HypertensionManagement");
+
+                    b.Navigation("IMNCIEncounter");
+
+                    b.Navigation("Immunization");
+
                     b.Navigation("LaboratoryTest");
 
-                    b.Navigation("MedicalRecord");
+                    b.Navigation("MedicalHistory");
+
+                    b.Navigation("MentalHealthCare");
+
+                    b.Navigation("NeonatalCare");
+
+                    b.Navigation("NutritionAssessment");
 
                     b.Navigation("PatientVisit");
 
+                    b.Navigation("Pregnancies");
+
+                    b.Navigation("PregnancyRegistrations");
+
                     b.Navigation("Prescription");
 
+                    b.Navigation("ProblemList");
+
                     b.Navigation("RadiologyRequest");
+
+                    b.Navigation("Referral");
+
+                    b.Navigation("SocialHistory");
+
+                    b.Navigation("TuberculosisManagement");
                 });
 
             modelBuilder.Entity("HospitalSys.Models.PatientManagment.PatientVisit", b =>
                 {
+                    b.Navigation("ANCVisit");
+
                     b.Navigation("Bill");
 
                     b.Navigation("Consultation");
+
+                    b.Navigation("DevelopmentAssessment");
+
+                    b.Navigation("GrowthMonitoring");
+
+                    b.Navigation("IMNCIEncounter");
+
+                    b.Navigation("Immunization");
+
+                    b.Navigation("NeonatalCare");
+
+                    b.Navigation("NutritionAssessment");
+
+                    b.Navigation("PNCVisit");
+
+                    b.Navigation("Referral");
 
                     b.Navigation("Triage");
                 });
@@ -3121,6 +6560,17 @@ namespace HospitalSys.Migrations
             modelBuilder.Entity("HospitalSys.Models.RadiologyTechnician", b =>
                 {
                     b.Navigation("RadiologyResult");
+                });
+
+            modelBuilder.Entity("HospitalSys.Models.ReferralManagement.Referral", b =>
+                {
+                    b.Navigation("AmbulanceRequests");
+
+                    b.Navigation("CounterReferrals");
+
+                    b.Navigation("Feedbacks");
+
+                    b.Navigation("ReferralServices");
                 });
 
             modelBuilder.Entity("HospitalSys.Models.Role", b =>

@@ -9,7 +9,6 @@ namespace HospitalSys.Models.Laboratory
         [MaxLength(100)]
         public string SectionName {get;set;} = "";
         public string Description {get;set;} = "";
-
         public List<LaboratoryTestType> LaboratoryTestType {get;set;} = new();
     }
 }

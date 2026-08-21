@@ -35,7 +35,7 @@ namespace HospitalSys.Models
 
         public List<Appointment> Appointment {get;set;} = new();
         public List<Consultation> Consultation {get;set;} = new();
-        public List<MedicalRecord> MedicalRecord {get;set;} = new();
+        public List<MedicalHistory> MedicalHistory {get;set;} = new();
         public List<Prescription> Prescription {get;set;} = new();
         public List<Admission> Admission {get;set;} = new();
         public List<LaboratoryTest> LaboratoryTest {get;set;} = new();

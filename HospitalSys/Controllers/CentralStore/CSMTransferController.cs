@@ -34,25 +34,45 @@ namespace HospitalSys.Controllers
             return int.Parse(claim.Value);
         }
 
+        // ============================================================
+        // NEW: Get CentralStoreManagerID from DB using ManagerID and CentralPharmacyID
+        // ============================================================
+        private async Task<int> GetCentralStoreManagerIdAsync()
+        {
+            var managerId = GetManagerId();
+            var centralPharmacyId = GetCentralPharmacyId();
+
+            var centralManager = await _context.CentralStoreManagers
+                .FirstOrDefaultAsync(cm => cm.ManagerID == managerId
+                                           && cm.CentralPharmacyID == centralPharmacyId
+                                           && cm.IsCurrent == true);
+
+            if (centralManager == null)
+                throw new UnauthorizedAccessException("No active Central Store Manager found for this user");
+
+            return centralManager.CentralStoreManagerID;
+        }
+
         [HttpPost("create")]
         public async Task<IActionResult> CreateTransfer([FromBody] CreateTransferDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
             var centralPharmacyId = GetCentralPharmacyId();
-            var managerId = GetManagerId();
+            var centralStoreManagerId = await GetCentralStoreManagerIdAsync(); // FIX
 
             CentralStoreRequest? request = null;
             if (dto.CentralRequestID.HasValue && dto.CentralRequestID.Value > 0)
             {
                 request = await _context.CentralStoreRequests
                     .Include(r => r.CentralStoreRequestDetail)
-                    .FirstOrDefaultAsync(r => r.CentralRequestID == dto.CentralRequestID.Value); // removed invalid filter
+                    .FirstOrDefaultAsync(r => r.CentralRequestID == dto.CentralRequestID.Value);
 
                 if (request == null) return NotFound("Request not found");
                 if (request.Status != "Approved" && request.Status != "PartiallyApproved")
                     return BadRequest("Request must be approved or partially approved");
             }
+
             // Check stock availability
             foreach (var item in dto.Items)
             {
@@ -75,7 +95,7 @@ namespace HospitalSys.Controllers
                     CentralRequestID = dto.CentralRequestID,
                     CentralPharmacyID = centralPharmacyId,
                     BranchPharmacyID = dto.BranchPharmacyID,
-                    CentralStoreManagerID = managerId,
+                    CentralStoreManagerID = centralStoreManagerId, // FIXED: now valid FK
                     TransferDate = dto.TransferDate,
                     Status = "Pending"
                 };
@@ -94,8 +114,7 @@ namespace HospitalSys.Controllers
                     };
                     _context.CentralStoreTransferDetails.Add(detail);
 
-                    // Deduct from central inventory: FIFO or LIFO? Simplest: deduct from batches with earliest expiry.
-                    // We'll get all batches for this medicine and deduct in order of expiry.
+                    // Deduct from central inventory (FIFO by expiry)
                     var batches = await _context.CentralStoreInventories
                         .Where(i => i.MedicineID == item.MedicineID && i.CentralPharmacyID == centralPharmacyId && i.QuantityAvailable > 0)
                         .OrderBy(i => i.ExpiryDate)
@@ -112,7 +131,6 @@ namespace HospitalSys.Controllers
 
                     if (remaining > 0)
                     {
-                        // Should not happen because we checked stock before transaction
                         await transaction.RollbackAsync();
                         return BadRequest("Stock inconsistency during transfer");
                     }
@@ -121,14 +139,12 @@ namespace HospitalSys.Controllers
                 // Add to branch inventory
                 foreach (var item in dto.Items)
                 {
-                    // Check if the same medicine batch exists in branch inventory (matching expiry and batch number)
-                    // For simplicity, we'll create a new branch inventory entry with a new batch number.
                     var branchInventory = new BranchInventory
                     {
                         BranchPharmacyID = dto.BranchPharmacyID,
                         MedicineID = item.MedicineID,
                         QuantityAvailable = item.QuantityTransferred,
-                        ExpiryDate = DateTime.UtcNow.AddMonths(12), // placeholder
+                        ExpiryDate = DateTime.UtcNow.AddMonths(12),
                         BatchNumber = $"TRF-{transfer.CentralTransferID}-{item.MedicineID}"
                     };
                     _context.BranchInventories.Add(branchInventory);
@@ -138,7 +154,6 @@ namespace HospitalSys.Controllers
                 if (request != null)
                 {
                     request.Status = "Closed";
-                    // Optionally update other fields
                 }
 
                 await _context.SaveChangesAsync();
@@ -223,7 +238,6 @@ namespace HospitalSys.Controllers
 
             if (transfer == null) return NotFound();
 
-            // Since we don't have a history table, we'll provide status and dates based on status
             var tracking = new TransferTrackingDto
             {
                 CentralTransferID = transfer.CentralTransferID,
@@ -259,7 +273,6 @@ namespace HospitalSys.Controllers
                 return BadRequest("Transfer is not pending");
 
             transfer.Status = "Dispatched";
-            // Optionally update transfer date to dispatch date
             transfer.TransferDate = dto.DispatchDate;
 
             await _context.SaveChangesAsync();
@@ -279,7 +292,6 @@ namespace HospitalSys.Controllers
 
             if (transfer == null) return NotFound();
 
-            // Validate status transition
             var allowedTransitions = new Dictionary<string, List<string>>
             {
                 { "Pending", new List<string> { "Dispatched", "Cancelled" } },
@@ -313,8 +325,6 @@ namespace HospitalSys.Controllers
             if (transfer.Status == "Received" || transfer.Status == "Closed")
                 return BadRequest("Cannot cancel a completed transfer");
 
-            // Rollback inventory? This is a business decision. We'll just cancel the transfer, but inventory remains deducted.
-            // We can optionally restore inventory, but that's complex.
             transfer.Status = "Cancelled";
 
             await _context.SaveChangesAsync();

@@ -630,7 +630,7 @@ public async Task<IActionResult> GetCentralPharmacyManagers(int centralPharmacyI
         {
             try
             {
-                var nurse = new Nurse
+                var nurse = new Models.Nurse
                 {
                     UserID = NurseDto.UserID,
                     ClinicalDepartmentID = NurseDto.ClinicalDepartmentID

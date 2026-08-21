@@ -8,15 +8,7 @@ import PatientList from './Pages/Dashboard/ReceptionistDashboard/PatientList';
 import VisitList from './Pages/Dashboard/ReceptionistDashboard/VisitList';
 import CreateVisit from './Pages/Dashboard/ReceptionistDashboard/CreateVisit';
 import CreatePatient from './Pages/Dashboard/ReceptionistDashboard/CreatePatient';
-import { 
-  NurseDashboard, 
-  TriageList, 
-  CreateTriage, 
-  AssignDepartment,
-  RecentVisits,                    
-  AddTriagePage,
-  RecentTriageByDepartment
-} from './pages/Dashboard/NurseDashboard';
+
 import NurseProtectRoute from "./ProtectRoute/NurseProtectRoute";
 import ReceptionistProtectRouter from "./ProtectRoute/ReceptionistProtectRouter";
 import { 
@@ -26,7 +18,7 @@ import {
   UpdateConsultation, 
   CreateMedicalRecord,
   TriageByVisit,
-  PatientDetail
+  PatientDetail as DoctorPatientDetail
 } from './pages/Dashboard/DoctorDashboard';
 import CSMProtectRoute from './ProtectRoute/CSMProtectRoute';
 
@@ -138,6 +130,37 @@ import PharmacyChangePassword from './Pages/Dashboard/PharmacyDashboard/Profile/
 
 import DepartmentTriageList from "./Pages/Dashboard/DoctorDashboard/DepartmentTriageList";
 
+// ===== NEW NURSE DASHBOARD IMPORTS =====
+import NurseDashboard from './Pages/Dashboard/NurseDashboard/NurseDashboard';
+import PatientListNurse from './Pages/Dashboard/NurseDashboard/PatientManagement/PatientList';
+import PatientDetailNurse from './Pages/Dashboard/NurseDashboard/PatientManagement/PatientDetail';
+import RegisterPatientNurse from './Pages/Dashboard/NurseDashboard/PatientManagement/RegisterPatient';
+import TodayVisitsNurse from './Pages/Dashboard/NurseDashboard/VisitManagement/TodayVisits';
+import CreateVisitNurse from './Pages/Dashboard/NurseDashboard/VisitManagement/CreateVisit';
+import CreateVisitAndTriageNurse from './Pages/Dashboard/NurseDashboard/VisitManagement/CreateVisitAndTriage';
+import VisitDetailNurse from './Pages/Dashboard/NurseDashboard/VisitManagement/VisitDetail';
+import PendingTriageNurse from './Pages/Dashboard/NurseDashboard/TriageManagement/PendingTriage';
+import CreateTriageNurse from './Pages/Dashboard/NurseDashboard/TriageManagement/CreateTriage';
+import TriageDetailNurse from './Pages/Dashboard/NurseDashboard/TriageManagement/TriageDetail';
+import CreatePrescriptionNurse from './Pages/Dashboard/NurseDashboard/PrescriptionManagement/CreatePrescription';
+import PrescriptionDetailNurse from './Pages/Dashboard/NurseDashboard/PrescriptionManagement/PrescriptionDetail';
+import RequestLabTestNurse from './Pages/Dashboard/NurseDashboard/LaboratoryManagement/RequestLabTest';
+import LabTestDetailNurse from './Pages/Dashboard/NurseDashboard/LaboratoryManagement/LabTestDetail';
+import NurseLayout from './Pages/Dashboard/NurseDashboard/NurseLayout';
+
+// ─── ⚠️ PLACEHOLDER COMPONENTS FOR MISSING NURSE ROUTES ───
+const AssignDepartment = () => (
+  <div className="p-4 text-gray-600">Assign Department – Coming Soon</div>
+);
+
+const AddTriagePage = () => (
+  <div className="p-4 text-gray-600">Add Triage – Coming Soon</div>
+);
+
+const RecentTriageByDepartment = () => (
+  <div className="p-4 text-gray-600">Recent Triage by Department – Coming Soon</div>
+);
+
 function App() {
   return (
     <Router>
@@ -150,19 +173,27 @@ function App() {
         <Route path="/admin/dashboard/*" element={<AdminDashboard />} />
         <Route path="/admin/dashboard/users/add" element={<AddUser />} />
 
-        {/* Nurse routes – protected */}
-        <Route element={<NurseProtectRoute />}>
-          <Route path="/nurse" element={<NurseDashboard />}>
-            <Route index element={<Navigate to="triage" replace />} />
-            <Route path="triage" element={<TriageList />} />
-            <Route path="create-triage" element={<CreateTriage />} />
-            <Route path="assign-department" element={<AssignDepartment />} />
-            <Route path="recent-visits" element={<RecentVisits />} />
-            <Route path="recent-visits/:id" element={<AddTriagePage />} />
-            <Route path="recent-triage-department" element={<RecentTriageByDepartment />} />
-          </Route>
-        </Route>
-
+        {/* ===== NURSE ROUTES – PROTECTED ===== */}
+      <Route >
+  <Route path="/nurse" element={<NurseLayout />}>
+    <Route index element={<Navigate to="/nurse/dashboard" replace />} />
+    <Route path="dashboard" element={<NurseDashboard />} />
+    <Route path="patients" element={<PatientListNurse />} />
+    <Route path="patients/register" element={<RegisterPatientNurse />} />
+    <Route path="patients/:id" element={<PatientDetailNurse />} />
+    <Route path="visits/today" element={<TodayVisitsNurse />} />
+    <Route path="visits/create" element={<CreateVisitNurse />} />
+    <Route path="visits/create-triage" element={<CreateVisitAndTriageNurse />} />
+    <Route path="visits/:id" element={<VisitDetailNurse />} />
+    <Route path="triage/pending" element={<PendingTriageNurse />} />
+    <Route path="triage/create" element={<CreateTriageNurse />} />
+    <Route path="triage/:id" element={<TriageDetailNurse />} />
+    <Route path="prescriptions/create" element={<CreatePrescriptionNurse />} />
+    <Route path="prescriptions/:id" element={<PrescriptionDetailNurse />} />
+    <Route path="laboratory/request" element={<RequestLabTestNurse />} />
+    <Route path="laboratory/:id" element={<LabTestDetailNurse />} />
+  </Route>
+</Route>
         {/* Receptionist routes – protected */}
         <Route element={<ReceptionistProtectRouter />}>
           <Route path="/receptionist" element={<ReceptionistDashboard />}>
@@ -184,7 +215,7 @@ function App() {
           <Route path="triage" element={<TriageByVisit />} />
           <Route path="triage/:visitId" element={<TriageByVisit />} />
           <Route path="department-triage" element={<DepartmentTriageList />} />
-          <Route path="patient/:patientId" element={<PatientDetail />} />
+          <Route path="patient/:patientId" element={<DoctorPatientDetail />} />
         </Route>
 
         {/* ===== CSM routes – protected with sidebar ===== */}
