@@ -280,7 +280,7 @@ public async Task<IActionResult> AddUser([FromBody] RegisterUserDto userDto)
                 {
                     return BadRequest("This User Is Not Assigned The Doctor Role");
                 }
-                var doctor = new Doctor
+                var doctor = new Models.Doctor
                 {
                     UserID = DoctorDto.UserID,
                     ClinicalDepartmentID = DoctorDto.ClinicalDepartmentID,
@@ -311,7 +311,7 @@ public async Task<IActionResult> AddUser([FromBody] RegisterUserDto userDto)
             {
                 UserIDs = selectedDoctorsDto.UserIDs
             };
-            await _context.Doctors.AddRangeAsync(doctor.UserIDs.Select(id => new Doctor
+            await _context.Doctors.AddRangeAsync(doctor.UserIDs.Select(id => new Models.Doctor
             {
                 UserID = id,
                 ClinicalDepartmentID = DepartmentID, // or some default value
@@ -429,7 +429,7 @@ public async Task<IActionResult> AddUser([FromBody] RegisterUserDto userDto)
 
             foreach (var docRole in doctor.UserRole.Where(ur => ur.Role.RoleName == "Doctor"))
             {
-                var doc = new Doctor
+                var doc = new Models.Doctor
                 {
                     // UserID = doctor.UserID,
                     // ClinicalDepartmentID = "", // Set to null or a default value if needed
