@@ -1,111 +1,63 @@
-import React, { useState, useEffect } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
-import { getAuthenticatedUser } from '../../../utils/getAuthenticatedUser';
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { getAuthenticatedUser } from "../../../utils/getAuthenticatedUser";
 
-const DoctorDashboard = () => {
+export default function DoctorDashboard() {
   const [doctor, setDoctor] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadDoctor = async () => {
-      const user = await getAuthenticatedUser();
-      if (user) {
-        setDoctor(user);
-      }
-      setLoading(false);
-    };
-    loadDoctor();
+    getAuthenticatedUser().then(setDoctor);
   }, []);
 
-  if (loading) return <div>Loading dashboard...</div>;
-
   return (
-    <div className="p-6">
-      {/* Header with Doctor Info */}
-      <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-6 mb-6 text-white shadow-lg">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold">
-              👋 Welcome, {doctor?.fullName || 'Doctor'}
-            </h1>
-            <p className="text-indigo-100 mt-1">
-              {doctor?.role} • Department: {doctor?.departmentName || doctor?.departmentID || 'N/A'}
-              {doctor?.departmentName && doctor?.departmentID && (
-                <span className="ml-2 text-xs opacity-75">(ID: {doctor.departmentID})</span>
-              )}
-            </p>
-          </div>
-          <div className="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg">
-            <span className="text-sm font-medium">Doctor ID: {doctor?.doctorID || doctor?.UserID || 'N/A'}</span>
-          </div>
-        </div>
+    <div className="max-w-5xl mx-auto space-y-6">
+      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+        <h2 className="text-2xl font-bold text-slate-800">
+          Welcome, {doctor?.fullName || "Doctor"}
+        </h2>
+        <p className="text-slate-500 mt-1">
+          {doctor?.role || "Doctor"}
+          {doctor?.departmentName ? ` · ${doctor.departmentName}` : ""}
+        </p>
       </div>
 
-      {/* Navigation Tabs with Bootstrap Icons */}
-      <nav className="flex flex-wrap gap-2 border-b border-gray-200 mb-6 pb-2">
-        <NavLink
-          to="/doctor/consultations"
-          className={({ isActive }) =>
-            `px-4 py-2 text-sm font-medium rounded-t-lg transition flex items-center gap-2 ${
-              isActive
-                ? 'bg-indigo-50 text-indigo-600 border-b-2 border-indigo-500'
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-            }`
-          }
-        >
-          <i className="bi bi-clipboard2-pulse"></i>
-          Consultations
-        </NavLink>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col">
+          <div className="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center mb-4">
+            <i className="bi bi-clipboard2-pulse text-2xl" />
+          </div>
+          <h3 className="text-lg font-semibold text-slate-800">Consultation</h3>
+          <p className="text-slate-500 text-sm mt-2 flex-1">
+            View your department triage queue and open patient consultations
+            (history, examination, diagnosis, and related clinical records).
+          </p>
+          <Link
+            to="/doctor/consultation/triage"
+            className="mt-5 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition"
+          >
+            Open Consultation
+            <i className="bi bi-arrow-right" />
+          </Link>
+        </div>
 
-        <NavLink
-          to="/doctor/create-medical-record"
-          className={({ isActive }) =>
-            `px-4 py-2 text-sm font-medium rounded-t-lg transition flex items-center gap-2 ${
-              isActive
-                ? 'bg-indigo-50 text-indigo-600 border-b-2 border-indigo-500'
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-            }`
-          }
-        >
-          <i className="bi bi-file-earmark-medical"></i>
-          Medical Record
-        </NavLink>
-
-        <NavLink
-          to="/doctor/triage"
-          className={({ isActive }) =>
-            `px-4 py-2 text-sm font-medium rounded-t-lg transition flex items-center gap-2 ${
-              isActive
-                ? 'bg-indigo-50 text-indigo-600 border-b-2 border-indigo-500'
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-            }`
-          }
-        >
-          <i className="bi bi-search-heart"></i>
-          View Triage
-        </NavLink>
-
-        <NavLink
-          to="/doctor/department-triage"
-          className={({ isActive }) =>
-            `px-4 py-2 text-sm font-medium rounded-t-lg transition flex items-center gap-2 ${
-              isActive
-                ? 'bg-indigo-50 text-indigo-600 border-b-2 border-indigo-500'
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-            }`
-          }
-        >
-          <i className="bi bi-building"></i>
-          Department Triage
-        </NavLink>
-      </nav>
-
-      {/* Page Content */}
-      <div className="bg-white rounded-lg shadow-md p-4">
-        <Outlet />
+        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col">
+          <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-4">
+            <i className="bi bi-heart-pulse text-2xl" />
+          </div>
+          <h3 className="text-lg font-semibold text-slate-800">Adult Medical Care</h3>
+          <p className="text-slate-500 text-sm mt-2 flex-1">
+            Manage longitudinal adult care records: asthma, diabetes, HIV,
+            hepatitis, hypertension, mental health, and tuberculosis.
+          </p>
+          <Link
+            to="/doctor/adult/triage"
+            className="mt-5 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition"
+          >
+            Open Adult Care
+            <i className="bi bi-arrow-right" />
+          </Link>
+        </div>
       </div>
     </div>
   );
-};
-
-export default DoctorDashboard;
+}

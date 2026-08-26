@@ -43,235 +43,235 @@ namespace HospitalSys.Controllers.Doctor
                             && t.PatientVisit.PatientID == patientId);
         }
 
-        [HttpGet("patient/{patientId:int}/visit/{visitId:int}")]
-        public async Task<IActionResult> GetPatientVisitDetails(int patientId, int visitId)
-        {
-            try
-            {
-                int departmentId = GetDepartmentId();
+        // [HttpGet("patient/{patientId:int}/visit/{visitId:int}")]
+        // public async Task<IActionResult> GetPatientVisitDetails(int patientId, int visitId)
+        // {
+        //     try
+        //     {
+        //         int departmentId = GetDepartmentId();
 
-                var visit = await _context.PatientVisits
-                    .AsNoTracking()
-                    .Include(v => v.Patient)
-                    .Include(v => v.Triage)
-                    .FirstOrDefaultAsync(v => v.VisitID == visitId);
+        //         var visit = await _context.PatientVisits
+        //             .AsNoTracking()
+        //             .Include(v => v.Patient)
+        //             .Include(v => v.Triage)
+        //             .FirstOrDefaultAsync(v => v.VisitID == visitId);
 
-                if (visit == null)
-                    return NotFound(new { message = "Patient visit not found." });
+        //         if (visit == null)
+        //             return NotFound(new { message = "Patient visit not found." });
 
-                if (visit.PatientID != patientId)
-                    return NotFound(new { message = "The visit does not belong to this patient." });
+        //         if (visit.PatientID != patientId)
+        //             return NotFound(new { message = "The visit does not belong to this patient." });
 
-                bool inDepartment = visit.Triage != null
-                    && visit.Triage.Any(t => t.ClinicalDepartmentID == departmentId);
+        //         bool inDepartment = visit.Triage != null
+        //             && visit.Triage.Any(t => t.ClinicalDepartmentID == departmentId);
 
-                if (!inDepartment)
-                    return NotFound(new { message = "Patient visit not found." });
+        //         if (!inDepartment)
+        //             return NotFound(new { message = "Patient visit not found." });
 
-                var patient = visit.Patient!;
+        //         var patient = visit.Patient!;
 
-                var currentTriage = await _context.Triages
-                    .AsNoTracking()
-                    .Where(t => t.VisitID == visitId && t.ClinicalDepartmentID == departmentId)
-                    .OrderByDescending(t => t.TriageId)
-                    .Select(t => new TriageDetailDto
-                    {
-                        TriageId = t.TriageId,
-                        VisitID = t.VisitID,
-                        NurseID = t.NurseID,
-                        TriageDepartmentID = t.TriageDepartmentID,
-                        ClinicalDepartmentID = t.ClinicalDepartmentID,
-                        Temprature = t.Temprature,
-                        BloodPressure = t.BloodPressure,
-                        HeartRate = t.HeartRate,
-                        RespiratotyRate = t.RespiratotyRate,
-                        Weight = t.Weight,
-                        Notes = t.Notes
-                    })
-                    .FirstOrDefaultAsync();
+        //         var currentTriage = await _context.Triages
+        //             .AsNoTracking()
+        //             .Where(t => t.VisitID == visitId && t.ClinicalDepartmentID == departmentId)
+        //             .OrderByDescending(t => t.TriageId)
+        //             .Select(t => new TriageDetailDto
+        //             {
+        //                 TriageId = t.TriageId,
+        //                 VisitID = t.VisitID,
+        //                 NurseID = t.NurseID,
+        //                 TriageDepartmentID = t.TriageDepartmentID,
+        //                 ClinicalDepartmentID = t.ClinicalDepartmentID,
+        //                 Temprature = t.Temprature,
+        //                 BloodPressure = t.BloodPressure,
+        //                 HeartRate = t.HeartRate,
+        //                 RespiratotyRate = t.RespiratotyRate,
+        //                 Weight = t.Weight,
+        //                 Notes = t.Notes
+        //             })
+        //             .FirstOrDefaultAsync();
 
-                var allergies = await _context.Allergies
-                    .AsNoTracking()
-                    .Where(a => a.PatientID == patientId)
-                    .Select(a => new AllergyDto
-                    {
-                        AllergyID = a.AllergyID,
-                        PatientID = a.PatientID,
-                        Allergen = a.Allergen,
-                        Reaction = a.Reaction,
-                        Severity = a.Severity,
-                        IsActive = a.IsActive,
-                        OnsetDate = a.OnsetDate,
-                        Notes = a.Notes
-                    })
-                    .ToListAsync();
+        //         var allergies = await _context.Allergies
+        //             .AsNoTracking()
+        //             .Where(a => a.PatientID == patientId)
+        //             .Select(a => new AllergyDto
+        //             {
+        //                 AllergyID = a.AllergyID,
+        //                 PatientID = a.PatientID,
+        //                 Allergen = a.Allergen,
+        //                 Reaction = a.Reaction,
+        //                 Severity = a.Severity,
+        //                 IsActive = a.IsActive,
+        //                 OnsetDate = a.OnsetDate,
+        //                 Notes = a.Notes
+        //             })
+        //             .ToListAsync();
 
-                var medicalHistory = await _context.MedicalHistories
-                    .AsNoTracking()
-                    .Where(m => m.PatientID == patientId)
-                    .Select(m => new MedicalHistoryDto
-                    {
-                        MedicalHistoryID = m.MedicalHistoryID,
-                        PatientID = m.PatientID,
-                        ConditionName = m.ConditionName,
-                        DiagnosedDate = m.DiagnosedDate,
-                        Status = m.Status,
-                        Treatment = m.Treatment,
-                        Notes = m.Notes
-                    })
-                    .ToListAsync();
+        //         var medicalHistory = await _context.MedicalHistories
+        //             .AsNoTracking()
+        //             .Where(m => m.PatientID == patientId)
+        //             .Select(m => new MedicalHistoryDto
+        //             {
+        //                 MedicalHistoryID = m.MedicalHistoryID,
+        //                 PatientID = m.PatientID,
+        //                 ConditionName = m.ConditionName,
+        //                 DiagnosedDate = m.DiagnosedDate,
+        //                 Status = m.Status,
+        //                 Treatment = m.Treatment,
+        //                 Notes = m.Notes
+        //             })
+        //             .ToListAsync();
 
-                var familyHistory = await _context.FamilyMedicalHistories
-                    .AsNoTracking()
-                    .Where(f => f.PatientID == patientId)
-                    .Select(f => new FamilyMedicalHistoryDto
-                    {
-                        FamilyMedicalHistoryID = f.FamilyMedicalHistoryID,
-                        PatientID = f.PatientID,
-                        Relative = f.Relative,
-                        ConditionName = f.ConditionName,
-                        Notes = f.Notes
-                    })
-                    .ToListAsync();
+        //         var familyHistory = await _context.FamilyMedicalHistories
+        //             .AsNoTracking()
+        //             .Where(f => f.PatientID == patientId)
+        //             .Select(f => new FamilyMedicalHistoryDto
+        //             {
+        //                 FamilyMedicalHistoryID = f.FamilyMedicalHistoryID,
+        //                 PatientID = f.PatientID,
+        //                 Relative = f.Relative,
+        //                 ConditionName = f.ConditionName,
+        //                 Notes = f.Notes
+        //             })
+        //             .ToListAsync();
 
-                var problemList = await _context.ProblemLists
-                    .AsNoTracking()
-                    .Where(p => p.PatientID == patientId)
-                    .Select(p => new ProblemListDto
-                    {
-                        ProblemListID = p.ProblemListID,
-                        PatientID = p.PatientID,
-                        ProblemName = p.ProblemName,
-                        Code = p.Code,
-                        CodingSystem = p.CodingSystem,
-                        Status = p.Status,
-                        OnsetDate = p.OnsetDate,
-                        ResolvedDate = p.ResolvedDate,
-                        Notes = p.Notes
-                    })
-                    .ToListAsync();
+        //         var problemList = await _context.ProblemLists
+        //             .AsNoTracking()
+        //             .Where(p => p.PatientID == patientId)
+        //             .Select(p => new ProblemListDto
+        //             {
+        //                 ProblemListID = p.ProblemListID,
+        //                 PatientID = p.PatientID,
+        //                 ProblemName = p.ProblemName,
+        //                 Code = p.Code,
+        //                 CodingSystem = p.CodingSystem,
+        //                 Status = p.Status,
+        //                 OnsetDate = p.OnsetDate,
+        //                 ResolvedDate = p.ResolvedDate,
+        //                 Notes = p.Notes
+        //             })
+        //             .ToListAsync();
 
-                var socialHistory = await _context.SocialHistories
-                    .AsNoTracking()
-                    .Where(s => s.PatientID == patientId)
-                    .Select(s => new SocialHistoryDto
-                    {
-                        SocialHistoryID = s.SocialHistoryID,
-                        PatientID = s.PatientID,
-                        SmokingStatus = s.SmokingStatus,
-                        AlcoholUse = s.AlcoholUse,
-                        Occupation = s.Occupation,
-                        LivingSituation = s.LivingSituation,
-                        PhysicalActivity = s.PhysicalActivity,
-                        Notes = s.Notes
-                    })
-                    .ToListAsync();
+        //         var socialHistory = await _context.SocialHistories
+        //             .AsNoTracking()
+        //             .Where(s => s.PatientID == patientId)
+        //             .Select(s => new SocialHistoryDto
+        //             {
+        //                 SocialHistoryID = s.SocialHistoryID,
+        //                 PatientID = s.PatientID,
+        //                 SmokingStatus = s.SmokingStatus,
+        //                 AlcoholUse = s.AlcoholUse,
+        //                 Occupation = s.Occupation,
+        //                 LivingSituation = s.LivingSituation,
+        //                 PhysicalActivity = s.PhysicalActivity,
+        //                 Notes = s.Notes
+        //             })
+        //             .ToListAsync();
 
-                var previousConsultations = await _context.Consultations
-                    .AsNoTracking()
-                    .Where(c => c.PatientVisit != null && c.PatientVisit.PatientID == patientId)
-                    .OrderByDescending(c => c.ConsultationDate)
-                    .Select(c => new ConsultationSummaryDto
-                    {
-                        ConsultationID = c.ConsultationID,
-                        VisitID = c.VisitID,
-                        DoctorID = c.DoctorID,
-                        ConsultationDate = c.ConsultationDate,
-                        ChiefComplaint = c.ChiefComplaint,
-                        HistoryOfPresentIllness = c.HistoryOfPresentIllness,
-                        Assessment = c.Assessment,
-                        TreatmentPlan = c.TreatmentPlan,
-                        ClinicalNotes = c.ClinicalNotes,
-                        PhysicalExaminations = c.PhysicalExaminations.Select(pe => new PhysicalExaminationDto
-                        {
-                            PhysicalExaminationID = pe.PhysicalExaminationID,
-                            ConsultationID = pe.ConsultationID,
-                            ExaminationArea = pe.ExaminationArea,
-                            Findings = pe.Findings,
-                            Notes = pe.Notes
-                        }).ToList(),
-                        Diagnoses = c.Diagnose.Select(d => new DiagnosisDto
-                        {
-                            DiagnosisID = d.DiagnosisID,
-                            ConsultationID = d.ConsultationID,
-                            Code = d.Code,
-                            Description = d.Description,
-                            CodingSystem = d.CodingSystem,
-                            DiagnosisType = d.DiagnosisType,
-                            IsPrimary = d.IsPrimary
-                        }).ToList()
-                    })
-                    .ToListAsync();
+        //         var previousConsultations = await _context.Consultations
+        //             .AsNoTracking()
+        //             .Where(c => c.PatientVisit != null && c.PatientVisit.PatientID == patientId)
+        //             .OrderByDescending(c => c.ConsultationDate)
+        //             .Select(c => new ConsultationSummaryDto
+        //             {
+        //                 ConsultationID = c.ConsultationID,
+        //                 VisitID = c.VisitID,
+        //                 DoctorID = c.DoctorID,
+        //                 ConsultationDate = c.ConsultationDate,
+        //                 ChiefComplaint = c.ChiefComplaint,
+        //                 HistoryOfPresentIllness = c.HistoryOfPresentIllness,
+        //                 Assessment = c.Assessment,
+        //                 TreatmentPlan = c.TreatmentPlan,
+        //                 ClinicalNotes = c.ClinicalNotes,
+        //                 PhysicalExaminations = c.PhysicalExaminations.Select(pe => new PhysicalExaminationDto
+        //                 {
+        //                     PhysicalExaminationID = pe.PhysicalExaminationID,
+        //                     ConsultationID = pe.ConsultationID,
+        //                     ExaminationArea = pe.ExaminationArea,
+        //                     Findings = pe.Findings,
+        //                     Notes = pe.Notes
+        //                 }).ToList(),
+        //                 Diagnoses = c.Diagnose.Select(d => new DiagnosisDto
+        //                 {
+        //                     DiagnosisID = d.DiagnosisID,
+        //                     ConsultationID = d.ConsultationID,
+        //                     Code = d.Code,
+        //                     Description = d.Description,
+        //                     CodingSystem = d.CodingSystem,
+        //                     DiagnosisType = d.DiagnosisType,
+        //                     IsPrimary = d.IsPrimary
+        //                 }).ToList()
+        //             })
+        //             .ToListAsync();
 
-                var latestPrescription = await _context.Prescriptions
-                    .AsNoTracking()
-                    .Where(p => p.PatientID == patientId)
-                    .OrderByDescending(p => p.PrescriptionDate)
-                    .Select(p => new PrescriptionDetailViewDto
-                    {
-                        PrescriptionID = p.PrescriptionID,
-                        ConsultationID = p.ConsultationID,
-                        DoctorID = p.DoctorID,
-                        PatientID = p.PatientID,
-                        BranchPharmacyID = p.BranchPharmacyID,
-                        PrescriptionDate = p.PrescriptionDate,
-                        Items = p.PrescriptionDetail.Select(pd => new PrescriptionItemDto
-                        {
-                            PrescriptionDetailID = pd.PrescriptionDetailID,
-                            PrescriptionID = pd.PrescriptionID,
-                            MedicineID = pd.MedicineID,
-                            MedicineName = pd.Medicine != null ? pd.Medicine.MedicineName : "",
-                            GenericName = pd.Medicine != null ? pd.Medicine.GenericName : "",
-                            Dosage = pd.Dosage,
-                            Frequency = pd.Frequency,
-                            Duration = pd.Duration,
-                            Quantity = pd.Quantity
-                        }).ToList()
-                    })
-                    .FirstOrDefaultAsync();
+        //         var latestPrescription = await _context.Prescriptions
+        //             .AsNoTracking()
+        //             .Where(p => p.PatientID == patientId)
+        //             .OrderByDescending(p => p.PrescriptionDate)
+        //             .Select(p => new PrescriptionDetailViewDto
+        //             {
+        //                 PrescriptionID = p.PrescriptionID,
+        //                 ConsultationID = p.ConsultationID,
+        //                 DoctorID = p.DoctorID,
+        //                 PatientID = p.PatientID,
+        //                 BranchPharmacyID = p.BranchPharmacyID,
+        //                 PrescriptionDate = p.PrescriptionDate,
+        //                 Items = p.PrescriptionDetail.Select(pd => new PrescriptionItemDto
+        //                 {
+        //                     PrescriptionDetailID = pd.PrescriptionDetailID,
+        //                     PrescriptionID = pd.PrescriptionID,
+        //                     MedicineID = pd.MedicineID,
+        //                     MedicineName = pd.Medicine != null ? pd.Medicine.MedicineName : "",
+        //                     GenericName = pd.Medicine != null ? pd.Medicine.GenericName : "",
+        //                     Dosage = pd.Dosage,
+        //                     Frequency = pd.Frequency,
+        //                     Duration = pd.Duration,
+        //                     Quantity = pd.Quantity
+        //                 }).ToList()
+        //             })
+        //             .FirstOrDefaultAsync();
 
-                var result = new DoctorPatientVisitDetailsDto
-                {
-                    Patient = new PatientSummaryDto
-                    {
-                        PatientID = patient.PatientID,
-                        MRN = patient.MRN,
-                        FirstName = patient.FirstName,
-                        LastName = patient.LastName,
-                        Gender = patient.Gender.ToString(),
-                        DateOfBirth = patient.DateOfBirth,
-                        Phone = patient.Phone,
-                        Address = patient.Address
-                    },
-                    CurrentVisit = new VisitSummaryDto
-                    {
-                        VisitID = visit.VisitID,
-                        PatientID = visit.PatientID,
-                        VisitDate = visit.VisitDate,
-                        VisitType = visit.VisitType,
-                        Status = visit.Status
-                    },
-                    CurrentTriage = currentTriage,
-                    Allergies = allergies,
-                    MedicalHistory = medicalHistory,
-                    FamilyMedicalHistory = familyHistory,
-                    ProblemList = problemList,
-                    SocialHistory = socialHistory,
-                    PreviousConsultations = previousConsultations,
-                    LatestPrescription = latestPrescription
-                };
+        //         var result = new DoctorPatientVisitDetailsDto
+        //         {
+        //             Patient = new PatientSummaryDto
+        //             {
+        //                 PatientID = patient.PatientID,
+        //                 MRN = patient.MRN,
+        //                 FirstName = patient.FirstName,
+        //                 LastName = patient.LastName,
+        //                 Gender = patient.Gender.ToString(),
+        //                 DateOfBirth = patient.DateOfBirth,
+        //                 Phone = patient.Phone,
+        //                 Address = patient.Address
+        //             },
+        //             CurrentVisit = new VisitSummaryDto
+        //             {
+        //                 VisitID = visit.VisitID,
+        //                 PatientID = visit.PatientID,
+        //                 VisitDate = visit.VisitDate,
+        //                 VisitType = visit.VisitType,
+        //                 Status = visit.Status
+        //             },
+        //             CurrentTriage = currentTriage,
+        //             Allergies = allergies,
+        //             MedicalHistory = medicalHistory,
+        //             FamilyMedicalHistory = familyHistory,
+        //             ProblemList = problemList,
+        //             SocialHistory = socialHistory,
+        //             PreviousConsultations = previousConsultations,
+        //             LatestPrescription = latestPrescription
+        //         };
 
-                return Ok(result);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Unauthorized(new { message = "Unauthorized" });
-            }
-            catch (Exception)
-            {
-                return StatusCode(500, new { message = "An error occurred while loading patient visit details." });
-            }
-        }
+        //         return Ok(result);
+        //     }
+        //     catch (UnauthorizedAccessException)
+        //     {
+        //         return Unauthorized(new { message = "Unauthorized" });
+        //     }
+        //     catch (Exception)
+        //     {
+        //         return StatusCode(500, new { message = "An error occurred while loading patient visit details." });
+        //     }
+        // }
 
         [HttpGet("patient/{patientId:int}")]
         public async Task<IActionResult> GetPatientDetails(int patientId)

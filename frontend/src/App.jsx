@@ -11,15 +11,14 @@ import CreatePatient from './Pages/Dashboard/ReceptionistDashboard/CreatePatient
 
 import NurseProtectRoute from "./ProtectRoute/NurseProtectRoute";
 import ReceptionistProtectRouter from "./ProtectRoute/ReceptionistProtectRouter";
-import { 
-  DoctorDashboard, 
-  ConsultationList, 
-  CreateConsultation, 
-  UpdateConsultation, 
-  CreateMedicalRecord,
-  TriageByVisit,
-  PatientDetail as DoctorPatientDetail
-} from './pages/Dashboard/DoctorDashboard';
+import {
+  DoctorLayout,
+  DoctorDashboard,
+  ConsultationQueue,
+  ConsultationPatient,
+  AdultMedicalCareQueue,
+  AdultMedicalCarePatient,
+} from "./Pages/Dashboard/DoctorDashboard";
 import CSMProtectRoute from './ProtectRoute/CSMProtectRoute';
 
 // ===== CSM Imports =====
@@ -128,7 +127,6 @@ import PharmacyExpiryReport from './Pages/Dashboard/PharmacyDashboard/Reports/Ex
 import PharmacyProfile from './Pages/Dashboard/PharmacyDashboard/Profile/Profile';
 import PharmacyChangePassword from './Pages/Dashboard/PharmacyDashboard/Profile/ChangePassword';
 
-import DepartmentTriageList from "./Pages/Dashboard/DoctorDashboard/DepartmentTriageList";
 
 // ===== NEW NURSE DASHBOARD IMPORTS =====
 import NurseDashboard from './Pages/Dashboard/NurseDashboard/NurseDashboard';
@@ -206,17 +204,20 @@ function App() {
         </Route>
 
         {/* Doctor routes – protected */}
-        <Route path="/doctor" element={<DoctorDashboard />}>
-          <Route index element={<Navigate to="consultations" replace />} />
-          <Route path="consultations" element={<ConsultationList />} />
-          <Route path="create-consultation" element={<CreateConsultation />} />
-          <Route path="update-consultation/:id" element={<UpdateConsultation />} />
-          <Route path="create-medical-record" element={<CreateMedicalRecord />} />
-          <Route path="triage" element={<TriageByVisit />} />
-          <Route path="triage/:visitId" element={<TriageByVisit />} />
-          <Route path="department-triage" element={<DepartmentTriageList />} />
-          <Route path="patient/:patientId" element={<DoctorPatientDetail />} />
-        </Route>
+       {/* Doctor routes */}
+<Route path="/doctor" element={<DoctorLayout />}>
+  <Route index element={<DoctorDashboard />} />
+  <Route path="consultation/triage" element={<ConsultationQueue />} />
+  <Route
+    path="consultation/patient/:patientId/:visitId"
+    element={<ConsultationPatient />}
+  />
+  <Route path="adult/triage" element={<AdultMedicalCareQueue />} />
+  <Route
+    path="adult/patient/:patientId/:visitId"
+    element={<AdultMedicalCarePatient />}
+  />
+</Route>
 
         {/* ===== CSM routes – protected with sidebar ===== */}
         <Route element={<CSMProtectRoute />}>
