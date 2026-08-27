@@ -10,9 +10,7 @@ namespace HospitalSys.Models.Laboratory
         public int TestID {get;set;}
         [ForeignKey(nameof(TestID))]
         public LaboratoryTest? LaboratoryTest {get;set;}
-        public int TechnicianID {get;set;}
-        [ForeignKey(nameof(TechnicianID))]
-        public LaboratoryTechnician? LaboratoryTechnician {get;set;}
+        public string TechnicianName {get;set;} = "";
         public string ResultDescription {get;set;} = "";
         public DateTime ResultDate { get; set; } = DateTime.UtcNow;
     }
