@@ -11,6 +11,6 @@ namespace HospitalSys.Models
         public int UserID {get;set;}
         [ForeignKey(nameof(UserID))]
         public Users? Users {get;set;}
-        public List<LaboratoryResult> LaboratoryResult {get;set;} = new();
+        
     }
 }

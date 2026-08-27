@@ -10,10 +10,9 @@ namespace HospitalSys.Models.Radiology
         public int RadiologyRequestID {get;set;}
         [ForeignKey(nameof(RadiologyRequestID))]
         public RadiologyRequest? RadiologyRequest {get;set;}
-        public int RadiologyTechnicianID {get;set;}
-        [ForeignKey(nameof(RadiologyTechnicianID))]
-        public RadiologyTechnician? RadiologyTechnician {get;set;}
+        public string RadiologyTechnicianName {get;set;} = "";
         public string ResultDescription {get;set;} = "";
         public DateTime ResultDate { get; set; } = DateTime.UtcNow;
+
     }
 }
