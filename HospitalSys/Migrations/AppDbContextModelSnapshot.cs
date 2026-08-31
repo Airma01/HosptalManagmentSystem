@@ -2140,15 +2140,14 @@ namespace HospitalSys.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("TechnicianID")
-                        .HasColumnType("integer");
+                    b.Property<string>("TechnicianName")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<int>("TestID")
                         .HasColumnType("integer");
 
                     b.HasKey("ResultID");
-
-                    b.HasIndex("TechnicianID");
 
                     b.HasIndex("TestID");
 
@@ -4063,8 +4062,9 @@ namespace HospitalSys.Migrations
                     b.Property<int>("RadiologyRequestID")
                         .HasColumnType("integer");
 
-                    b.Property<int>("RadiologyTechnicianID")
-                        .HasColumnType("integer");
+                    b.Property<string>("RadiologyTechnicianName")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("ResultDate")
                         .HasColumnType("timestamp with time zone");
@@ -4076,8 +4076,6 @@ namespace HospitalSys.Migrations
                     b.HasKey("RadiologyResultID");
 
                     b.HasIndex("RadiologyRequestID");
-
-                    b.HasIndex("RadiologyTechnicianID");
 
                     b.ToTable("RadiologyResults");
                 });
@@ -5132,19 +5130,11 @@ namespace HospitalSys.Migrations
 
             modelBuilder.Entity("HospitalSys.Models.Laboratory.LaboratoryResult", b =>
                 {
-                    b.HasOne("HospitalSys.Models.LaboratoryTechnician", "LaboratoryTechnician")
-                        .WithMany("LaboratoryResult")
-                        .HasForeignKey("TechnicianID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("HospitalSys.Models.Laboratory.LaboratoryTest", "LaboratoryTest")
                         .WithMany("LaboratoryResult")
                         .HasForeignKey("TestID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("LaboratoryTechnician");
 
                     b.Navigation("LaboratoryTest");
                 });
@@ -6015,15 +6005,7 @@ namespace HospitalSys.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("HospitalSys.Models.RadiologyTechnician", "RadiologyTechnician")
-                        .WithMany("RadiologyResult")
-                        .HasForeignKey("RadiologyTechnicianID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("RadiologyRequest");
-
-                    b.Navigation("RadiologyTechnician");
                 });
 
             modelBuilder.Entity("HospitalSys.Models.Radiology.RadiologyTestType", b =>
@@ -6259,11 +6241,6 @@ namespace HospitalSys.Migrations
             modelBuilder.Entity("HospitalSys.Models.LaboratoryCashier", b =>
                 {
                     b.Navigation("LaboratoryPayments");
-                });
-
-            modelBuilder.Entity("HospitalSys.Models.LaboratoryTechnician", b =>
-                {
-                    b.Navigation("LaboratoryResult");
                 });
 
             modelBuilder.Entity("HospitalSys.Models.MainPharmacyManager", b =>
@@ -6555,11 +6532,6 @@ namespace HospitalSys.Migrations
             modelBuilder.Entity("HospitalSys.Models.RadiologyCashier", b =>
                 {
                     b.Navigation("RadiologyPayment");
-                });
-
-            modelBuilder.Entity("HospitalSys.Models.RadiologyTechnician", b =>
-                {
-                    b.Navigation("RadiologyResult");
                 });
 
             modelBuilder.Entity("HospitalSys.Models.ReferralManagement.Referral", b =>

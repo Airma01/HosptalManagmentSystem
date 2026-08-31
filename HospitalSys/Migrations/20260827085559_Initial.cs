@@ -2877,19 +2877,13 @@ namespace HospitalSys.Migrations
                     ResultID = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     TestID = table.Column<int>(type: "integer", nullable: false),
-                    TechnicianID = table.Column<int>(type: "integer", nullable: false),
+                    TechnicianName = table.Column<string>(type: "text", nullable: false),
                     ResultDescription = table.Column<string>(type: "text", nullable: false),
                     ResultDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_LaboratoryResults", x => x.ResultID);
-                    table.ForeignKey(
-                        name: "FK_LaboratoryResults_LaboratoryTechnicians_TechnicianID",
-                        column: x => x.TechnicianID,
-                        principalTable: "LaboratoryTechnicians",
-                        principalColumn: "TechnicianID",
-                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_LaboratoryResults_LaboratoryTests_TestID",
                         column: x => x.TestID,
@@ -3029,7 +3023,7 @@ namespace HospitalSys.Migrations
                     RadiologyResultID = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     RadiologyRequestID = table.Column<int>(type: "integer", nullable: false),
-                    RadiologyTechnicianID = table.Column<int>(type: "integer", nullable: false),
+                    RadiologyTechnicianName = table.Column<string>(type: "text", nullable: false),
                     ResultDescription = table.Column<string>(type: "text", nullable: false),
                     ResultDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
@@ -3041,12 +3035,6 @@ namespace HospitalSys.Migrations
                         column: x => x.RadiologyRequestID,
                         principalTable: "RadiologyRequests",
                         principalColumn: "RadiologyRequestID",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_RadiologyResults_RadiologyTechnicians_RadiologyTechnicianID",
-                        column: x => x.RadiologyTechnicianID,
-                        principalTable: "RadiologyTechnicians",
-                        principalColumn: "RadiologyTechnicianID",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -3644,11 +3632,6 @@ namespace HospitalSys.Migrations
                 column: "TestID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_LaboratoryResults_TechnicianID",
-                table: "LaboratoryResults",
-                column: "TechnicianID");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_LaboratoryResults_TestID",
                 table: "LaboratoryResults",
                 column: "TestID");
@@ -3966,11 +3949,6 @@ namespace HospitalSys.Migrations
                 column: "RadiologyRequestID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_RadiologyResults_RadiologyTechnicianID",
-                table: "RadiologyResults",
-                column: "RadiologyTechnicianID");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_RadiologyTechnicians_UserID",
                 table: "RadiologyTechnicians",
                 column: "UserID");
@@ -4170,6 +4148,9 @@ namespace HospitalSys.Migrations
                 name: "LaboratoryResults");
 
             migrationBuilder.DropTable(
+                name: "LaboratoryTechnicians");
+
+            migrationBuilder.DropTable(
                 name: "MedicalHistories");
 
             migrationBuilder.DropTable(
@@ -4224,6 +4205,9 @@ namespace HospitalSys.Migrations
                 name: "RadiologyResults");
 
             migrationBuilder.DropTable(
+                name: "RadiologyTechnicians");
+
+            migrationBuilder.DropTable(
                 name: "Receptionists");
 
             migrationBuilder.DropTable(
@@ -4269,9 +4253,6 @@ namespace HospitalSys.Migrations
                 name: "LaboratoryCashiers");
 
             migrationBuilder.DropTable(
-                name: "LaboratoryTechnicians");
-
-            migrationBuilder.DropTable(
                 name: "LaboratoryTests");
 
             migrationBuilder.DropTable(
@@ -4291,9 +4272,6 @@ namespace HospitalSys.Migrations
 
             migrationBuilder.DropTable(
                 name: "RadiologyRequests");
-
-            migrationBuilder.DropTable(
-                name: "RadiologyTechnicians");
 
             migrationBuilder.DropTable(
                 name: "Referrals");

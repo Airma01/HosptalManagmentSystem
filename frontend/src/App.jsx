@@ -146,6 +146,16 @@ import RequestLabTestNurse from './Pages/Dashboard/NurseDashboard/LaboratoryMana
 import LabTestDetailNurse from './Pages/Dashboard/NurseDashboard/LaboratoryManagement/LabTestDetail';
 import NurseLayout from './Pages/Dashboard/NurseDashboard/NurseLayout';
 
+import MLTDashboard from './Pages/Dashboard/MLTDashboard/MLTDashboard';
+import MLTPatient from './Pages/Dashboard/MLTDashboard/MLTPatient';
+import MLTQueue from './Pages/Dashboard/MLTDashboard/MLTQueue';
+import MLTTest from './Pages/Dashboard/MLTDashboard/MLTTest';
+import MLTResult from './Pages/Dashboard/MLTDashboard/MLTResult';
+import MLTReport from './Pages/Dashboard/MLTDashboard/MLTReport';
+import LaboratorySection from './Pages/Dashboard/MLTDashboard/LaboratorySection/LaboratorySection';
+import AddSection from './Pages/Dashboard/MLTDashboard/LaboratorySection/AddSection';
+import SectionDetails from './Pages/Dashboard/MLTDashboard/LaboratorySection/SectionDetails';
+import AddTestType from './Pages/Dashboard/MLTDashboard/LaboratorySection/AddTestType';
 // ─── ⚠️ PLACEHOLDER COMPONENTS FOR MISSING NURSE ROUTES ───
 const AssignDepartment = () => (
   <div className="p-4 text-gray-600">Assign Department – Coming Soon</div>
@@ -349,6 +359,16 @@ function App() {
           </Route>
         </Route>
 
+        <Route path="/mlt/dashboard" element={<MLTDashboard />} />
+        <Route path="/mlt/patients" element={<MLTPatient />} />
+        <Route path="/mlt/queue" element={<MLTQueue />} />
+        <Route path="/mlt/tests" element={<MLTTest />} />
+        <Route path="/mlt/results" element={<MLTResult />} />
+        <Route path="/mlt/reports" element={<MLTReport />} />
+        <Route path="/mlt/laboratory-sections" element={<LaboratorySection />} />
+        <Route path="/mlt/laboratory-sections/add" element={<AddSection />} />
+        <Route path="/mlt/laboratory-sections/:sectionId" element={<SectionDetails />} />
+        <Route path="/mlt/laboratory-sections/:sectionId/add-test-type" element={<AddTestType />} />
         {/* Fallback routes */}
         <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />

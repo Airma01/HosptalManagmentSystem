@@ -31,6 +31,11 @@ const roleConfig = {
     me: '/Hospital/Pharmacist/PharmacistAuth/auth_me',
     redirect: '/pharmacy',
   },
+  LaboratoryTechnician: {
+  login: '/mlt/MLTAuth/mlt_login',
+  me: '/mlt/MLTAuth/auth_me',
+  redirect: '/mlt/dashboard',
+},
 };
 
 export default function Login() {
@@ -146,11 +151,12 @@ export default function Login() {
                 onChange={(e) => setSelectedRole(e.target.value)}
                 className="w-full appearance-none bg-white/80 border border-gray-300 rounded-xl px-4 py-2.5 pr-10 focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 outline-none transition cursor-pointer"
               >
-                <option value="Doctor">👨‍⚕️ Doctor</option>
-                <option value="Receptionist">📋 Receptionist</option>
-                <option value="Nurse">🩺 Nurse</option>
-                <option value="CSM">🏢 CSM (Central Store Manager)</option>
-                <option value="Pharmacist">💊 Pharmacist</option>
+                <option value="Doctor">Doctor</option>
+                <option value="Receptionist">Receptionist</option>
+                <option value="Nurse">Nurse</option>
+                <option value="CSM">CSM (Central Store Manager)</option>
+                <option value="Pharmacist">Pharmacist</option>
+                <option value="LaboratoryTechnician">LaboratoryTechnician</option>
               </select>
               <span className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

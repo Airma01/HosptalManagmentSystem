@@ -908,263 +908,263 @@ public async Task<IActionResult> GetClinicalDepartments()
         // ============================================================
 
         // POST: laboratory/request
-        [HttpPost("laboratory/request")]
-        public async Task<IActionResult> RequestLaboratoryTest([FromBody] NurseLaboratoryRequestDto dto)
-        {
-            try
-            {
-                if (!ModelState.IsValid)
-                    return BadRequest(ModelState);
+        // [HttpPost("laboratory/request")]
+        // public async Task<IActionResult> RequestLaboratoryTest([FromBody] NurseLaboratoryRequestDto dto)
+        // {
+        //     try
+        //     {
+        //         if (!ModelState.IsValid)
+        //             return BadRequest(ModelState);
 
-                // Verify existence of related entities
-                var patient = await _context.Patients.FindAsync(dto.PatientId);
-                if (patient == null)
-                    return NotFound(new { message = "Patient not found" });
+        //         // Verify existence of related entities
+        //         var patient = await _context.Patients.FindAsync(dto.PatientId);
+        //         if (patient == null)
+        //             return NotFound(new { message = "Patient not found" });
 
-                var consultation = await _context.Consultations.FindAsync(dto.ConsultationId);
-                if (consultation == null)
-                    return NotFound(new { message = "Consultation not found" });
+        //         var consultation = await _context.Consultations.FindAsync(dto.ConsultationId);
+        //         if (consultation == null)
+        //             return NotFound(new { message = "Consultation not found" });
 
-                var doctor = await _context.Doctors.FindAsync(dto.DoctorId);
-                if (doctor == null)
-                    return NotFound(new { message = "Doctor not found" });
+        //         var doctor = await _context.Doctors.FindAsync(dto.DoctorId);
+        //         if (doctor == null)
+        //             return NotFound(new { message = "Doctor not found" });
 
-                var testType = await _context.LaboratoryTestTypes.FindAsync(dto.LaboratoryTestTypeId);
-                if (testType == null)
-                    return NotFound(new { message = "Laboratory test type not found" });
+        //         var testType = await _context.LaboratoryTestTypes.FindAsync(dto.LaboratoryTestTypeId);
+        //         if (testType == null)
+        //             return NotFound(new { message = "Laboratory test type not found" });
 
-                var test = new LaboratoryTest
-                {
-                    ConsultationID = dto.ConsultationId,
-                    PatientID = dto.PatientId,
-                    DoctorID = dto.DoctorId,
-                    LaboratoryTestTypeID = dto.LaboratoryTestTypeId,
-                    RequestDate = dto.RequestDate ?? DateTime.UtcNow,
-                    Status = dto.Status ?? "Requested"
-                };
+        //         var test = new LaboratoryTest
+        //         {
+        //             ConsultationID = dto.ConsultationId,
+        //             PatientID = dto.PatientId,
+        //             DoctorID = dto.DoctorId,
+        //             LaboratoryTestTypeID = dto.LaboratoryTestTypeId,
+        //             RequestDate = dto.RequestDate ?? DateTime.UtcNow,
+        //             Status = dto.Status ?? "Requested"
+        //         };
 
-                _context.LaboratoryTests.Add(test);
-                await _context.SaveChangesAsync();
+        //         _context.LaboratoryTests.Add(test);
+        //         await _context.SaveChangesAsync();
 
-                // Build response
-                var response = new NurseLaboratoryTestResponseDto
-                {
-                    TestId = test.TestID,
-                    ConsultationId = test.ConsultationID,
-                    PatientId = test.PatientID,
-                    PatientMrn = patient.MRN,
-                    PatientName = $"{patient.FirstName} {patient.LastName}",
-                    DoctorId = test.DoctorID,
-                    DoctorName = $"{doctor.Users.FirstName} {doctor.Users.FatherName}",
-                    LaboratoryTestTypeId = test.LaboratoryTestTypeID,
-                    TestTypeName = testType.TestName,
-                    LaboratorySectionId = testType.LaboratorySectionID,
-                    SectionName = testType.LaboratorySection.SectionName,
-                    RequestDate = test.RequestDate,
-                    Status = test.Status,
-                    Result = null // no result yet
-                };
+        //         // Build response
+        //         var response = new NurseLaboratoryTestResponseDto
+        //         {
+        //             TestId = test.TestID,
+        //             ConsultationId = test.ConsultationID,
+        //             PatientId = test.PatientID,
+        //             PatientMrn = patient.MRN,
+        //             PatientName = $"{patient.FirstName} {patient.LastName}",
+        //             DoctorId = test.DoctorID,
+        //             DoctorName = $"{doctor.Users.FirstName} {doctor.Users.FatherName}",
+        //             LaboratoryTestTypeId = test.LaboratoryTestTypeID,
+        //             TestTypeName = testType.TestName,
+        //             LaboratorySectionId = testType.LaboratorySectionID,
+        //             SectionName = testType.LaboratorySection.SectionName,
+        //             RequestDate = test.RequestDate,
+        //             Status = test.Status,
+        //             Result = null // no result yet
+        //         };
 
-                return CreatedAtAction(nameof(GetLaboratoryTest), new { id = test.TestID }, response);
-            }
-            catch (Exception)
-            {
-                return StatusCode(500, new { message = "An unexpected error occurred" });
-            }
-        }
+        //         return CreatedAtAction(nameof(GetLaboratoryTest), new { id = test.TestID }, response);
+        //     }
+        //     catch (Exception)
+        //     {
+        //         return StatusCode(500, new { message = "An unexpected error occurred" });
+        //     }
+        // }
 
-        // GET: laboratory/test-types
-        [HttpGet("laboratory/test-types")]
-        public async Task<IActionResult> GetLaboratoryTestTypes()
-        {
-            try
-            {
-                var types = await _context.LaboratoryTestTypes
-                    .Include(t => t.LaboratorySection)
-                    .Select(t => new NurseLaboratoryTestTypeDto
-                    {
-                        LaboratoryTestTypeId = t.LaboratoryTestTypeID,
-                        TestName = t.TestName,
-                        Price = t.Price,
-                        Description = t.Description,
-                        LaboratorySectionId = t.LaboratorySectionID,
-                        SectionName = t.LaboratorySection.SectionName
-                    })
-                    .ToListAsync();
+        // // GET: laboratory/test-types
+        // [HttpGet("laboratory/test-types")]
+        // public async Task<IActionResult> GetLaboratoryTestTypes()
+        // {
+        //     try
+        //     {
+        //         var types = await _context.LaboratoryTestTypes
+        //             .Include(t => t.LaboratorySection)
+        //             .Select(t => new NurseLaboratoryTestTypeDto
+        //             {
+        //                 LaboratoryTestTypeId = t.LaboratoryTestTypeID,
+        //                 TestName = t.TestName,
+        //                 Price = t.Price,
+        //                 Description = t.Description,
+        //                 LaboratorySectionId = t.LaboratorySectionID,
+        //                 SectionName = t.LaboratorySection.SectionName
+        //             })
+        //             .ToListAsync();
 
-                return Ok(types);
-            }
-            catch (Exception)
-            {
-                return StatusCode(500, new { message = "An unexpected error occurred" });
-            }
-        }
+        //         return Ok(types);
+        //     }
+        //     catch (Exception)
+        //     {
+        //         return StatusCode(500, new { message = "An unexpected error occurred" });
+        //     }
+        // }
 
-        // GET: laboratory/sections
-        [HttpGet("laboratory/sections")]
-        public async Task<IActionResult> GetLaboratorySections()
-        {
-            try
-            {
-                var sections = await _context.LaboratorySections
-                    .Select(s => new NurseLaboratorySectionDto
-                    {
-                        LaboratorySectionId = s.LaboratorySectionID,
-                        SectionName = s.SectionName,
-                        Description = s.Description
-                    })
-                    .ToListAsync();
+        // // GET: laboratory/sections
+        // [HttpGet("laboratory/sections")]
+        // public async Task<IActionResult> GetLaboratorySections()
+        // {
+        //     try
+        //     {
+        //         var sections = await _context.LaboratorySections
+        //             .Select(s => new NurseLaboratorySectionDto
+        //             {
+        //                 LaboratorySectionId = s.LaboratorySectionID,
+        //                 SectionName = s.SectionName,
+        //                 Description = s.Description
+        //             })
+        //             .ToListAsync();
 
-                return Ok(sections);
-            }
-            catch (Exception)
-            {
-                return StatusCode(500, new { message = "An unexpected error occurred" });
-            }
-        }
+        //         return Ok(sections);
+        //     }
+        //     catch (Exception)
+        //     {
+        //         return StatusCode(500, new { message = "An unexpected error occurred" });
+        //     }
+        // }
 
-        // GET: laboratory/test/{id}
-        [HttpGet("laboratory/test/{id}")]
-        public async Task<IActionResult> GetLaboratoryTest(int id)
-        {
-            try
-            {
-                var test = await _context.LaboratoryTests
-                    .Where(t => t.TestID == id)
-                    .Select(t => new NurseLaboratoryTestResponseDto
-                    {
-                        TestId = t.TestID,
-                        ConsultationId = t.ConsultationID,
-                        PatientId = t.PatientID,
-                        PatientMrn = t.Patient.MRN,
-                        PatientName = $"{t.Patient.FirstName} {t.Patient.LastName}",
-                        DoctorId = t.DoctorID,
-                        DoctorName = $"{t.Doctor.Users.FirstName} {t.Doctor.Users.FatherName}",
-                        LaboratoryTestTypeId = t.LaboratoryTestTypeID,
-                        TestTypeName = t.LaboratoryTestType.TestName,
-                        LaboratorySectionId = t.LaboratoryTestType.LaboratorySectionID,
-                        SectionName = t.LaboratoryTestType.LaboratorySection.SectionName,
-                        RequestDate = t.RequestDate,
-                        Status = t.Status,
-                        Result = t.LaboratoryResult.Any()
-                            ? new NurseLaboratoryResultResponseDto
-                            {
-                                ResultId = t.LaboratoryResult.First().ResultID,
-                                TestId = t.LaboratoryResult.First().TestID,
-                                TechnicianId = t.LaboratoryResult.First().TechnicianID,
-                                TechnicianName = $"{t.LaboratoryResult.First().LaboratoryTechnician.Users.FirstName} {t.LaboratoryResult.First().LaboratoryTechnician.Users.FatherName}",
-                                ResultDescription = t.LaboratoryResult.First().ResultDescription,
-                                ResultDate = t.LaboratoryResult.First().ResultDate
-                            }
-                            : null
-                    })
-                    .FirstOrDefaultAsync();
+        // // GET: laboratory/test/{id}
+        // [HttpGet("laboratory/test/{id}")]
+        // public async Task<IActionResult> GetLaboratoryTest(int id)
+        // {
+        //     try
+        //     {
+        //         var test = await _context.LaboratoryTests
+        //             .Where(t => t.TestID == id)
+        //             .Select(t => new NurseLaboratoryTestResponseDto
+        //             {
+        //                 TestId = t.TestID,
+        //                 ConsultationId = t.ConsultationID,
+        //                 PatientId = t.PatientID,
+        //                 PatientMrn = t.Patient.MRN,
+        //                 PatientName = $"{t.Patient.FirstName} {t.Patient.LastName}",
+        //                 DoctorId = t.DoctorID,
+        //                 DoctorName = $"{t.Doctor.Users.FirstName} {t.Doctor.Users.FatherName}",
+        //                 // LaboratoryTestTypeId = t.LaboratoryTestTypeID,
+        //                 TestTypeName = t.LaboratoryTestType.TestName,
+        //                 LaboratorySectionId = t.LaboratoryTestType.LaboratorySectionID,
+        //                 SectionName = t.LaboratoryTestType.LaboratorySection.SectionName,
+        //                 RequestDate = t.RequestDate,
+        //                 Status = t.Status,
+        //                 Result = t.LaboratoryResult.Any()
+        //                     ? new NurseLaboratoryResultResponseDto
+        //                     {
+        //                         ResultId = t.LaboratoryResult.First().ResultID,
+        //                         TestId = t.LaboratoryResult.First().TestID,
+        //                         TechnicianId = t.LaboratoryResult.First().TechnicianID,
+        //                         TechnicianName = $"{t.LaboratoryResult.First().LaboratoryTechnician.Users.FirstName} {t.LaboratoryResult.First().LaboratoryTechnician.Users.FatherName}",
+        //                         ResultDescription = t.LaboratoryResult.First().ResultDescription,
+        //                         ResultDate = t.LaboratoryResult.First().ResultDate
+        //                     }
+        //                     : null
+        //             })
+        //             .FirstOrDefaultAsync();
 
-                if (test == null)
-                    return NotFound(new { message = "Laboratory test not found" });
+        //         if (test == null)
+        //             return NotFound(new { message = "Laboratory test not found" });
 
-                return Ok(test);
-            }
-            catch (Exception)
-            {
-                return StatusCode(500, new { message = "An unexpected error occurred" });
-            }
-        }
+        //         return Ok(test);
+        //     }
+        //     catch (Exception)
+        //     {
+        //         return StatusCode(500, new { message = "An unexpected error occurred" });
+        //     }
+        // }
 
-        // GET: patient/{patientId}/laboratory-tests
-        [HttpGet("patient/{patientId}/laboratory-tests")]
-        public async Task<IActionResult> GetPatientLaboratoryTests(int patientId)
-        {
-            try
-            {
-                var patient = await _context.Patients.FindAsync(patientId);
-                if (patient == null)
-                    return NotFound(new { message = "Patient not found" });
+        // // GET: patient/{patientId}/laboratory-tests
+        // [HttpGet("patient/{patientId}/laboratory-tests")]
+        // public async Task<IActionResult> GetPatientLaboratoryTests(int patientId)
+        // {
+        //     try
+        //     {
+        //         var patient = await _context.Patients.FindAsync(patientId);
+        //         if (patient == null)
+        //             return NotFound(new { message = "Patient not found" });
 
-                var tests = await _context.LaboratoryTests
-                    .Where(t => t.PatientID == patientId)
-                    .Select(t => new NurseLaboratoryTestListDto
-                    {
-                        TestId = t.TestID,
-                        PatientId = t.PatientID,
-                        PatientName = $"{t.Patient.FirstName} {t.Patient.LastName}",
-                        PatientMrn = t.Patient.MRN,
-                        TestTypeName = t.LaboratoryTestType.TestName,
-                        SectionName = t.LaboratoryTestType.LaboratorySection.SectionName,
-                        RequestDate = t.RequestDate,
-                        Status = t.Status,
-                        HasResult = t.LaboratoryResult.Any()
-                    })
-                    .ToListAsync();
+        //         var tests = await _context.LaboratoryTests
+        //             .Where(t => t.PatientID == patientId)
+        //             .Select(t => new NurseLaboratoryTestListDto
+        //             {
+        //                 TestId = t.TestID,
+        //                 PatientId = t.PatientID,
+        //                 PatientName = $"{t.Patient.FirstName} {t.Patient.LastName}",
+        //                 PatientMrn = t.Patient.MRN,
+        //                 TestTypeName = t.LaboratoryTestType.TestName,
+        //                 SectionName = t.LaboratoryTestType.LaboratorySection.SectionName,
+        //                 RequestDate = t.RequestDate,
+        //                 Status = t.Status,
+        //                 HasResult = t.LaboratoryResult.Any()
+        //             })
+        //             .ToListAsync();
 
-                return Ok(tests);
-            }
-            catch (Exception)
-            {
-                return StatusCode(500, new { message = "An unexpected error occurred" });
-            }
-        }
+        //         return Ok(tests);
+        //     }
+        //     catch (Exception)
+        //     {
+        //         return StatusCode(500, new { message = "An unexpected error occurred" });
+        //     }
+        // }
 
-        // GET: laboratory/today
-        [HttpGet("laboratory/today")]
-        public async Task<IActionResult> GetTodayLaboratoryTests()
-        {
-            try
-            {
-                var today = DateTime.UtcNow.Date;
-                var tests = await _context.LaboratoryTests
-                    .Where(t => t.RequestDate.Date == today)
-                    .Select(t => new NurseLaboratoryTestListDto
-                    {
-                        TestId = t.TestID,
-                        PatientId = t.PatientID,
-                        PatientName = $"{t.Patient.FirstName} {t.Patient.LastName}",
-                        PatientMrn = t.Patient.MRN,
-                        TestTypeName = t.LaboratoryTestType.TestName,
-                        SectionName = t.LaboratoryTestType.LaboratorySection.SectionName,
-                        RequestDate = t.RequestDate,
-                        Status = t.Status,
-                        HasResult = t.LaboratoryResult.Any()
-                    })
-                    .ToListAsync();
+        // // GET: laboratory/today
+        // [HttpGet("laboratory/today")]
+        // public async Task<IActionResult> GetTodayLaboratoryTests()
+        // {
+        //     try
+        //     {
+        //         var today = DateTime.UtcNow.Date;
+        //         var tests = await _context.LaboratoryTests
+        //             .Where(t => t.RequestDate.Date == today)
+        //             .Select(t => new NurseLaboratoryTestListDto
+        //             {
+        //                 TestId = t.TestID,
+        //                 PatientId = t.PatientID,
+        //                 PatientName = $"{t.Patient.FirstName} {t.Patient.LastName}",
+        //                 PatientMrn = t.Patient.MRN,
+        //                 TestTypeName = t.LaboratoryTestType.TestName,
+        //                 SectionName = t.LaboratoryTestType.LaboratorySection.SectionName,
+        //                 RequestDate = t.RequestDate,
+        //                 Status = t.Status,
+        //                 HasResult = t.LaboratoryResult.Any()
+        //             })
+        //             .ToListAsync();
 
-                return Ok(tests);
-            }
-            catch (Exception)
-            {
-                return StatusCode(500, new { message = "An unexpected error occurred" });
-            }
-        }
+        //         return Ok(tests);
+        //     }
+        //     catch (Exception)
+        //     {
+        //         return StatusCode(500, new { message = "An unexpected error occurred" });
+        //     }
+        // }
 
-        // GET: laboratory/test/{id}/result
-        [HttpGet("laboratory/test/{id}/result")]
-        public async Task<IActionResult> GetLaboratoryResult(int id)
-        {
-            try
-            {
-                var result = await _context.LaboratoryResults
-                    .Where(r => r.TestID == id)
-                    .Select(r => new NurseLaboratoryResultResponseDto
-                    {
-                        ResultId = r.ResultID,
-                        TestId = r.TestID,
-                        TechnicianId = r.TechnicianID,
-                        TechnicianName = $"{r.LaboratoryTechnician.Users.FirstName} {r.LaboratoryTechnician.Users.FatherName}",
-                        ResultDescription = r.ResultDescription,
-                        ResultDate = r.ResultDate
-                    })
-                    .FirstOrDefaultAsync();
+        // // GET: laboratory/test/{id}/result
+        // [HttpGet("laboratory/test/{id}/result")]
+        // public async Task<IActionResult> GetLaboratoryResult(int id)
+        // {
+        //     try
+        //     {
+        //         var result = await _context.LaboratoryResults
+        //             .Where(r => r.TestID == id)
+        //             .Select(r => new NurseLaboratoryResultResponseDto
+        //             {
+        //                 ResultId = r.ResultID,
+        //                 TestId = r.TestID,
+        //                 TechnicianId = r.TechnicianID,
+        //                 TechnicianName = $"{r.TechnicianName}",
+        //                 ResultDescription = r.ResultDescription,
+        //                 ResultDate = r.ResultDate
+        //             })
+        //             .FirstOrDefaultAsync();
 
-                if (result == null)
-                    return NotFound(new { message = "No result found for this test" });
+        //         if (result == null)
+        //             return NotFound(new { message = "No result found for this test" });
 
-                return Ok(result);
-            }
-            catch (Exception)
-            {
-                return StatusCode(500, new { message = "An unexpected error occurred" });
-            }
-        }
+        //         return Ok(result);
+        //     }
+        //     catch (Exception)
+        //     {
+        //         return StatusCode(500, new { message = "An unexpected error occurred" });
+        //     }
+        // }
 
         // ============================================================
         // 6. PRESCRIPTION

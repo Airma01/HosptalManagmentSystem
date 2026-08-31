@@ -311,8 +311,8 @@ namespace HospitalSys.Controllers.Doctor
                     .AsNoTracking()
                     .AnyAsync(c => c.VisitID == visitId && c.DoctorID == doctorId);
 
-                if (existing)
-                    return Conflict(new { message = "A consultation already exists for this visit and doctor." });
+                // if (existing)
+                //     return Conflict(new { message = "A consultation already exists for this visit and doctor." });
 
                 var consultation = new Consultation
                 {
