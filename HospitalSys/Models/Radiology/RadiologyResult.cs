@@ -11,6 +11,8 @@ namespace HospitalSys.Models.Radiology
         [ForeignKey(nameof(RadiologyRequestID))]
         public RadiologyRequest? RadiologyRequest {get;set;}
         public string RadiologyTechnicianName {get;set;} = "";
+        public string? ImageName { get; set; } = "";
+        public string? ImagePath { get; set; } = "";
         public string ResultDescription {get;set;} = "";
         public DateTime ResultDate { get; set; } = DateTime.UtcNow;
 
