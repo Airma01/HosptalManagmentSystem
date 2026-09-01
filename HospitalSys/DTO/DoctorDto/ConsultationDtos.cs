@@ -13,6 +13,8 @@ namespace HospitalSys.Dto.DoctorDtos
         public List<SocialHistoryDto> SocialHistory { get; set; } = new();
         public List<ConsultationSummaryDto> PreviousConsultations { get; set; } = new();
         public PrescriptionDetailViewDto? LatestPrescription { get; set; }
+        public List<LaboratoryTestViewDto> LaboratoryTests { get; set; } = new();
+        public List<RadiologyRequestViewDto> RadiologyRequests { get; set; } = new();
     }
 
     public class PatientSummaryDto
@@ -215,6 +217,7 @@ namespace HospitalSys.Dto.DoctorDtos
         public string? Notes { get; set; }
     }
 
+    // ---------- Prescription ----------
     public class PrescriptionDetailViewDto
     {
         public int PrescriptionID { get; set; }
@@ -238,4 +241,122 @@ namespace HospitalSys.Dto.DoctorDtos
         public decimal Duration { get; set; }
         public decimal Quantity { get; set; }
     }
+
+    public class CreatePrescriptionDto
+    {
+        public int BranchPharmacyID { get; set; }
+        public List<CreatePrescriptionItemDto> Items { get; set; } = new();
+    }
+
+    public class CreatePrescriptionItemDto
+    {
+        public int MedicineID { get; set; }
+        public string? Dosage { get; set; }
+        public decimal Frequency { get; set; }
+        public decimal Duration { get; set; }
+        public decimal Quantity { get; set; }
+    }
+
+    // ---------- Laboratory (flat model → collection of tests) ----------
+    public class CreateLaboratoryTestsDto
+    {
+        public List<CreateLaboratoryTestItemDto> Tests { get; set; } = new();
+    }
+
+    public class CreateLaboratoryTestItemDto
+    {
+        public int LaboratoryTestTypeID { get; set; }
+        public string? Status { get; set; }   // e.g. "Requested", "Urgent" – uses existing string field
+    }
+
+    public class LaboratoryTestViewDto
+    {
+        public int TestID { get; set; }
+        public int ConsultationID { get; set; }
+        public int PatientID { get; set; }
+        public int DoctorID { get; set; }
+        public int LaboratoryTestTypeID { get; set; }
+        public string TestName { get; set; } = "";
+        public int LaboratorySectionID { get; set; }
+        public string SectionName { get; set; } = "";
+        public DateTime RequestDate { get; set; }
+        public string Status { get; set; } = "";
+    }
+
+    // ---------- Radiology (flat model → collection of requests) ----------
+    public class CreateRadiologyRequestsDto
+    {
+        public List<CreateRadiologyRequestItemDto> Requests { get; set; } = new();
+    }
+
+    public class CreateRadiologyRequestItemDto
+    {
+        public int RadiologyTestTypeID { get; set; }
+        public string? Status { get; set; }
+    }
+
+    public class RadiologyRequestViewDto
+    {
+        public int RadiologyRequestID { get; set; }
+        public int ConsultationID { get; set; }
+        public int PatientID { get; set; }
+        public int DoctorID { get; set; }
+        public int RadiologyTestTypeID { get; set; }
+        public string TestName { get; set; } = "";
+        public DateTime RequestDate { get; set; }
+        public string Status { get; set; } = "";
+    }
+
+    // Lookups for doctor dropdowns
+public class BranchPharmacyLookupDto
+{
+    public int BranchPharmacyID { get; set; }
+    public string BranchName { get; set; } = "";
+    public string Location { get; set; } = "";
+}
+
+public class MedicineLookupDto
+{
+    public int MedicineID { get; set; }
+    public string MedicineName { get; set; } = "";
+    public string GenericName { get; set; } = "";
+    public string UnitOfMeasure { get; set; } = "";
+}
+
+public class LaboratoryTestTypeLookupDto
+{
+    public int LaboratoryTestTypeID { get; set; }
+    public string TestName { get; set; } = "";
+    public int LaboratorySectionID { get; set; }
+    public string SectionName { get; set; } = "";
+}
+
+public class RadiologyTestTypeLookupDto
+{
+    public int RadiologyTestTypeID { get; set; }
+    public string TestName { get; set; } = "";
+    public int RadiologyDepartmentID { get; set; }
+    public string? DepartmentName { get; set; }
+}
+
+// Results (nested under each test/request)
+public class LaboratoryResultViewDto
+{
+    public int ResultID { get; set; }
+    public int TestID { get; set; }
+    public string TechnicianName { get; set; } = "";
+    public string ResultDescription { get; set; } = "";
+    public DateTime ResultDate { get; set; }
+}
+
+public class RadiologyResultViewDto
+{
+    public int RadiologyResultID { get; set; }
+    public int RadiologyRequestID { get; set; }
+    public string RadiologyTechnicianName { get; set; } = "";
+    public string? ImageName { get; set; }
+    public string? ImagePath { get; set; }
+    public string ResultDescription { get; set; } = "";
+    public DateTime ResultDate { get; set; }
+}
 }

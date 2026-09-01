@@ -3,8 +3,10 @@ using System.Security.Claims;
 using HospitalSys.Data;
 using HospitalSys.Dto.DoctorDtos;
 using HospitalSys.Models.Consultation_M;
+using HospitalSys.Models.Laboratory;
 using HospitalSys.Models.PatientManagment;
 using HospitalSys.Models.Pharmacy.Common;
+using HospitalSys.Models.Radiology;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -39,14 +41,9 @@ namespace HospitalSys.Controllers.Doctor
             return id;
         }
 
-        /// <summary>
-        /// Validates that the visit belongs to the patient and that triage (if any)
-        /// is assigned to the doctor's department. Returns 404 on failure to avoid enumeration.
-        /// </summary>
         private async Task<(PatientVisit? visit, bool forbidden)> ValidateVisitAccessAsync(
             int patientId, int visitId, int departmentId)
         {
-            
             var visit = await _context.PatientVisits
                 .AsNoTracking()
                 .Include(v => v.Patient)
@@ -57,14 +54,41 @@ namespace HospitalSys.Controllers.Doctor
             if (visit == null)
                 return (null, false);
 
-            // Must have triage in doctor's department (or at least one triage for that dept)
             bool inDepartment = visit.Triage != null &&
                                 visit.Triage.Any(t => t.ClinicalDepartmentID == departmentId);
 
             if (!inDepartment)
-                return (null, true); // treat as not found for security
+                return (null, true);
 
             return (visit, false);
+        }
+
+        private async Task EnsureDoctorCanAccessPatientAsync(int patientId)
+        {
+            int departmentId = GetDepartmentId();
+            bool accessible = await _context.Triages
+                .AsNoTracking()
+                .AnyAsync(t => t.ClinicalDepartmentID == departmentId &&
+                               t.PatientVisit!.PatientID == patientId);
+            if (!accessible)
+                throw new KeyNotFoundException();
+        }
+
+        private async Task<Consultation?> GetAuthorizedConsultationAsync(int consultationId, int doctorId, int departmentId)
+        {
+            var consultation = await _context.Consultations
+                .Include(c => c.PatientVisit!)
+                    .ThenInclude(v => v.Triage)
+                .FirstOrDefaultAsync(c => c.ConsultationID == consultationId);
+
+            if (consultation == null) return null;
+            if (consultation.DoctorID != doctorId) return null;
+
+            bool inDept = consultation.PatientVisit!.Triage
+                .Any(t => t.ClinicalDepartmentID == departmentId);
+            if (!inDept) return null;
+
+            return consultation;
         }
 
         // ============================================================
@@ -82,7 +106,6 @@ namespace HospitalSys.Controllers.Doctor
                 if (visit == null)
                     return NotFound(new { message = "Patient visit not found." });
 
-                // Current triage for this department (latest)
                 var currentTriage = await _context.Triages
                     .AsNoTracking()
                     .Where(t => t.VisitID == visitId && t.ClinicalDepartmentID == departmentId)
@@ -182,7 +205,6 @@ namespace HospitalSys.Controllers.Doctor
                     })
                     .ToListAsync();
 
-                // Previous consultations for this patient (any visit)
                 var previousConsultations = await _context.Consultations
                     .AsNoTracking()
                     .Where(c => c.PatientVisit!.PatientID == patientId)
@@ -219,7 +241,6 @@ namespace HospitalSys.Controllers.Doctor
                     })
                     .ToListAsync();
 
-                // Latest prescription for patient
                 var latestPrescription = await _context.Prescriptions
                     .AsNoTracking()
                     .Where(p => p.PatientID == patientId)
@@ -246,6 +267,44 @@ namespace HospitalSys.Controllers.Doctor
                         }).ToList()
                     })
                     .FirstOrDefaultAsync();
+
+                // Laboratory tests linked to consultations of this patient (current + previous)
+                var laboratoryTests = await _context.LaboratoryTests
+                    .AsNoTracking()
+                    .Where(lt => lt.PatientID == patientId)
+                    .OrderByDescending(lt => lt.RequestDate)
+                    .Select(lt => new LaboratoryTestViewDto
+                    {
+                        TestID = lt.TestID,
+                        ConsultationID = lt.ConsultationID,
+                        PatientID = lt.PatientID,
+                        DoctorID = lt.DoctorID,
+                        LaboratoryTestTypeID = lt.LaboratoryTestTypeID,
+                        TestName = lt.LaboratoryTestType != null ? lt.LaboratoryTestType.TestName : "",
+                        LaboratorySectionID = lt.LaboratoryTestType != null ? lt.LaboratoryTestType.LaboratorySectionID : 0,
+                        SectionName = lt.LaboratoryTestType != null && lt.LaboratoryTestType.LaboratorySection != null
+                            ? lt.LaboratoryTestType.LaboratorySection.SectionName : "",
+                        RequestDate = lt.RequestDate,
+                        Status = lt.Status
+                    })
+                    .ToListAsync();
+
+                var radiologyRequests = await _context.RadiologyRequests
+                    .AsNoTracking()
+                    .Where(rr => rr.PatientID == patientId)
+                    .OrderByDescending(rr => rr.RequestDate)
+                    .Select(rr => new RadiologyRequestViewDto
+                    {
+                        RadiologyRequestID = rr.RadiologyRequestID,
+                        ConsultationID = rr.ConsultationID,
+                        PatientID = rr.PatientID,
+                        DoctorID = rr.DoctorID,
+                        RadiologyTestTypeID = rr.RadiologyTestTypeID,
+                        TestName = rr.RadiologyTestType != null ? rr.RadiologyTestType.TestName : "",
+                        RequestDate = rr.RequestDate,
+                        Status = rr.Status
+                    })
+                    .ToListAsync();
 
                 var result = new DoctorPatientVisitDetailsDto
                 {
@@ -275,7 +334,9 @@ namespace HospitalSys.Controllers.Doctor
                     ProblemList = problemList,
                     SocialHistory = socialHistory,
                     PreviousConsultations = previousConsultations,
-                    LatestPrescription = latestPrescription
+                    LatestPrescription = latestPrescription,
+                    LaboratoryTests = laboratoryTests,
+                    RadiologyRequests = radiologyRequests
                 };
 
                 return Ok(result);
@@ -305,14 +366,6 @@ namespace HospitalSys.Controllers.Doctor
                 var (visit, _) = await ValidateVisitAccessAsync(patientId, visitId, departmentId);
                 if (visit == null)
                     return NotFound(new { message = "Patient visit not found." });
-
-                // Optional business rule: prevent duplicate open consultation for same visit+doctor
-                var existing = await _context.Consultations
-                    .AsNoTracking()
-                    .AnyAsync(c => c.VisitID == visitId && c.DoctorID == doctorId);
-
-                // if (existing)
-                //     return Conflict(new { message = "A consultation already exists for this visit and doctor." });
 
                 var consultation = new Consultation
                 {
@@ -369,20 +422,8 @@ namespace HospitalSys.Controllers.Doctor
                 int doctorId = GetDoctorId();
                 int departmentId = GetDepartmentId();
 
-                var consultation = await _context.Consultations
-                    .Include(c => c.PatientVisit!)
-                        .ThenInclude(v => v.Triage)
-                    .FirstOrDefaultAsync(c => c.ConsultationID == consultationId);
-
+                var consultation = await GetAuthorizedConsultationAsync(consultationId, doctorId, departmentId);
                 if (consultation == null)
-                    return NotFound(new { message = "Consultation not found." });
-
-                if (consultation.DoctorID != doctorId)
-                    return Forbid();
-
-                bool inDept = consultation.PatientVisit!.Triage
-                    .Any(t => t.ClinicalDepartmentID == departmentId);
-                if (!inDept)
                     return NotFound(new { message = "Consultation not found." });
 
                 var pe = new PhysicalExamination
@@ -427,20 +468,8 @@ namespace HospitalSys.Controllers.Doctor
                 int doctorId = GetDoctorId();
                 int departmentId = GetDepartmentId();
 
-                var consultation = await _context.Consultations
-                    .Include(c => c.PatientVisit!)
-                        .ThenInclude(v => v.Triage)
-                    .FirstOrDefaultAsync(c => c.ConsultationID == consultationId);
-
+                var consultation = await GetAuthorizedConsultationAsync(consultationId, doctorId, departmentId);
                 if (consultation == null)
-                    return NotFound(new { message = "Consultation not found." });
-
-                if (consultation.DoctorID != doctorId)
-                    return Forbid();
-
-                bool inDept = consultation.PatientVisit!.Triage
-                    .Any(t => t.ClinicalDepartmentID == departmentId);
-                if (!inDept)
                     return NotFound(new { message = "Consultation not found." });
 
                 var diagnosis = new Diagnosis
@@ -478,7 +507,313 @@ namespace HospitalSys.Controllers.Doctor
         }
 
         // ============================================================
-        // PATIENT CLINICAL HISTORY – ALLERGIES
+        // NEW: PRESCRIPTION (multi-medicine)
+        // POST /api/doctor/consultation/{consultationId}/prescription
+        // ============================================================
+        [HttpPost("consultation/{consultationId:int}/prescription")]
+        public async Task<IActionResult> CreatePrescription(
+            int consultationId, [FromBody] CreatePrescriptionDto dto)
+        {
+            try
+            {
+                int doctorId = GetDoctorId();
+                int departmentId = GetDepartmentId();
+
+                if (dto.Items == null || !dto.Items.Any())
+                    return BadRequest(new { message = "At least one medicine item is required." });
+
+                var consultation = await GetAuthorizedConsultationAsync(consultationId, doctorId, departmentId);
+                if (consultation == null)
+                    return NotFound(new { message = "Consultation not found." });
+
+                var patientId = consultation.PatientVisit!.PatientID;
+
+                // Validate BranchPharmacy
+                var branchExists = await _context.BranchPharmacies
+                    .AsNoTracking()
+                    .AnyAsync(b => b.BranchPharmacyID == dto.BranchPharmacyID);
+                if (!branchExists)
+                    return BadRequest(new { message = "Branch pharmacy not found." });
+
+                // Validate all medicines
+                var medicineIds = dto.Items.Select(i => i.MedicineID).Distinct().ToList();
+                var validMedicines = await _context.Medicines
+                    .AsNoTracking()
+                    .Where(m => medicineIds.Contains(m.MedicineID))
+                    .Select(m => m.MedicineID)
+                    .ToListAsync();
+
+                if (validMedicines.Count != medicineIds.Count)
+                    return BadRequest(new { message = "One or more medicines are invalid." });
+
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    var prescription = new Prescription
+                    {
+                        ConsultationID = consultationId,
+                        DoctorID = doctorId,
+                        PatientID = patientId,
+                        BranchPharmacyID = dto.BranchPharmacyID,
+                        PrescriptionDate = DateTime.UtcNow
+                    };
+
+                    _context.Prescriptions.Add(prescription);
+                    await _context.SaveChangesAsync();
+
+                    foreach (var item in dto.Items)
+                    {
+                        if (item.Quantity <= 0)
+                            throw new InvalidOperationException("Quantity must be greater than zero.");
+
+                        var detail = new PrescriptionDetail
+                        {
+                            PrescriptionID = prescription.PrescriptionID,
+                            MedicineID = item.MedicineID,
+                            Dosage = item.Dosage ?? "",
+                            Frequency = item.Frequency,
+                            Duration = item.Duration,
+                            Quantity = item.Quantity
+                        };
+                        _context.PrescriptionDetails.Add(detail);
+                    }
+
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    // Reload for response
+                    var created = await _context.Prescriptions
+                        .AsNoTracking()
+                        .Where(p => p.PrescriptionID == prescription.PrescriptionID)
+                        .Select(p => new PrescriptionDetailViewDto
+                        {
+                            PrescriptionID = p.PrescriptionID,
+                            ConsultationID = p.ConsultationID,
+                            DoctorID = p.DoctorID,
+                            PatientID = p.PatientID,
+                            BranchPharmacyID = p.BranchPharmacyID,
+                            PrescriptionDate = p.PrescriptionDate,
+                            Items = p.PrescriptionDetail.Select(pd => new PrescriptionItemDto
+                            {
+                                PrescriptionDetailID = pd.PrescriptionDetailID,
+                                PrescriptionID = pd.PrescriptionID,
+                                MedicineID = pd.MedicineID,
+                                MedicineName = pd.Medicine != null ? pd.Medicine.MedicineName : "",
+                                GenericName = pd.Medicine != null ? pd.Medicine.GenericName : "",
+                                Dosage = pd.Dosage,
+                                Frequency = pd.Frequency,
+                                Duration = pd.Duration,
+                                Quantity = pd.Quantity
+                            }).ToList()
+                        })
+                        .FirstAsync();
+
+                    return StatusCode(201, created);
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Unauthorized(new { message = "Unauthorized" });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { message = "An error occurred while creating prescription." });
+            }
+        }
+
+        // ============================================================
+        // NEW: LABORATORY TESTS (multiple tests → multiple LaboratoryTest rows)
+        // POST /api/doctor/consultation/{consultationId}/laboratory-tests
+        // ============================================================
+        [HttpPost("consultation/{consultationId:int}/laboratory-tests")]
+        public async Task<IActionResult> CreateLaboratoryTests(
+            int consultationId, [FromBody] CreateLaboratoryTestsDto dto)
+        {
+            try
+            {
+                int doctorId = GetDoctorId();
+                int departmentId = GetDepartmentId();
+
+                if (dto.Tests == null || !dto.Tests.Any())
+                    return BadRequest(new { message = "At least one laboratory test is required." });
+
+                var consultation = await GetAuthorizedConsultationAsync(consultationId, doctorId, departmentId);
+                if (consultation == null)
+                    return NotFound(new { message = "Consultation not found." });
+
+                var patientId = consultation.PatientVisit!.PatientID;
+
+                // Validate TestTypes and their Section relationship
+                var testTypeIds = dto.Tests.Select(t => t.LaboratoryTestTypeID).Distinct().ToList();
+                var validTypes = await _context.LaboratoryTestTypes
+                    .AsNoTracking()
+                    .Where(tt => testTypeIds.Contains(tt.LaboratoryTestTypeID))
+                    .Select(tt => new { tt.LaboratoryTestTypeID, tt.LaboratorySectionID })
+                    .ToListAsync();
+
+                if (validTypes.Count != testTypeIds.Count)
+                    return BadRequest(new { message = "One or more laboratory test types are invalid." });
+
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    var createdIds = new List<int>();
+
+                    foreach (var item in dto.Tests)
+                    {
+                        var labTest = new LaboratoryTest
+                        {
+                            ConsultationID = consultationId,
+                            PatientID = patientId,
+                            DoctorID = doctorId,
+                            LaboratoryTestTypeID = item.LaboratoryTestTypeID,
+                            RequestDate = DateTime.UtcNow,
+                            Status = string.IsNullOrWhiteSpace(item.Status) ? "Requested" : item.Status
+                        };
+                        _context.LaboratoryTests.Add(labTest);
+                        await _context.SaveChangesAsync();
+                        createdIds.Add(labTest.TestID);
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var result = await _context.LaboratoryTests
+                        .AsNoTracking()
+                        .Where(lt => createdIds.Contains(lt.TestID))
+                        .Select(lt => new LaboratoryTestViewDto
+                        {
+                            TestID = lt.TestID,
+                            ConsultationID = lt.ConsultationID,
+                            PatientID = lt.PatientID,
+                            DoctorID = lt.DoctorID,
+                            LaboratoryTestTypeID = lt.LaboratoryTestTypeID,
+                            TestName = lt.LaboratoryTestType != null ? lt.LaboratoryTestType.TestName : "",
+                            LaboratorySectionID = lt.LaboratoryTestType != null ? lt.LaboratoryTestType.LaboratorySectionID : 0,
+                            SectionName = lt.LaboratoryTestType != null && lt.LaboratoryTestType.LaboratorySection != null
+                                ? lt.LaboratoryTestType.LaboratorySection.SectionName : "",
+                            RequestDate = lt.RequestDate,
+                            Status = lt.Status
+                        })
+                        .ToListAsync();
+
+                    return StatusCode(201, result);
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Unauthorized(new { message = "Unauthorized" });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { message = "An error occurred while creating laboratory tests." });
+            }
+        }
+
+        // ============================================================
+        // NEW: RADIOLOGY REQUESTS (multiple → multiple RadiologyRequest rows)
+        // POST /api/doctor/consultation/{consultationId}/radiology-requests
+        // ============================================================
+        [HttpPost("consultation/{consultationId:int}/radiology-requests")]
+        public async Task<IActionResult> CreateRadiologyRequests(
+            int consultationId, [FromBody] CreateRadiologyRequestsDto dto)
+        {
+            try
+            {
+                int doctorId = GetDoctorId();
+                int departmentId = GetDepartmentId();
+
+                if (dto.Requests == null || !dto.Requests.Any())
+                    return BadRequest(new { message = "At least one radiology request is required." });
+
+                var consultation = await GetAuthorizedConsultationAsync(consultationId, doctorId, departmentId);
+                if (consultation == null)
+                    return NotFound(new { message = "Consultation not found." });
+
+                var patientId = consultation.PatientVisit!.PatientID;
+
+                var testTypeIds = dto.Requests.Select(r => r.RadiologyTestTypeID).Distinct().ToList();
+                var validTypes = await _context.RadiologyTestTypes
+                    .AsNoTracking()
+                    .Where(tt => testTypeIds.Contains(tt.RadiologyTestTypeID))
+                    .Select(tt => tt.RadiologyTestTypeID)
+                    .ToListAsync();
+
+                if (validTypes.Count != testTypeIds.Count)
+                    return BadRequest(new { message = "One or more radiology test types are invalid." });
+
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    var createdIds = new List<int>();
+
+                    foreach (var item in dto.Requests)
+                    {
+                        var req = new RadiologyRequest
+                        {
+                            ConsultationID = consultationId,
+                            PatientID = patientId,
+                            DoctorID = doctorId,
+                            RadiologyTestTypeID = item.RadiologyTestTypeID,
+                            RequestDate = DateTime.UtcNow,
+                            Status = string.IsNullOrWhiteSpace(item.Status) ? "Requested" : item.Status
+                        };
+                        _context.RadiologyRequests.Add(req);
+                        await _context.SaveChangesAsync();
+                        createdIds.Add(req.RadiologyRequestID);
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var result = await _context.RadiologyRequests
+                        .AsNoTracking()
+                        .Where(rr => createdIds.Contains(rr.RadiologyRequestID))
+                        .Select(rr => new RadiologyRequestViewDto
+                        {
+                            RadiologyRequestID = rr.RadiologyRequestID,
+                            ConsultationID = rr.ConsultationID,
+                            PatientID = rr.PatientID,
+                            DoctorID = rr.DoctorID,
+                            RadiologyTestTypeID = rr.RadiologyTestTypeID,
+                            TestName = rr.RadiologyTestType != null ? rr.RadiologyTestType.TestName : "",
+                            RequestDate = rr.RequestDate,
+                            Status = rr.Status
+                        })
+                        .ToListAsync();
+
+                    return StatusCode(201, result);
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Unauthorized(new { message = "Unauthorized" });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { message = "An error occurred while creating radiology requests." });
+            }
+        }
+
+        // ============================================================
+        // PATIENT CLINICAL HISTORY – ALLERGIES (existing)
         // ============================================================
         [HttpGet("patient/{patientId:int}/allergies")]
         public async Task<IActionResult> GetAllergies(int patientId)
@@ -593,7 +928,7 @@ namespace HospitalSys.Controllers.Doctor
         }
 
         // ============================================================
-        // MEDICAL HISTORY
+        // MEDICAL HISTORY (existing)
         // ============================================================
         [HttpGet("patient/{patientId:int}/medical-history")]
         public async Task<IActionResult> GetMedicalHistory(int patientId)
@@ -703,7 +1038,7 @@ namespace HospitalSys.Controllers.Doctor
         }
 
         // ============================================================
-        // FAMILY MEDICAL HISTORY
+        // FAMILY MEDICAL HISTORY (existing)
         // ============================================================
         [HttpGet("patient/{patientId:int}/family-medical-history")]
         public async Task<IActionResult> GetFamilyMedicalHistory(int patientId)
@@ -803,7 +1138,7 @@ namespace HospitalSys.Controllers.Doctor
         }
 
         // ============================================================
-        // PROBLEM LIST
+        // PROBLEM LIST (existing)
         // ============================================================
         [HttpGet("patient/{patientId:int}/problem-list")]
         public async Task<IActionResult> GetProblemList(int patientId)
@@ -923,7 +1258,7 @@ namespace HospitalSys.Controllers.Doctor
         }
 
         // ============================================================
-        // SOCIAL HISTORY
+        // SOCIAL HISTORY (existing)
         // ============================================================
         [HttpGet("patient/{patientId:int}/social-history")]
         public async Task<IActionResult> GetSocialHistory(int patientId)
@@ -956,7 +1291,6 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
-                
                 await EnsureDoctorCanAccessPatientAsync(patientId);
                 var entity = new SocialHistory
                 {
@@ -1037,20 +1371,103 @@ namespace HospitalSys.Controllers.Doctor
             catch (KeyNotFoundException) { return NotFound(new { message = "Patient not found or not accessible." }); }
             catch { return StatusCode(500, new { message = "Error deleting social history." }); }
         }
+        
+                // ============================================================
+        // LOOKUPS (names for dropdowns — Doctor role)
+        // ============================================================
 
-        /// <summary>
-        /// Ensures the patient has at least one triage assigned to the doctor's department.
-        /// Throws KeyNotFoundException if not accessible (mapped to 404).
-        /// </summary>
-        private async Task EnsureDoctorCanAccessPatientAsync(int patientId)
+        [HttpGet("lookups/branch-pharmacies")]
+        public async Task<IActionResult> GetBranchPharmacies()
         {
-            int departmentId = GetDepartmentId();
-            bool accessible = await _context.Triages
-                .AsNoTracking()
-                .AnyAsync(t => t.ClinicalDepartmentID == departmentId &&
-                               t.PatientVisit!.PatientID == patientId);
-            if (!accessible)
-                throw new KeyNotFoundException();
+            try
+            {
+                _ = GetDoctorId();
+                var list = await _context.BranchPharmacies
+                    .AsNoTracking()
+                    .OrderBy(b => b.BranchName)
+                    .Select(b => new BranchPharmacyLookupDto
+                    {
+                        BranchPharmacyID = b.BranchPharmacyID,
+                        BranchName = b.BranchName,
+                        Location = b.Location
+                    })
+                    .ToListAsync();
+                return Ok(list);
+            }
+            catch (UnauthorizedAccessException) { return Unauthorized(); }
+            catch { return StatusCode(500, new { message = "Failed to load branch pharmacies." }); }
+        }
+
+        [HttpGet("lookups/medicines")]
+        public async Task<IActionResult> GetMedicines()
+        {
+            try
+            {
+                _ = GetDoctorId();
+                var list = await _context.Medicines
+                    .AsNoTracking()
+                    .OrderBy(m => m.MedicineName)
+                    .Select(m => new MedicineLookupDto
+                    {
+                        MedicineID = m.MedicineID,
+                        MedicineName = m.MedicineName,
+                        GenericName = m.GenericName,
+                        UnitOfMeasure = m.UnitOfMeasure
+                    })
+                    .ToListAsync();
+                return Ok(list);
+            }
+            catch (UnauthorizedAccessException) { return Unauthorized(); }
+            catch { return StatusCode(500, new { message = "Failed to load medicines." }); }
+        }
+
+        [HttpGet("lookups/laboratory-test-types")]
+        public async Task<IActionResult> GetLaboratoryTestTypes()
+        {
+            try
+            {
+                _ = GetDoctorId();
+                var list = await _context.LaboratoryTestTypes
+                    .AsNoTracking()
+                    .Include(t => t.LaboratorySection)
+                    .OrderBy(t => t.LaboratorySection!.SectionName)
+                    .ThenBy(t => t.TestName)
+                    .Select(t => new LaboratoryTestTypeLookupDto
+                    {
+                        LaboratoryTestTypeID = t.LaboratoryTestTypeID,
+                        TestName = t.TestName,
+                        LaboratorySectionID = t.LaboratorySectionID,
+                        SectionName = t.LaboratorySection != null ? t.LaboratorySection.SectionName : ""
+                    })
+                    .ToListAsync();
+                return Ok(list);
+            }
+            catch (UnauthorizedAccessException) { return Unauthorized(); }
+            catch { return StatusCode(500, new { message = "Failed to load laboratory test types." }); }
+        }
+
+        [HttpGet("lookups/radiology-test-types")]
+        public async Task<IActionResult> GetRadiologyTestTypes()
+        {
+            try
+            {
+                _ = GetDoctorId();
+                var list = await _context.RadiologyTestTypes
+                    .AsNoTracking()
+                    .Include(t => t.RadiologyDepartment)
+                    .OrderBy(t => t.TestName)
+                    .Select(t => new RadiologyTestTypeLookupDto
+                    {
+                        RadiologyTestTypeID = t.RadiologyTestTypeID,
+                        TestName = t.TestName,
+                        RadiologyDepartmentID = t.RadiologyDepartmentID,
+                        DepartmentName = t.RadiologyDepartment != null ? t.RadiologyDepartment.DepartmentName : null
+                    })
+                    .ToListAsync();
+                return Ok(list);
+            }
+            catch (UnauthorizedAccessException) { return Unauthorized(); }
+            catch { return StatusCode(500, new { message = "Failed to load radiology test types." }); }
         }
     }
 }

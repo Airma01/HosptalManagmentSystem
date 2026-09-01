@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import API from "../../../../Config/API";
 import PrescriptionDetails from "../Prescription/PrescriptionDetails";
@@ -14,6 +14,8 @@ const SECTIONS = [
   { id: "diagnosis", label: "Diagnosis", icon: "bi-file-medical" },
   { id: "problemList", label: "Problem List", icon: "bi-list-check" },
   { id: "prescription", label: "Prescription", icon: "bi-prescription2" },
+  { id: "laboratory", label: "Laboratory", icon: "bi-droplet" },
+  { id: "radiology", label: "Radiology", icon: "bi-radioactive" },
 ];
 
 function Modal({ title, onClose, children, wide }) {
@@ -48,6 +50,24 @@ function Field({ label, children }) {
 const inputCls =
   "w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500";
 
+const emptyMedicineRow = () => ({
+  medicineID: "",
+  dosage: "",
+  frequency: "",
+  duration: "",
+  quantity: "",
+});
+
+const emptyLabRow = () => ({
+  laboratoryTestTypeID: "",
+  status: "Requested",
+});
+
+const emptyRadRow = () => ({
+  radiologyTestTypeID: "",
+  status: "Requested",
+});
+
 export default function ConsultationPatient() {
   const { patientId, visitId } = useParams();
   const navigate = useNavigate();
@@ -56,10 +76,22 @@ export default function ConsultationPatient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [modal, setModal] = useState(null); // { type, mode, record? }
+  const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
+
+  // Lookups (names for dropdowns)
+  const [branchPharmacies, setBranchPharmacies] = useState([]);
+  const [medicines, setMedicines] = useState([]);
+  const [labTestTypes, setLabTestTypes] = useState([]);
+  const [radTestTypes, setRadTestTypes] = useState([]);
+
+  // Multi-item create forms
+  const [rxItems, setRxItems] = useState([emptyMedicineRow()]);
+  const [rxBranchId, setRxBranchId] = useState("");
+  const [labItems, setLabItems] = useState([emptyLabRow()]);
+  const [radItems, setRadItems] = useState([emptyRadRow()]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -78,6 +110,26 @@ export default function ConsultationPatient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Load dropdown lists once
+  useEffect(() => {
+    (async () => {
+      try {
+        const [b, m, l, r] = await Promise.all([
+          API.get("/api/doctor/lookups/branch-pharmacies"),
+          API.get("/api/doctor/lookups/medicines"),
+          API.get("/api/doctor/lookups/laboratory-test-types"),
+          API.get("/api/doctor/lookups/radiology-test-types"),
+        ]);
+        setBranchPharmacies(b.data || []);
+        setMedicines(m.data || []);
+        setLabTestTypes(l.data || []);
+        setRadTestTypes(r.data || []);
+      } catch {
+        // Lookups optional; forms still render
+      }
+    })();
+  }, []);
 
   const flash = (msg) => {
     setMessage(msg);
@@ -220,6 +272,108 @@ export default function ConsultationPatient() {
     }
   };
 
+  const submitPrescription = async (e) => {
+    e.preventDefault();
+    if (!primaryConsultationId) {
+      alert("Start a consultation first.");
+      return;
+    }
+    if (!rxBranchId) {
+      alert("Please select a branch pharmacy.");
+      return;
+    }
+    const items = rxItems
+      .filter((r) => r.medicineID)
+      .map((r) => ({
+        medicineID: Number(r.medicineID),
+        dosage: r.dosage || "",
+        frequency: Number(r.frequency) || 0,
+        duration: Number(r.duration) || 0,
+        quantity: Number(r.quantity) || 0,
+      }));
+    if (items.length === 0) {
+      alert("Add at least one medicine.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await API.post(`/api/doctor/consultation/${primaryConsultationId}/prescription`, {
+        branchPharmacyID: Number(rxBranchId),
+        items,
+      });
+      setRxItems([emptyMedicineRow()]);
+      setRxBranchId("");
+      flash("Prescription created.");
+      await load();
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to create prescription.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const submitLaboratory = async (e) => {
+    e.preventDefault();
+    if (!primaryConsultationId) {
+      alert("Start a consultation first.");
+      return;
+    }
+    const tests = labItems
+      .filter((r) => r.laboratoryTestTypeID)
+      .map((r) => ({
+        laboratoryTestTypeID: Number(r.laboratoryTestTypeID),
+        status: r.status || "Requested",
+      }));
+    if (tests.length === 0) {
+      alert("Add at least one laboratory test.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await API.post(`/api/doctor/consultation/${primaryConsultationId}/laboratory-tests`, {
+        tests,
+      });
+      setLabItems([emptyLabRow()]);
+      flash("Laboratory tests requested.");
+      await load();
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to request laboratory tests.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const submitRadiology = async (e) => {
+    e.preventDefault();
+    if (!primaryConsultationId) {
+      alert("Start a consultation first.");
+      return;
+    }
+    const requests = radItems
+      .filter((r) => r.radiologyTestTypeID)
+      .map((r) => ({
+        radiologyTestTypeID: Number(r.radiologyTestTypeID),
+        status: r.status || "Requested",
+      }));
+    if (requests.length === 0) {
+      alert("Add at least one radiology test.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await API.post(`/api/doctor/consultation/${primaryConsultationId}/radiology-requests`, {
+        requests,
+      });
+      setRadItems([emptyRadRow()]);
+      flash("Radiology requests created.");
+      await load();
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to create radiology requests.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const doDelete = async () => {
     if (!confirmDelete) return;
     try {
@@ -274,6 +428,9 @@ export default function ConsultationPatient() {
   );
   const primaryConsultationId =
     visitConsultations[0]?.consultationID || consultations[0]?.consultationID;
+
+  const laboratoryTests = data.laboratoryTests || [];
+  const radiologyRequests = data.radiologyRequests || [];
 
   return (
     <div className="space-y-4">
@@ -385,13 +542,21 @@ export default function ConsultationPatient() {
                 consultation for this visit.
               </p>
               <p>
-                Previous consultations on file:{" "}
-                <strong>{consultations.length}</strong>
+                Previous consultations on file: <strong>{consultations.length}</strong>
               </p>
               <p>
                 Allergies: <strong>{(data.allergies || []).length}</strong> · Problems:{" "}
                 <strong>{(data.problemList || []).length}</strong>
               </p>
+              <p>
+                Lab tests: <strong>{laboratoryTests.length}</strong> · Radiology:{" "}
+                <strong>{radiologyRequests.length}</strong>
+              </p>
+              {!primaryConsultationId && (
+                <p className="text-amber-600">
+                  Start a consultation before ordering prescription, lab, or radiology.
+                </p>
+              )}
             </div>
           )}
 
@@ -628,8 +793,498 @@ export default function ConsultationPatient() {
             </div>
           )}
 
+          {/* ========== PRESCRIPTION ========== */}
           {section === "prescription" && (
-            <PrescriptionDetails prescription={data.latestPrescription} />
+            <div className="space-y-4">
+              <PrescriptionDetails prescription={data.latestPrescription} />
+
+              <div className="bg-white border rounded-xl shadow-sm">
+                <div className="px-5 py-4 border-b">
+                  <h3 className="font-semibold text-slate-800">New Prescription</h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Consultation #{primaryConsultationId || "—"} · Select pharmacy and
+                    medicines by name
+                  </p>
+                </div>
+                <form onSubmit={submitPrescription} className="p-5 space-y-4">
+                  {!primaryConsultationId && (
+                    <p className="text-amber-600 text-sm">Start a consultation first.</p>
+                  )}
+                  <Field label="Branch Pharmacy">
+                    <select
+                      className={inputCls}
+                      value={rxBranchId}
+                      onChange={(e) => setRxBranchId(e.target.value)}
+                      required
+                      disabled={!primaryConsultationId}
+                    >
+                      <option value="">Select branch pharmacy</option>
+                      {branchPharmacies.map((b) => (
+                        <option key={b.branchPharmacyID} value={b.branchPharmacyID}>
+                          {b.branchName}
+                          {b.location ? ` (${b.location})` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-slate-700">Medicines</span>
+                      <button
+                        type="button"
+                        onClick={() => setRxItems([...rxItems, emptyMedicineRow()])}
+                        className="text-xs text-indigo-600"
+                        disabled={!primaryConsultationId}
+                      >
+                        + Add medicine
+                      </button>
+                    </div>
+                    {rxItems.map((row, idx) => (
+                      <div
+                        key={idx}
+                        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2 p-3 border border-slate-100 rounded-lg"
+                      >
+                        <Field label="Medicine">
+                          <select
+                            className={inputCls}
+                            value={row.medicineID}
+                            onChange={(e) => {
+                              const next = [...rxItems];
+                              next[idx] = { ...next[idx], medicineID: e.target.value };
+                              setRxItems(next);
+                            }}
+                            required
+                          >
+                            <option value="">Select medicine</option>
+                            {medicines.map((m) => (
+                              <option key={m.medicineID} value={m.medicineID}>
+                                {m.medicineName}
+                                {m.genericName ? ` (${m.genericName})` : ""}
+                              </option>
+                            ))}
+                          </select>
+                        </Field>
+                        <Field label="Dosage">
+                          <input
+                            className={inputCls}
+                            value={row.dosage}
+                            onChange={(e) => {
+                              const next = [...rxItems];
+                              next[idx] = { ...next[idx], dosage: e.target.value };
+                              setRxItems(next);
+                            }}
+                            placeholder="500 mg"
+                          />
+                        </Field>
+                        <Field label="Frequency">
+                          <input
+                            className={inputCls}
+                            type="number"
+                            step="0.1"
+                            value={row.frequency}
+                            onChange={(e) => {
+                              const next = [...rxItems];
+                              next[idx] = { ...next[idx], frequency: e.target.value };
+                              setRxItems(next);
+                            }}
+                          />
+                        </Field>
+                        <Field label="Duration">
+                          <input
+                            className={inputCls}
+                            type="number"
+                            step="0.1"
+                            value={row.duration}
+                            onChange={(e) => {
+                              const next = [...rxItems];
+                              next[idx] = { ...next[idx], duration: e.target.value };
+                              setRxItems(next);
+                            }}
+                          />
+                        </Field>
+                        <Field label="Quantity">
+                          <input
+                            className={inputCls}
+                            type="number"
+                            step="0.1"
+                            value={row.quantity}
+                            onChange={(e) => {
+                              const next = [...rxItems];
+                              next[idx] = { ...next[idx], quantity: e.target.value };
+                              setRxItems(next);
+                            }}
+                          />
+                        </Field>
+                        <div className="flex items-end">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setRxItems(rxItems.filter((_, i) => i !== idx))
+                            }
+                            className="text-xs text-red-600 px-2 py-2"
+                            disabled={rxItems.length === 1}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={saving || !primaryConsultationId}
+                      className="px-4 py-2 text-sm rounded-lg bg-indigo-600 text-white disabled:opacity-50"
+                    >
+                      {saving ? "Saving..." : "Create prescription"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* ========== LABORATORY ========== */}
+          {section === "laboratory" && (
+            <div className="space-y-4">
+              <div className="bg-white border rounded-xl shadow-sm">
+                <div className="px-5 py-4 border-b">
+                  <h3 className="font-semibold text-slate-800">Laboratory Tests</h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Existing requests and results for this patient
+                  </p>
+                </div>
+                {laboratoryTests.length === 0 ? (
+                  <p className="p-5 text-sm text-slate-500">No laboratory tests yet.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm">
+                      <thead className="bg-slate-50 text-slate-600">
+                        <tr>
+                          <th className="text-left px-4 py-2 font-medium">ID</th>
+                          <th className="text-left px-4 py-2 font-medium">Section</th>
+                          <th className="text-left px-4 py-2 font-medium">Test</th>
+                          <th className="text-left px-4 py-2 font-medium">Status</th>
+                          <th className="text-left px-4 py-2 font-medium">Date</th>
+                          <th className="text-left px-4 py-2 font-medium">Consultation</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {laboratoryTests.map((t) => (
+                          <Fragment key={t.testID}>
+                            <tr>
+                              <td className="px-4 py-2">{t.testID}</td>
+                              <td className="px-4 py-2">{t.sectionName || "—"}</td>
+                              <td className="px-4 py-2">{t.testName || "—"}</td>
+                              <td className="px-4 py-2">{t.status || "—"}</td>
+                              <td className="px-4 py-2">
+                                {t.requestDate
+                                  ? new Date(t.requestDate).toLocaleString()
+                                  : "—"}
+                              </td>
+                              <td className="px-4 py-2">#{t.consultationID}</td>
+                            </tr>
+                            <tr>
+                              <td colSpan={6} className="bg-slate-50 px-4 py-2 text-xs text-slate-600">
+                                <span className="font-medium text-slate-500">Results: </span>
+                                {(t.results || []).length === 0 ? (
+                                  <span className="text-slate-400">No result yet</span>
+                                ) : (
+                                  (t.results || []).map((r) => (
+                                    <div key={r.resultID} className="mt-1">
+                                      <strong>
+                                        {r.resultDate
+                                          ? new Date(r.resultDate).toLocaleString()
+                                          : ""}
+                                      </strong>
+                                      {" · "}
+                                      {r.technicianName || "Technician"}
+                                      {": "}
+                                      {r.resultDescription || "—"}
+                                    </div>
+                                  ))
+                                )}
+                              </td>
+                            </tr>
+                          </Fragment>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-white border rounded-xl shadow-sm">
+                <div className="px-5 py-4 border-b">
+                  <h3 className="font-semibold text-slate-800">Request Laboratory Tests</h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Consultation #{primaryConsultationId || "—"} · Select tests by name
+                    (section shown)
+                  </p>
+                </div>
+                <form onSubmit={submitLaboratory} className="p-5 space-y-4">
+                  {!primaryConsultationId && (
+                    <p className="text-amber-600 text-sm">Start a consultation first.</p>
+                  )}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-slate-700">Tests</span>
+                      <button
+                        type="button"
+                        onClick={() => setLabItems([...labItems, emptyLabRow()])}
+                        className="text-xs text-indigo-600"
+                        disabled={!primaryConsultationId}
+                      >
+                        + Add test
+                      </button>
+                    </div>
+                    {labItems.map((row, idx) => (
+                      <div
+                        key={idx}
+                        className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-3 border border-slate-100 rounded-lg"
+                      >
+                        <Field label="Test type">
+                          <select
+                            className={inputCls}
+                            value={row.laboratoryTestTypeID}
+                            onChange={(e) => {
+                              const next = [...labItems];
+                              next[idx] = {
+                                ...next[idx],
+                                laboratoryTestTypeID: e.target.value,
+                              };
+                              setLabItems(next);
+                            }}
+                            required
+                          >
+                            <option value="">Select test type</option>
+                            {labTestTypes.map((t) => (
+                              <option
+                                key={t.laboratoryTestTypeID}
+                                value={t.laboratoryTestTypeID}
+                              >
+                                {t.sectionName ? `${t.sectionName} — ` : ""}
+                                {t.testName}
+                              </option>
+                            ))}
+                          </select>
+                        </Field>
+                        <Field label="Status / Priority">
+                          <select
+                            className={inputCls}
+                            value={row.status}
+                            onChange={(e) => {
+                              const next = [...labItems];
+                              next[idx] = { ...next[idx], status: e.target.value };
+                              setLabItems(next);
+                            }}
+                          >
+                            <option value="Requested">Requested</option>
+                            <option value="Urgent">Urgent</option>
+                            <option value="STAT">STAT</option>
+                          </select>
+                        </Field>
+                        <div className="flex items-end">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setLabItems(labItems.filter((_, i) => i !== idx))
+                            }
+                            className="text-xs text-red-600 px-2 py-2"
+                            disabled={labItems.length === 1}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={saving || !primaryConsultationId}
+                      className="px-4 py-2 text-sm rounded-lg bg-indigo-600 text-white disabled:opacity-50"
+                    >
+                      {saving ? "Saving..." : "Submit laboratory request"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* ========== RADIOLOGY ========== */}
+          {section === "radiology" && (
+            <div className="space-y-4">
+              <div className="bg-white border rounded-xl shadow-sm">
+                <div className="px-5 py-4 border-b">
+                  <h3 className="font-semibold text-slate-800">Radiology Requests</h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Existing requests and results for this patient
+                  </p>
+                </div>
+                {radiologyRequests.length === 0 ? (
+                  <p className="p-5 text-sm text-slate-500">No radiology requests yet.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm">
+                      <thead className="bg-slate-50 text-slate-600">
+                        <tr>
+                          <th className="text-left px-4 py-2 font-medium">ID</th>
+                          <th className="text-left px-4 py-2 font-medium">Test</th>
+                          <th className="text-left px-4 py-2 font-medium">Status</th>
+                          <th className="text-left px-4 py-2 font-medium">Date</th>
+                          <th className="text-left px-4 py-2 font-medium">Consultation</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {radiologyRequests.map((r) => (
+                          <Fragment key={r.radiologyRequestID}>
+                            <tr>
+                              <td className="px-4 py-2">{r.radiologyRequestID}</td>
+                              <td className="px-4 py-2">{r.testName || "—"}</td>
+                              <td className="px-4 py-2">{r.status || "—"}</td>
+                              <td className="px-4 py-2">
+                                {r.requestDate
+                                  ? new Date(r.requestDate).toLocaleString()
+                                  : "—"}
+                              </td>
+                              <td className="px-4 py-2">#{r.consultationID}</td>
+                            </tr>
+                            <tr>
+                              <td colSpan={5} className="bg-slate-50 px-4 py-2 text-xs text-slate-600">
+                                <span className="font-medium text-slate-500">Results: </span>
+                                {(r.results || []).length === 0 ? (
+                                  <span className="text-slate-400">No result yet</span>
+                                ) : (
+                                  (r.results || []).map((res) => (
+                                    <div key={res.radiologyResultID} className="mt-1">
+                                      <strong>
+                                        {res.resultDate
+                                          ? new Date(res.resultDate).toLocaleString()
+                                          : ""}
+                                      </strong>
+                                      {" · "}
+                                      {res.radiologyTechnicianName || "Technician"}
+                                      {": "}
+                                      {res.resultDescription || "—"}
+                                      {res.imageName ? (
+                                        <span className="text-slate-400">
+                                          {" "}
+                                          · Image: {res.imageName}
+                                        </span>
+                                      ) : null}
+                                    </div>
+                                  ))
+                                )}
+                              </td>
+                            </tr>
+                          </Fragment>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-white border rounded-xl shadow-sm">
+                <div className="px-5 py-4 border-b">
+                  <h3 className="font-semibold text-slate-800">Request Radiology</h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Consultation #{primaryConsultationId || "—"} · Select tests by name
+                  </p>
+                </div>
+                <form onSubmit={submitRadiology} className="p-5 space-y-4">
+                  {!primaryConsultationId && (
+                    <p className="text-amber-600 text-sm">Start a consultation first.</p>
+                  )}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-slate-700">Tests</span>
+                      <button
+                        type="button"
+                        onClick={() => setRadItems([...radItems, emptyRadRow()])}
+                        className="text-xs text-indigo-600"
+                        disabled={!primaryConsultationId}
+                      >
+                        + Add test
+                      </button>
+                    </div>
+                    {radItems.map((row, idx) => (
+                      <div
+                        key={idx}
+                        className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-3 border border-slate-100 rounded-lg"
+                      >
+                        <Field label="Radiology test">
+                          <select
+                            className={inputCls}
+                            value={row.radiologyTestTypeID}
+                            onChange={(e) => {
+                              const next = [...radItems];
+                              next[idx] = {
+                                ...next[idx],
+                                radiologyTestTypeID: e.target.value,
+                              };
+                              setRadItems(next);
+                            }}
+                            required
+                          >
+                            <option value="">Select radiology test</option>
+                            {radTestTypes.map((t) => (
+                              <option
+                                key={t.radiologyTestTypeID}
+                                value={t.radiologyTestTypeID}
+                              >
+                                {t.testName}
+                                {t.departmentName ? ` (${t.departmentName})` : ""}
+                              </option>
+                            ))}
+                          </select>
+                        </Field>
+                        <Field label="Status / Priority">
+                          <select
+                            className={inputCls}
+                            value={row.status}
+                            onChange={(e) => {
+                              const next = [...radItems];
+                              next[idx] = { ...next[idx], status: e.target.value };
+                              setRadItems(next);
+                            }}
+                          >
+                            <option value="Requested">Requested</option>
+                            <option value="Urgent">Urgent</option>
+                            <option value="STAT">STAT</option>
+                          </select>
+                        </Field>
+                        <div className="flex items-end">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setRadItems(radItems.filter((_, i) => i !== idx))
+                            }
+                            className="text-xs text-red-600 px-2 py-2"
+                            disabled={radItems.length === 1}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={saving || !primaryConsultationId}
+                      className="px-4 py-2 text-sm rounded-lg bg-indigo-600 text-white disabled:opacity-50"
+                    >
+                      {saving ? "Saving..." : "Submit radiology request"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
           )}
         </div>
       </div>

@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using HospitalSys.Data;
 using HospitalSys.Dto.Radiology;
 using HospitalSys.Models.Radiology;
@@ -26,6 +25,8 @@ namespace HospitalSys.Controllers.Radiology
                 return id;
             return null;
         }
+
+        private bool IsInRole(string role) => User.IsInRole(role);
 
         private static RadiologyRequestDto MapListItem(RadiologyRequest r)
         {
@@ -113,7 +114,10 @@ namespace HospitalSys.Controllers.Radiology
                 .Include(r => r.RadiologyResult);
         }
 
+        // ----------------------------------------------------------
         // POST: /radiology/RadiologyRequest
+        // Single request (existing contract)
+        // ----------------------------------------------------------
         [HttpPost]
         [Authorize(Roles = "Doctor")]
         public async Task<IActionResult> Create([FromBody] CreateRadiologyRequestDto dto)
@@ -127,7 +131,6 @@ namespace HospitalSys.Controllers.Radiology
                 if (doctorId == null)
                     return Unauthorized(new { message = "Doctor identity not found in token." });
 
-                // Prefer authenticated DoctorID over client-supplied value
                 var effectiveDoctorId = doctorId.Value;
 
                 if (dto.DoctorID != 0 && dto.DoctorID != effectiveDoctorId)
@@ -159,7 +162,7 @@ namespace HospitalSys.Controllers.Radiology
                     DoctorID = effectiveDoctorId,
                     RadiologyTestTypeID = dto.RadiologyTestTypeID,
                     RequestDate = DateTime.UtcNow,
-                    Status = string.IsNullOrWhiteSpace(dto.Status) ? "Pending" : dto.Status.Trim()
+                    Status = string.IsNullOrWhiteSpace(dto.Status) ? "Requested" : dto.Status.Trim()
                 };
 
                 _context.RadiologyRequests.Add(entity);
@@ -177,9 +180,104 @@ namespace HospitalSys.Controllers.Radiology
             }
         }
 
+        // ----------------------------------------------------------
+        // POST: /radiology/RadiologyRequest/bulk
+        // Multiple tests under one consultation (same patient/doctor)
+        // Body shape (if you add CreateRadiologyRequestsBulkDto):
+        // {
+        //   "consultationID": 1,
+        //   "patientID": 1,
+        //   "status": "Requested",
+        //   "items": [ { "radiologyTestTypeID": 1 }, { "radiologyTestTypeID": 2 } ]
+        // }
+        // If you prefer not to add a new DTO, use the doctor consultation
+        // endpoint instead: POST /api/doctor/consultation/{id}/radiology-requests
+        // ----------------------------------------------------------
+        [HttpPost("bulk")]
+        [Authorize(Roles = "Doctor")]
+        public async Task<IActionResult> CreateBulk([FromBody] CreateRadiologyRequestBulkDto dto)
+        {
+            try
+            {
+                if (dto == null || dto.Items == null || dto.Items.Count == 0)
+                    return BadRequest(new { message = "At least one radiology test item is required." });
+
+                var doctorId = GetAuthenticatedDoctorId();
+                if (doctorId == null)
+                    return Unauthorized(new { message = "Doctor identity not found in token." });
+
+                var effectiveDoctorId = doctorId.Value;
+
+                var patientExists = await _context.Patients.AnyAsync(p => p.PatientID == dto.PatientID);
+                if (!patientExists)
+                    return BadRequest(new { message = "PatientID does not exist." });
+
+                var consultation = await _context.Consultations
+                    .FirstOrDefaultAsync(c => c.ConsultationID == dto.ConsultationID);
+
+                if (consultation == null)
+                    return BadRequest(new { message = "ConsultationID does not exist." });
+
+                if (consultation.DoctorID != effectiveDoctorId)
+                    return BadRequest(new { message = "Consultation does not belong to the authenticated doctor." });
+
+                var typeIds = dto.Items.Select(i => i.RadiologyTestTypeID).Distinct().ToList();
+                var validCount = await _context.RadiologyTestTypes
+                    .CountAsync(t => typeIds.Contains(t.RadiologyTestTypeID));
+
+                if (validCount != typeIds.Count)
+                    return BadRequest(new { message = "One or more RadiologyTestTypeID values are invalid." });
+
+                var status = string.IsNullOrWhiteSpace(dto.Status) ? "Requested" : dto.Status.Trim();
+                var createdIds = new List<int>();
+
+                using var tx = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    foreach (var item in dto.Items)
+                    {
+                        var entity = new RadiologyRequest
+                        {
+                            ConsultationID = dto.ConsultationID,
+                            PatientID = dto.PatientID,
+                            DoctorID = effectiveDoctorId,
+                            RadiologyTestTypeID = item.RadiologyTestTypeID,
+                            RequestDate = DateTime.UtcNow,
+                            Status = string.IsNullOrWhiteSpace(item.Status) ? status : item.Status.Trim()
+                        };
+                        _context.RadiologyRequests.Add(entity);
+                        await _context.SaveChangesAsync();
+                        createdIds.Add(entity.RadiologyRequestID);
+                    }
+
+                    await tx.CommitAsync();
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
+
+                var created = await BaseQuery()
+                    .AsNoTracking()
+                    .Where(r => createdIds.Contains(r.RadiologyRequestID))
+                    .OrderBy(r => r.RadiologyRequestID)
+                    .ToListAsync();
+
+                return StatusCode(201, created.Select(MapDetail).ToList());
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Failed to create radiology requests.", error = ex.Message });
+            }
+        }
+
+        // ----------------------------------------------------------
         // GET: /radiology/RadiologyRequest
+        // FIXED: was [HttpGet("/")] which mapped to site root
+        // ----------------------------------------------------------
         [HttpGet]
-        [Authorize]
+        [Authorize(Roles = "Radiographer")]
         public async Task<IActionResult> GetAll([FromQuery] string? status = null)
         {
             try
@@ -273,7 +371,7 @@ namespace HospitalSys.Controllers.Radiology
         }
 
         // GET: /radiology/RadiologyRequest/queue
-        // Radiographer work queue (Pending / InProgress)
+        // Radiographer work queue (Pending / Requested / InProgress)
         [HttpGet("queue")]
         [Authorize(Roles = "Radiographer")]
         public async Task<IActionResult> GetQueue([FromQuery] string? status = null)
@@ -291,6 +389,7 @@ namespace HospitalSys.Controllers.Radiology
                 {
                     query = query.Where(r =>
                         r.Status.ToLower() == "pending" ||
+                        r.Status.ToLower() == "requested" ||
                         r.Status.ToLower() == "inprogress" ||
                         r.Status == "");
                 }
@@ -325,6 +424,17 @@ namespace HospitalSys.Controllers.Radiology
 
                 if (entity == null)
                     return NotFound(new { message = "Radiology request not found." });
+
+                // Doctors may only update their own requests
+                if (IsInRole("Doctor") && !IsInRole("Radiographer"))
+                {
+                    var doctorId = GetAuthenticatedDoctorId();
+                    if (doctorId == null)
+                        return Unauthorized(new { message = "Doctor identity not found in token." });
+
+                    if (entity.DoctorID != doctorId.Value)
+                        return Forbid();
+                }
 
                 entity.Status = dto.Status.Trim();
                 await _context.SaveChangesAsync();

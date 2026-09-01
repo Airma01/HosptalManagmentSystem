@@ -27,4 +27,17 @@ namespace HospitalSys.Dto.Radiology
         [MaxLength(50)]
         public string? Status { get; set; }
     }
+    public class CreateRadiologyRequestBulkDto
+    {
+        public int ConsultationID { get; set; }
+        public int PatientID { get; set; }
+        public string? Status { get; set; }
+        public List<CreateRadiologyRequestBulkItemDto> Items { get; set; } = new();
+    }
+
+    public class CreateRadiologyRequestBulkItemDto
+    {
+        public int RadiologyTestTypeID { get; set; }
+        public string? Status { get; set; }
+    }
 }
