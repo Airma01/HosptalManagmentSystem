@@ -176,6 +176,33 @@ import LaboratorySection from './Pages/Dashboard/MLTDashboard/LaboratorySection/
 import AddSection from './Pages/Dashboard/MLTDashboard/LaboratorySection/AddSection';
 import SectionDetails from './Pages/Dashboard/MLTDashboard/LaboratorySection/SectionDetails';
 import AddTestType from './Pages/Dashboard/MLTDashboard/LaboratorySection/AddTestType';
+// ===== Radiology Dashboard =====
+import RadiologyLayout from './Pages/Dashboard/RadiologyDashboard/RadiologyLayout';
+import RadiologyDashboard from './Pages/Dashboard/RadiologyDashboard/RadiologyDashboard';
+import RadiographerDashboard from './Pages/Dashboard/RadiologyDashboard/Radiographer/RadiographerDashboard';
+import RadiographerQueue from './Pages/Dashboard/RadiologyDashboard/Radiographer/RadiographerQueue';
+import RadiographerRequestDetails from './Pages/Dashboard/RadiologyDashboard/Radiographer/RadiographerRequestDetails';
+import PerformExamination from './Pages/Dashboard/RadiologyDashboard/Radiographer/PerformExamination';
+import UploadRadiologyImage from './Pages/Dashboard/RadiologyDashboard/Radiographer/UploadRadiologyImage';
+import CompletedExaminations from './Pages/Dashboard/RadiologyDashboard/Radiographer/CompletedExaminations';
+import RadiologistDashboard from './Pages/Dashboard/RadiologyDashboard/Radiologist/RadiologistDashboard';
+import RadiologistQueue from './Pages/Dashboard/RadiologyDashboard/Radiologist/RadiologistQueue';
+import RadiologistRequestDetails from './Pages/Dashboard/RadiologyDashboard/Radiologist/RadiologistRequestDetails';
+import RadiologyResultWorkup from './Pages/Dashboard/RadiologyDashboard/Radiologist/RadiologyResultWorkup';
+import CompletedReports from './Pages/Dashboard/RadiologyDashboard/Radiologist/CompletedReports';
+import RadiologyDepartmentList from './Pages/Dashboard/RadiologyDashboard/Department/RadiologyDepartmentList';
+import CreateRadiologyDepartment from './Pages/Dashboard/RadiologyDashboard/Department/CreateRadiologyDepartment';
+import UpdateRadiologyDepartment from './Pages/Dashboard/RadiologyDashboard/Department/UpdateRadiologyDepartment';
+import RadiologyDepartmentDetails from './Pages/Dashboard/RadiologyDashboard/Department/RadiologyDepartmentDetails';
+import RadiologyTestTypeList from './Pages/Dashboard/RadiologyDashboard/TestType/RadiologyTestTypeList';
+import CreateRadiologyTestType from './Pages/Dashboard/RadiologyDashboard/TestType/CreateRadiologyTestType';
+import UpdateRadiologyTestType from './Pages/Dashboard/RadiologyDashboard/TestType/UpdateRadiologyTestType';
+import RadiologyRequestList from './Pages/Dashboard/RadiologyDashboard/Request/RadiologyRequestList';
+import CreateRadiologyRequest from './Pages/Dashboard/RadiologyDashboard/Request/CreateRadiologyRequest';
+import RadiologyRequestDetails from './Pages/Dashboard/RadiologyDashboard/Request/RadiologyRequestDetails';
+import UpdateRadiologyRequest from './Pages/Dashboard/RadiologyDashboard/Request/UpdateRadiologyRequest';
+import RadiologyResultDetails from './Pages/Dashboard/RadiologyDashboard/Result/RadiologyResultDetails';
+
 // ─── ⚠️ PLACEHOLDER COMPONENTS FOR MISSING NURSE ROUTES ───
 const AssignDepartment = () => (
   <div className="p-4 text-gray-600">Assign Department – Coming Soon</div>
@@ -409,6 +436,51 @@ function App() {
         <Route path="/mlt/laboratory-sections/add" element={<AddSection />} />
         <Route path="/mlt/laboratory-sections/:sectionId" element={<SectionDetails />} />
         <Route path="/mlt/laboratory-sections/:sectionId/add-test-type" element={<AddTestType />} />
+
+        {/* ===== Radiology ===== */}
+        <Route path="/radiology" element={<RadiologyDashboard />} />
+
+        <Route path="/radiology/radiographer" element={<RadiologyLayout mode="radiographer" />}>
+          <Route index element={<RadiographerDashboard />} />
+          <Route path="queue" element={<RadiographerQueue />} />
+          <Route path="completed" element={<CompletedExaminations />} />
+          <Route path="requests/:id" element={<RadiographerRequestDetails />} />
+          <Route path="requests/:id/perform" element={<PerformExamination />} />
+          <Route path="requests/:id/upload" element={<UploadRadiologyImage />} />
+        </Route>
+
+        <Route path="/radiology/radiologist" element={<RadiologyLayout mode="radiologist" />}>
+          <Route index element={<RadiologistDashboard />} />
+          <Route path="queue" element={<RadiologistQueue />} />
+          <Route path="completed" element={<CompletedReports />} />
+          <Route path="requests/:id" element={<RadiologistRequestDetails />} />
+          <Route path="results/:id" element={<RadiologyResultWorkup />} />
+        </Route>
+
+        <Route path="/radiology/requests" element={<RadiologyLayout mode="doctor" />}>
+          <Route index element={<RadiologyRequestList />} />
+          <Route path="create" element={<CreateRadiologyRequest />} />
+          <Route path=":id" element={<RadiologyRequestDetails />} />
+          <Route path=":id/status" element={<UpdateRadiologyRequest />} />
+        </Route>
+
+        <Route path="/radiology/departments" element={<RadiologyLayout mode="radiographer" />}>
+          <Route index element={<RadiologyDepartmentList />} />
+          <Route path="create" element={<CreateRadiologyDepartment />} />
+          <Route path=":id" element={<RadiologyDepartmentDetails />} />
+          <Route path=":id/edit" element={<UpdateRadiologyDepartment />} />
+        </Route>
+
+        <Route path="/radiology/test-types" element={<RadiologyLayout mode="radiographer" />}>
+          <Route index element={<RadiologyTestTypeList />} />
+          <Route path="create" element={<CreateRadiologyTestType />} />
+          <Route path=":id/edit" element={<UpdateRadiologyTestType />} />
+        </Route>
+
+        <Route path="/radiology/results/:id" element={<RadiologyLayout mode="doctor" />}>
+          <Route index element={<RadiologyResultDetails />} />
+        </Route>
+
         {/* Fallback routes */}
         <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />

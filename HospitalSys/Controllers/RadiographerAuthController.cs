@@ -152,6 +152,7 @@ namespace HospitalSys.Controllers
                     GenerateAuthToken(
                         new RadiographerAuthDto
                         {
+                            UserID = user.UserID,
                             Username = user.Username,
                             FullName = fullName,
                             RoleName = RadiographerRole
@@ -178,9 +179,11 @@ namespace HospitalSys.Controllers
                     token,
                     cookieOptions
                 );
+
                 return Ok(new
                 {
                     message = "Login successful",
+                    userID = user.UserID,
                     username = user.Username,
                     fullName = fullName,
                     role = RadiographerRole
@@ -291,6 +294,10 @@ namespace HospitalSys.Controllers
                     )?.Value;
 
 
+                var userId =
+                    principal.FindFirst("UserID")?.Value;
+
+
                 // -------------------------------------------------
                 // Verify role
                 // -------------------------------------------------
@@ -307,6 +314,7 @@ namespace HospitalSys.Controllers
 
                 return Ok(new
                 {
+                    userID = userId,
                     fullName = fullName,
                     username = username,
                     role = role
@@ -396,6 +404,12 @@ namespace HospitalSys.Controllers
                 new Claim(
                     ClaimTypes.Role,
                     user.RoleName
+                ),
+
+                // UserID (from Users.UserID)
+                new Claim(
+                    "UserID",
+                    user.UserID.ToString()
                 )
             };
 

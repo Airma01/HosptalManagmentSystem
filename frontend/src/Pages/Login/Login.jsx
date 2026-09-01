@@ -36,6 +36,11 @@ const roleConfig = {
   me: '/mlt/MLTAuth/auth_me',
   redirect: '/mlt/dashboard',
 },
+  Radiographer: {
+    login: '/radiographer/RadiographerAuth/radiographer_login',
+    me: '/radiographer/RadiographerAuth/auth_me',
+    redirect: '/radiology/radiographer',
+  },
 };
 
 export default function Login() {
@@ -157,6 +162,7 @@ export default function Login() {
                 <option value="CSM">CSM (Central Store Manager)</option>
                 <option value="Pharmacist">Pharmacist</option>
                 <option value="LaboratoryTechnician">LaboratoryTechnician</option>
+                <option value="Radiographer">Radiographer</option>
               </select>
               <span className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

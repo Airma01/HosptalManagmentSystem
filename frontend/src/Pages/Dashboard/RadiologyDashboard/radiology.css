@@ -1,0 +1,19 @@
+/* Radiology module helpers */
+.radiology-sidebar-link.active {
+  background-color: rgb(238 242 255);
+  color: rgb(67 56 202);
+  font-weight: 600;
+}
+.radiology-img-thumb {
+  object-fit: cover;
+  width: 72px;
+  height: 72px;
+  border-radius: 0.5rem;
+}
+.radiology-img-main {
+  max-height: 70vh;
+  object-fit: contain;
+  width: 100%;
+  background: #0f172a;
+  border-radius: 0.75rem;
+}
