@@ -52,6 +52,14 @@ export default function DoctorSidebar({ open, onClose }) {
           <i className="bi bi-heart-pulse" />
           Adult Care Queue
         </NavLink>
+
+        <p className="px-4 pt-4 pb-1 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+          Maternal & Child
+        </p>
+        <NavLink to="/doctor/maternal/triage" className={linkClass} onClick={onClose}>
+          <i className="bi bi-gender-female" />
+          Maternal & Child Queue
+        </NavLink>
       </nav>
     </aside>
   );

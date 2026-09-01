@@ -18,6 +18,26 @@ import {
   ConsultationPatient,
   AdultMedicalCareQueue,
   AdultMedicalCarePatient,
+  MaternalChildQueue,
+  MaternalChildDashboard,
+  PregnancyList,
+  PregnancyRegistration,
+  PregnancyDetails,
+  ANCQueue,
+  ANCVisitDetails,
+  RiskAssessment,
+  HighRiskPregnancy,
+  BirthPreparedness,
+  PregnancyLaboratoryOrder,
+  PregnancyUltrasound,
+  PregnancyMedication,
+  LaborRecord,
+  DeliveryRecord,
+  DeliveryComplication,
+  ChildBirth,
+  PNCVisit,
+  FamilyPlanning,
+  ChildHealthDashboard,
 } from "./Pages/Dashboard/DoctorDashboard";
 import CSMProtectRoute from './ProtectRoute/CSMProtectRoute';
 
@@ -227,6 +247,26 @@ function App() {
     path="adult/patient/:patientId/:visitId"
     element={<AdultMedicalCarePatient />}
   />
+  <Route path="maternal/triage" element={<MaternalChildQueue />} />
+  <Route path="maternal/patient/:patientId/:visitId" element={<MaternalChildDashboard />} />
+  <Route path="maternal/patient/:patientId/:visitId/pregnancies" element={<PregnancyList />} />
+  <Route path="maternal/patient/:patientId/:visitId/pregnancies/register" element={<PregnancyRegistration />} />
+  <Route path="maternal/patient/:patientId/:visitId/pregnancy/:pregnancyId" element={<PregnancyDetails />} />
+  <Route path="maternal/patient/:patientId/:visitId/anc" element={<ANCQueue />} />
+  <Route path="maternal/patient/:patientId/:visitId/anc/:ancVisitId" element={<ANCVisitDetails />} />
+  <Route path="maternal/patient/:patientId/:visitId/risk" element={<RiskAssessment />} />
+  <Route path="maternal/patient/:patientId/:visitId/high-risk" element={<HighRiskPregnancy />} />
+  <Route path="maternal/patient/:patientId/:visitId/birth-preparedness" element={<BirthPreparedness />} />
+  <Route path="maternal/patient/:patientId/:visitId/laboratory" element={<PregnancyLaboratoryOrder />} />
+  <Route path="maternal/patient/:patientId/:visitId/ultrasound" element={<PregnancyUltrasound />} />
+  <Route path="maternal/patient/:patientId/:visitId/medication" element={<PregnancyMedication />} />
+  <Route path="maternal/patient/:patientId/:visitId/labor" element={<LaborRecord />} />
+  <Route path="maternal/patient/:patientId/:visitId/delivery" element={<DeliveryRecord />} />
+  <Route path="maternal/patient/:patientId/:visitId/delivery/:deliveryId/complications" element={<DeliveryComplication />} />
+  <Route path="maternal/patient/:patientId/:visitId/delivery/:deliveryId/childbirths" element={<ChildBirth />} />
+  <Route path="maternal/patient/:patientId/:visitId/pnc" element={<PNCVisit />} />
+  <Route path="maternal/patient/:patientId/:visitId/family-planning" element={<FamilyPlanning />} />
+  <Route path="maternal/patient/:patientId/:visitId/child-health" element={<ChildHealthDashboard />} />
 </Route>
 
         {/* ===== CSM routes – protected with sidebar ===== */}
