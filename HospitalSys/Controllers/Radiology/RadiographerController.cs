@@ -16,7 +16,9 @@ namespace HospitalSys.Controllers.Radiology
         private readonly AppDbContext _context;
         private readonly IWebHostEnvironment _env;
 
-        private static readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".dcm" };
+        private static readonly string[] AllowedExtensions =
+            { ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".dcm" };
+
         private const long MaxFileBytes = 15 * 1024 * 1024; // 15 MB
 
         public RadiographerController(AppDbContext context, IWebHostEnvironment env)
@@ -32,6 +34,14 @@ namespace HospitalSys.Controllers.Radiology
             if (string.IsNullOrWhiteSpace(name))
                 name = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             return name?.Trim() ?? "";
+        }
+
+        /// <summary>Pending-like: empty, Pending, or doctor-created Requested.</summary>
+        private static bool IsPendingLike(string? status)
+        {
+            if (string.IsNullOrWhiteSpace(status)) return true;
+            var s = status.Trim().ToLowerInvariant();
+            return s == "pending" || s == "requested";
         }
 
         private static RadiologyRequestDto MapListItem(RadiologyRequest r)
@@ -120,7 +130,9 @@ namespace HospitalSys.Controllers.Radiology
                 .Include(r => r.RadiologyResult);
         }
 
-        // GET: /radiology/Radiographer/dashboard
+        // ============================================================
+        // GET /radiology/Radiographer/dashboard
+        // ============================================================
         [HttpGet("dashboard")]
         public async Task<IActionResult> Dashboard()
         {
@@ -134,16 +146,16 @@ namespace HospitalSys.Controllers.Radiology
                     .Include(r => r.RadiologyResult)
                     .ToListAsync();
 
-                var pending = requests.Where(r =>
-                    string.IsNullOrWhiteSpace(r.Status) ||
-                    r.Status.Equals("Pending", StringComparison.OrdinalIgnoreCase)).ToList();
+                var pending = requests.Where(r => IsPendingLike(r.Status)).ToList();
 
                 var inProgress = requests.Where(r =>
+                    !string.IsNullOrWhiteSpace(r.Status) &&
                     r.Status.Equals("InProgress", StringComparison.OrdinalIgnoreCase)).ToList();
 
-                var completedToday = requests.Where(r =>
+                var completedToday = requests.Count(r =>
+                    !string.IsNullOrWhiteSpace(r.Status) &&
                     r.Status.Equals("Completed", StringComparison.OrdinalIgnoreCase) &&
-                    r.RequestDate >= today && r.RequestDate < tomorrow).Count();
+                    r.RequestDate >= today && r.RequestDate < tomorrow);
 
                 var todayCount = requests.Count(r => r.RequestDate >= today && r.RequestDate < tomorrow);
                 var withResults = requests.Count(r => r.RadiologyResult != null && r.RadiologyResult.Any());
@@ -153,7 +165,8 @@ namespace HospitalSys.Controllers.Radiology
                     .AsNoTracking()
                     .Where(r =>
                         string.IsNullOrWhiteSpace(r.Status) ||
-                        r.Status.ToLower() == "pending")
+                        r.Status.ToLower() == "pending" ||
+                        r.Status.ToLower() == "requested")
                     .OrderBy(r => r.RequestDate)
                     .Take(10)
                     .ToListAsync();
@@ -179,7 +192,10 @@ namespace HospitalSys.Controllers.Radiology
             }
         }
 
-        // GET: /radiology/Radiographer/queue
+        // ============================================================
+        // GET /radiology/Radiographer/queue
+        // Default: Pending + Requested + InProgress
+        // ============================================================
         [HttpGet("queue")]
         public async Task<IActionResult> Queue([FromQuery] string? status = null)
         {
@@ -189,15 +205,28 @@ namespace HospitalSys.Controllers.Radiology
 
                 if (!string.IsNullOrWhiteSpace(status))
                 {
-                    var s = status.Trim().ToLower();
-                    query = query.Where(r => r.Status.ToLower() == s);
+                    var s = status.Trim().ToLowerInvariant();
+
+                    // UI "Pending" includes doctor-created "Requested"
+                    if (s == "pending")
+                    {
+                        query = query.Where(r =>
+                            string.IsNullOrWhiteSpace(r.Status) ||
+                            r.Status.ToLower() == "pending" ||
+                            r.Status.ToLower() == "requested");
+                    }
+                    else
+                    {
+                        query = query.Where(r => r.Status.ToLower() == s);
+                    }
                 }
                 else
                 {
                     query = query.Where(r =>
+                        string.IsNullOrWhiteSpace(r.Status) ||
                         r.Status.ToLower() == "pending" ||
-                        r.Status.ToLower() == "inprogress" ||
-                        r.Status == "");
+                        r.Status.ToLower() == "requested" ||
+                        r.Status.ToLower() == "inprogress");
                 }
 
                 var items = await query.OrderBy(r => r.RequestDate).ToListAsync();
@@ -209,7 +238,9 @@ namespace HospitalSys.Controllers.Radiology
             }
         }
 
-        // GET: /radiology/Radiographer/requests/{id}
+        // ============================================================
+        // GET /radiology/Radiographer/requests/{id}
+        // ============================================================
         [HttpGet("requests/{id:int}")]
         public async Task<IActionResult> GetRequestDetails(int id)
         {
@@ -230,8 +261,33 @@ namespace HospitalSys.Controllers.Radiology
             }
         }
 
-        // POST: /radiology/Radiographer/results
-        // Create result (optional image fields already set by a prior upload)
+        // ============================================================
+        // GET /radiology/Radiographer/completed
+        // ============================================================
+        [HttpGet("completed")]
+        public async Task<IActionResult> GetCompleted()
+        {
+            try
+            {
+                var items = await BaseRequestQuery()
+                    .AsNoTracking()
+                    .Where(r =>
+                        r.Status.ToLower() == "completed" ||
+                        r.Status.ToLower() == "readyforreview")
+                    .OrderByDescending(r => r.RequestDate)
+                    .ToListAsync();
+
+                return Ok(items.Select(MapListItem).ToList());
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Failed to load completed examinations.", error = ex.Message });
+            }
+        }
+
+        // ============================================================
+        // POST /radiology/Radiographer/results
+        // ============================================================
         [HttpPost("results")]
         public async Task<IActionResult> CreateResult([FromBody] CreateRadiologyResultDto dto)
         {
@@ -258,11 +314,8 @@ namespace HospitalSys.Controllers.Radiology
 
                 _context.RadiologyResults.Add(entity);
 
-                if (string.IsNullOrWhiteSpace(request.Status) ||
-                    request.Status.Equals("Pending", StringComparison.OrdinalIgnoreCase))
-                {
+                if (IsPendingLike(request.Status))
                     request.Status = "InProgress";
-                }
 
                 await _context.SaveChangesAsync();
 
@@ -283,14 +336,28 @@ namespace HospitalSys.Controllers.Radiology
             }
         }
 
-        // POST: /radiology/Radiographer/results/{requestId}/upload
-        // Multipart form: file + optional resultDescription
+        // ============================================================
+        // POST /radiology/Radiographer/results/{requestId}/upload
+        // multipart/form-data: file + optional resultDescription
+        // ============================================================
         [HttpPost("results/{requestId:int}/upload")]
-        [RequestSizeLimit(MaxFileBytes)]
-        public async Task<IActionResult> UploadImage(int requestId, IFormFile file, [FromForm] string? resultDescription = null)
+        [RequestSizeLimit(20 * 1024 * 1024)]
+        [RequestFormLimits(MultipartBodyLengthLimit = 20 * 1024 * 1024)]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadImage(
+            int requestId,
+            IFormFile? file,
+            [FromForm] string? resultDescription = null)
         {
             try
             {
+                // Fallback if binder missed the field
+                if (file == null || file.Length == 0)
+                {
+                    file = Request.Form.Files.GetFile("file")
+                           ?? Request.Form.Files.FirstOrDefault();
+                }
+
                 if (file == null || file.Length == 0)
                     return BadRequest(new { message = "Image file is required." });
 
@@ -298,8 +365,13 @@ namespace HospitalSys.Controllers.Radiology
                     return BadRequest(new { message = "File exceeds maximum allowed size (15 MB)." });
 
                 var ext = Path.GetExtension(file.FileName)?.ToLowerInvariant() ?? "";
-                if (!AllowedExtensions.Contains(ext))
-                    return BadRequest(new { message = $"File type not allowed. Allowed: {string.Join(", ", AllowedExtensions)}" });
+                if (string.IsNullOrEmpty(ext) || !AllowedExtensions.Contains(ext))
+                {
+                    return BadRequest(new
+                    {
+                        message = $"File type not allowed. Allowed: {string.Join(", ", AllowedExtensions)}"
+                    });
+                }
 
                 var request = await _context.RadiologyRequests
                     .FirstOrDefaultAsync(r => r.RadiologyRequestID == requestId);
@@ -309,16 +381,14 @@ namespace HospitalSys.Controllers.Radiology
 
                 var webRoot = _env.WebRootPath;
                 if (string.IsNullOrWhiteSpace(webRoot))
-                {
                     webRoot = Path.Combine(_env.ContentRootPath, "wwwroot");
-                }
 
-                var uploadDir = Path.Combine(webRoot, "uploads", "radiology");
+                var uploadDir = Path.Combine(webRoot, "uploads", "radiology", requestId.ToString());
                 Directory.CreateDirectory(uploadDir);
 
                 var storedName = $"{Guid.NewGuid():N}{ext}";
                 var physicalPath = Path.Combine(uploadDir, storedName);
-                var relativePath = $"/uploads/radiology/{storedName}";
+                var relativePath = $"/uploads/radiology/{requestId}/{storedName}";
 
                 await using (var stream = new FileStream(physicalPath, FileMode.Create))
                 {
@@ -329,7 +399,7 @@ namespace HospitalSys.Controllers.Radiology
                 {
                     RadiologyRequestID = requestId,
                     RadiologyTechnicianName = GetAuthenticatedName(),
-                    ImageName = storedName,
+                    ImageName = file.FileName,
                     ImagePath = relativePath,
                     ResultDescription = resultDescription?.Trim() ?? "",
                     ResultDate = DateTime.UtcNow
@@ -337,11 +407,8 @@ namespace HospitalSys.Controllers.Radiology
 
                 _context.RadiologyResults.Add(entity);
 
-                if (string.IsNullOrWhiteSpace(request.Status) ||
-                    request.Status.Equals("Pending", StringComparison.OrdinalIgnoreCase))
-                {
+                if (IsPendingLike(request.Status))
                     request.Status = "InProgress";
-                }
 
                 await _context.SaveChangesAsync();
 
@@ -358,11 +425,17 @@ namespace HospitalSys.Controllers.Radiology
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Failed to upload radiology image.", error = ex.Message });
+                return StatusCode(500, new
+                {
+                    message = "Failed to upload radiology image.",
+                    error = ex.Message
+                });
             }
         }
 
-        // PUT: /radiology/Radiographer/results/{id}
+        // ============================================================
+        // PUT /radiology/Radiographer/results/{id}
+        // ============================================================
         [HttpPut("results/{id:int}")]
         public async Task<IActionResult> UpdateResult(int id, [FromBody] UpdateRadiologyResultDto dto)
         {
@@ -386,7 +459,6 @@ namespace HospitalSys.Controllers.Radiology
                 if (dto.ResultDate.HasValue)
                     entity.ResultDate = dto.ResultDate.Value;
 
-                // Always stamp authenticated technician name on update
                 entity.RadiologyTechnicianName = GetAuthenticatedName();
 
                 await _context.SaveChangesAsync();
@@ -408,8 +480,42 @@ namespace HospitalSys.Controllers.Radiology
             }
         }
 
-        // PUT: /radiology/Radiographer/requests/{id}/complete
-        // Mark examination done / ready for interpretation (request Status = Completed or keep InProgress with result)
+        // ============================================================
+        // PUT /radiology/Radiographer/requests/{id}/status
+        // ============================================================
+        [HttpPut("requests/{id:int}/status")]
+        public async Task<IActionResult> UpdateStatus(int id, [FromBody] UpdateRadiologyRequestDto dto)
+        {
+            try
+            {
+                if (dto == null || string.IsNullOrWhiteSpace(dto.Status))
+                    return BadRequest(new { message = "Status is required." });
+
+                var entity = await _context.RadiologyRequests
+                    .FirstOrDefaultAsync(r => r.RadiologyRequestID == id);
+
+                if (entity == null)
+                    return NotFound(new { message = "Radiology request not found." });
+
+                entity.Status = dto.Status.Trim();
+                await _context.SaveChangesAsync();
+
+                var updated = await BaseRequestQuery()
+                    .AsNoTracking()
+                    .FirstAsync(r => r.RadiologyRequestID == id);
+
+                return Ok(MapDetail(updated));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Failed to update request status.", error = ex.Message });
+            }
+        }
+
+        // ============================================================
+        // PUT /radiology/Radiographer/requests/{id}/complete
+        // Used by PerformExamination.jsx → Mark Ready for Review
+        // ============================================================
         [HttpPut("requests/{id:int}/complete")]
         public async Task<IActionResult> CompleteExamination(int id)
         {
@@ -423,9 +529,13 @@ namespace HospitalSys.Controllers.Radiology
                     return NotFound(new { message = "Radiology request not found." });
 
                 if (request.RadiologyResult == null || !request.RadiologyResult.Any())
-                    return BadRequest(new { message = "Cannot complete examination without at least one result/image." });
+                {
+                    return BadRequest(new
+                    {
+                        message = "Cannot complete examination without at least one result/image."
+                    });
+                }
 
-                // Ready for radiologist review: still interpretable; status signals work finished by tech
                 request.Status = "ReadyForReview";
                 await _context.SaveChangesAsync();
 

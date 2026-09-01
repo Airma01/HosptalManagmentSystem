@@ -35,31 +35,36 @@ export default function PerformExamination() {
   }, [load]);
 
   const handleUpload = async () => {
-    if (!file) {
-      setError('Please select an image file.');
-      return;
+  if (!file) {
+    setError("Please select an image file.");
+    return;
+  }
+  setSubmitting(true);
+  setError("");
+  setMessage("");
+  try {
+    const form = new FormData();
+    form.append("file", file); // name MUST be "file" (matches IFormFile file)
+    if (resultDescription) {
+      form.append("resultDescription", resultDescription);
     }
-    setSubmitting(true);
-    setError('');
-    setMessage('');
-    try {
-      const form = new FormData();
-      form.append('file', file);
-      if (resultDescription) form.append('resultDescription', resultDescription);
 
-      await API.post(`/radiology/Radiographer/results/${id}/upload`, form, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+    // Do NOT set Content-Type — axios + browser handle boundary
+    await API.post(`/radiology/Radiographer/results/${id}/upload`, form);
 
-      setMessage('Image uploaded and result saved.');
-      await load();
-      setFile(null);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Upload failed.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
+    setMessage("Image uploaded and result saved.");
+    await load();
+    setFile(null);
+  } catch (err) {
+    setError(
+      err.response?.data?.message ||
+        err.response?.data?.error ||
+        "Upload failed."
+    );
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   const handleComplete = async () => {
     setSubmitting(true);

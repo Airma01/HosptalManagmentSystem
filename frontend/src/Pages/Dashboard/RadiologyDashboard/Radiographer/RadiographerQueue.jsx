@@ -38,8 +38,8 @@ export default function RadiographerQueue() {
             onChange={(e) => setStatus(e.target.value)}
             className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
           >
-            <option value="">Pending + In Progress</option>
-            <option value="Pending">Pending</option>
+           <option value="">Pending / Requested + In Progress</option>
+            <option value="Pending">Pending / Requested</option>
             <option value="InProgress">In Progress</option>
             <option value="ReadyForReview">Ready for Review</option>
             <option value="Completed">Completed</option>
