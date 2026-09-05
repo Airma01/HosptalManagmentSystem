@@ -3,6 +3,9 @@ import { useNavigate, useParams } from "react-router-dom";
 import API from "../../../../Config/API";
 import PrescriptionDetails from "../Prescription/PrescriptionDetails";
 
+// Change this if your API runs on a different host/port
+const API_BASE = import.meta.env.VITE_API_URL || API.defaults.baseURL || "http://localhost:5000";
+
 const SECTIONS = [
   { id: "overview", label: "Overview", icon: "bi-person-vcard" },
   { id: "allergies", label: "Allergies", icon: "bi-exclamation-triangle" },
@@ -68,6 +71,19 @@ const emptyRadRow = () => ({
   status: "Requested",
 });
 
+function buildRadiologyImageUrl(res) {
+  if (!res) return null;
+  if (res.imagePath) {
+    if (res.imagePath.startsWith("http")) return res.imagePath;
+    if (res.imagePath.startsWith("/")) return `${API_BASE}${res.imagePath}`;
+    return `${API_BASE}/uploads/radiology/${res.imagePath}`;
+  }
+  if (res.imageName) {
+    return `${API_BASE}/uploads/radiology/${res.imageName}`;
+  }
+  return null;
+}
+
 export default function ConsultationPatient() {
   const { patientId, visitId } = useParams();
   const navigate = useNavigate();
@@ -81,13 +97,11 @@ export default function ConsultationPatient() {
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
 
-  // Lookups (names for dropdowns)
   const [branchPharmacies, setBranchPharmacies] = useState([]);
   const [medicines, setMedicines] = useState([]);
   const [labTestTypes, setLabTestTypes] = useState([]);
   const [radTestTypes, setRadTestTypes] = useState([]);
 
-  // Multi-item create forms
   const [rxItems, setRxItems] = useState([emptyMedicineRow()]);
   const [rxBranchId, setRxBranchId] = useState("");
   const [labItems, setLabItems] = useState([emptyLabRow()]);
@@ -111,7 +125,6 @@ export default function ConsultationPatient() {
     load();
   }, [load]);
 
-  // Load dropdown lists once
   useEffect(() => {
     (async () => {
       try {
@@ -126,7 +139,7 @@ export default function ConsultationPatient() {
         setLabTestTypes(l.data || []);
         setRadTestTypes(r.data || []);
       } catch {
-        // Lookups optional; forms still render
+        // lookups optional
       }
     })();
   }, []);
@@ -396,25 +409,22 @@ export default function ConsultationPatient() {
 
   if (loading) {
     return (
-      <div className="bg-white border rounded-xl p-10 text-center text-slate-500">
-        Loading patient visit...
+      <div className="flex items-center justify-center min-h-[40vh] text-slate-500">
+        Loading patient data...
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="space-y-3">
+      <div className="p-6">
+        <p className="text-red-600 mb-4">{error || "Patient data not found."}</p>
         <button
-          type="button"
-          onClick={() => navigate("/doctor/consultation/triage")}
-          className="text-sm text-indigo-600"
+          onClick={() => navigate(-1)}
+          className="px-4 py-2 text-sm rounded-lg bg-slate-100 hover:bg-slate-200"
         >
-          ← Back to queue
+          Go back
         </button>
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm">
-          {error || "Patient visit not found."}
-        </div>
       </div>
     );
   }
@@ -434,480 +444,675 @@ export default function ConsultationPatient() {
 
   return (
     <div className="space-y-4">
+      {/* Header */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <button
-          type="button"
-          onClick={() => navigate("/doctor/consultation/triage")}
-          className="text-sm text-indigo-600 hover:underline"
+          onClick={() => navigate(-1)}
+          className="text-sm text-indigo-600 hover:underline flex items-center gap-1"
         >
-          ← Back to consultation queue
+          <i className="bi bi-arrow-left" /> Back to queue
         </button>
         {message && (
-          <span className="text-sm text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">
+          <span className="text-sm text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
             {message}
           </span>
         )}
       </div>
 
-      {/* Patient header */}
-      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+      {/* Patient card */}
+      <div className="bg-white border rounded-xl shadow-sm p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 className="text-xl font-semibold text-slate-800">
               {patient.firstName} {patient.lastName}
             </h2>
             <p className="text-sm text-slate-500 mt-1">
-              Patient ID: {patient.patientID}
-              {patient.mrn ? ` · MRN: ${patient.mrn}` : ""}
-              {patient.gender ? ` · ${patient.gender}` : ""}
-              {patient.phone ? ` · ${patient.phone}` : ""}
+              MRN: <strong>{patient.mrn || "—"}</strong> ·{" "}
+              {patient.gender || "—"} · DOB:{" "}
+              {patient.dateOfBirth
+                ? new Date(patient.dateOfBirth).toLocaleDateString()
+                : "—"}
             </p>
-            {patient.dateOfBirth && (
-              <p className="text-xs text-slate-400 mt-0.5">
-                DOB: {new Date(patient.dateOfBirth).toLocaleDateString()}
-              </p>
-            )}
+            <p className="text-sm text-slate-500">
+              Phone: {patient.phone || "—"} · {patient.address || "—"}
+            </p>
           </div>
-          <div className="text-sm text-slate-600 space-y-1 md:text-right">
+          <div className="text-sm text-right">
             <p>
-              <span className="text-slate-400">Visit #</span> {visit.visitID}
+              Visit #{visit.visitID} · {visit.visitType || "—"} ·{" "}
+              <span className="font-medium">{visit.status || "—"}</span>
             </p>
-            <p>
-              <span className="text-slate-400">Date:</span>{" "}
-              {visit.visitDate ? new Date(visit.visitDate).toLocaleString() : "—"}
+            <p className="text-slate-500">
+              {visit.visitDate
+                ? new Date(visit.visitDate).toLocaleString()
+                : "—"}
             </p>
-            <p>
-              <span className="text-slate-400">Type:</span> {visit.visitType || "—"}
-            </p>
-            <span className="inline-flex px-2 py-0.5 rounded-full text-xs bg-indigo-50 text-indigo-700">
-              {visit.status || "—"}
-            </span>
           </div>
         </div>
         {triage && (
-          <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs text-slate-600">
+          <div className="mt-4 pt-4 border-t grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 text-sm">
             <div>
-              <p className="text-slate-400">Temp</p>
-              <p className="font-medium">{triage.temprature}</p>
+              <span className="text-slate-400 block text-xs">Temp</span>
+              {triage.temprature ?? "—"} °C
             </div>
             <div>
-              <p className="text-slate-400">BP</p>
-              <p className="font-medium">{triage.bloodPressure}</p>
+              <span className="text-slate-400 block text-xs">BP</span>
+              {triage.bloodPressure ?? "—"}
             </div>
             <div>
-              <p className="text-slate-400">HR</p>
-              <p className="font-medium">{triage.heartRate}</p>
+              <span className="text-slate-400 block text-xs">HR</span>
+              {triage.heartRate ?? "—"}
             </div>
             <div>
-              <p className="text-slate-400">RR</p>
-              <p className="font-medium">{triage.respiratotyRate}</p>
+              <span className="text-slate-400 block text-xs">RR</span>
+              {triage.respiratotyRate ?? "—"}
             </div>
             <div>
-              <p className="text-slate-400">Weight</p>
-              <p className="font-medium">{triage.weight}</p>
+              <span className="text-slate-400 block text-xs">Weight</span>
+              {triage.weight ?? "—"} kg
+            </div>
+            <div>
+              <span className="text-slate-400 block text-xs">Notes</span>
+              {triage.notes || "—"}
             </div>
           </div>
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* Section nav */}
-        <div className="lg:col-span-3">
-          <div className="bg-white border border-slate-200 rounded-xl p-2 shadow-sm sticky top-20">
-            {SECTIONS.map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => setSection(s.id)}
-                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left transition ${
-                  section === s.id
-                    ? "bg-indigo-50 text-indigo-700 font-medium"
-                    : "text-slate-600 hover:bg-slate-50"
-                }`}
-              >
-                <i className={`bi ${s.icon}`} />
-                {s.label}
-              </button>
-            ))}
+      {/* Section tabs */}
+      <div className="flex flex-wrap gap-1 bg-white border rounded-xl p-2 shadow-sm">
+        {SECTIONS.map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            onClick={() => setSection(s.id)}
+            className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-1.5 transition ${
+              section === s.id
+                ? "bg-indigo-600 text-white"
+                : "text-slate-600 hover:bg-slate-100"
+            }`}
+          >
+            <i className={`bi ${s.icon}`} />
+            {s.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Content */}
+      <div className="min-h-[320px]">
+        {/* ========== OVERVIEW ========== */}
+        {section === "overview" && (
+          <div className="bg-white border rounded-xl shadow-sm p-5 space-y-3 text-sm">
+            <p>
+              Consultations: <strong>{consultations.length}</strong>
+            </p>
+            <p>
+              Allergies: <strong>{(data.allergies || []).length}</strong> · Problems:{" "}
+              <strong>{(data.problemList || []).length}</strong>
+            </p>
+            <p>
+              Lab tests: <strong>{laboratoryTests.length}</strong> · Radiology:{" "}
+              <strong>{radiologyRequests.length}</strong>
+            </p>
+            {!primaryConsultationId && (
+              <p className="text-amber-600">
+                Start a consultation before ordering prescription, lab, or radiology.
+              </p>
+            )}
           </div>
-        </div>
+        )}
 
-        {/* Content */}
-        <div className="lg:col-span-9 space-y-4">
-          {section === "overview" && (
-            <div className="bg-white border rounded-xl p-5 shadow-sm space-y-3 text-sm text-slate-600">
-              <p>
-                Use the sections on the left to review and update clinical records for this
-                patient. Consultation, physical examination, and diagnosis are linked to a
-                consultation for this visit.
-              </p>
-              <p>
-                Previous consultations on file: <strong>{consultations.length}</strong>
-              </p>
-              <p>
-                Allergies: <strong>{(data.allergies || []).length}</strong> · Problems:{" "}
-                <strong>{(data.problemList || []).length}</strong>
-              </p>
-              <p>
-                Lab tests: <strong>{laboratoryTests.length}</strong> · Radiology:{" "}
-                <strong>{radiologyRequests.length}</strong>
-              </p>
-              {!primaryConsultationId && (
-                <p className="text-amber-600">
-                  Start a consultation before ordering prescription, lab, or radiology.
-                </p>
-              )}
+        {/* ========== ALLERGIES ========== */}
+        {section === "allergies" && (
+          <div className="bg-white border rounded-xl shadow-sm">
+            <div className="px-5 py-4 border-b flex justify-between items-center">
+              <h3 className="font-semibold text-slate-800">Allergies</h3>
+              <button
+                type="button"
+                onClick={() => openCreate("allergy")}
+                className="text-sm text-indigo-600"
+              >
+                + Add
+              </button>
             </div>
-          )}
-
-          {section === "allergies" && (
-            <RecordPanel
-              title="Allergies"
-              onAdd={() => openCreate("allergy", { isActive: true })}
-              rows={data.allergies || []}
-              columns={[
-                { key: "allergen", label: "Allergen" },
-                { key: "reaction", label: "Reaction" },
-                { key: "severity", label: "Severity" },
-                {
-                  key: "isActive",
-                  label: "Active",
-                  render: (v) => (v ? "Yes" : "No"),
-                },
-              ]}
-              idKey="allergyID"
-              onEdit={(r) => openEdit("allergy", r)}
-              onDelete={(r) => setConfirmDelete({ type: "allergy", id: r.allergyID })}
-            />
-          )}
-
-          {section === "medicalHistory" && (
-            <RecordPanel
-              title="Medical History"
-              onAdd={() => openCreate("medicalHistory")}
-              rows={data.medicalHistory || []}
-              columns={[
-                { key: "conditionName", label: "Condition" },
-                { key: "status", label: "Status" },
-                { key: "treatment", label: "Treatment" },
-              ]}
-              idKey="medicalHistoryID"
-              onEdit={(r) => openEdit("medicalHistory", r)}
-              onDelete={(r) =>
-                setConfirmDelete({ type: "medicalHistory", id: r.medicalHistoryID })
-              }
-            />
-          )}
-
-          {section === "familyHistory" && (
-            <RecordPanel
-              title="Family Medical History"
-              onAdd={() => openCreate("familyHistory")}
-              rows={data.familyMedicalHistory || []}
-              columns={[
-                { key: "relative", label: "Relative" },
-                { key: "conditionName", label: "Condition" },
-                { key: "notes", label: "Notes" },
-              ]}
-              idKey="familyMedicalHistoryID"
-              onEdit={(r) => openEdit("familyHistory", r)}
-              onDelete={(r) =>
-                setConfirmDelete({
-                  type: "familyHistory",
-                  id: r.familyMedicalHistoryID,
-                })
-              }
-            />
-          )}
-
-          {section === "socialHistory" && (
-            <RecordPanel
-              title="Social History"
-              onAdd={() => openCreate("socialHistory")}
-              rows={data.socialHistory || []}
-              columns={[
-                { key: "smokingStatus", label: "Smoking" },
-                { key: "alcoholUse", label: "Alcohol" },
-                { key: "occupation", label: "Occupation" },
-                { key: "livingSituation", label: "Living" },
-              ]}
-              idKey="socialHistoryID"
-              onEdit={(r) => openEdit("socialHistory", r)}
-              onDelete={(r) =>
-                setConfirmDelete({ type: "socialHistory", id: r.socialHistoryID })
-              }
-            />
-          )}
-
-          {section === "problemList" && (
-            <RecordPanel
-              title="Problem List"
-              onAdd={() => openCreate("problemList", { status: "Active" })}
-              rows={data.problemList || []}
-              columns={[
-                { key: "problemName", label: "Problem" },
-                { key: "code", label: "Code" },
-                { key: "status", label: "Status" },
-              ]}
-              idKey="problemListID"
-              onEdit={(r) => openEdit("problemList", r)}
-              onDelete={(r) =>
-                setConfirmDelete({ type: "problemList", id: r.problemListID })
-              }
-            />
-          )}
-
-          {section === "consultation" && (
-            <div className="bg-white border rounded-xl shadow-sm">
-              <div className="flex items-center justify-between px-5 py-4 border-b">
-                <h3 className="font-semibold text-slate-800">Consultations</h3>
-                <button
-                  type="button"
-                  onClick={() => openCreate("consultation")}
-                  className="px-3 py-1.5 text-xs rounded-lg bg-indigo-600 text-white"
-                >
-                  + Start consultation
-                </button>
+            {(data.allergies || []).length === 0 ? (
+              <p className="p-5 text-sm text-slate-500">No allergies recorded.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-slate-50 text-slate-600">
+                    <tr>
+                      <th className="text-left px-4 py-2">Allergen</th>
+                      <th className="text-left px-4 py-2">Reaction</th>
+                      <th className="text-left px-4 py-2">Severity</th>
+                      <th className="text-left px-4 py-2">Active</th>
+                      <th className="text-left px-4 py-2">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {(data.allergies || []).map((a) => (
+                      <tr key={a.allergyID}>
+                        <td className="px-4 py-2">{a.allergen}</td>
+                        <td className="px-4 py-2">{a.reaction || "—"}</td>
+                        <td className="px-4 py-2">{a.severity || "—"}</td>
+                        <td className="px-4 py-2">{a.isActive ? "Yes" : "No"}</td>
+                        <td className="px-4 py-2 space-x-2">
+                          <button
+                            type="button"
+                            className="text-indigo-600 text-xs"
+                            onClick={() => openEdit("allergy", a)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="text-red-600 text-xs"
+                            onClick={() =>
+                              setConfirmDelete({ type: "allergy", id: a.allergyID })
+                            }
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-              <div className="p-5 space-y-3">
-                {consultations.length === 0 && (
-                  <p className="text-sm text-slate-500">No consultations yet.</p>
-                )}
-                {consultations.map((c) => (
-                  <div
-                    key={c.consultationID}
-                    className="border border-slate-100 rounded-lg p-4 text-sm"
-                  >
-                    <div className="flex justify-between gap-2">
-                      <p className="font-medium text-slate-800">
-                        #{c.consultationID} · Visit {c.visitID}
-                      </p>
-                      <p className="text-xs text-slate-400">
-                        {c.consultationDate
-                          ? new Date(c.consultationDate).toLocaleString()
-                          : ""}
-                      </p>
+            )}
+          </div>
+        )}
+
+        {/* ========== MEDICAL HISTORY ========== */}
+        {section === "medicalHistory" && (
+          <div className="bg-white border rounded-xl shadow-sm">
+            <div className="px-5 py-4 border-b flex justify-between items-center">
+              <h3 className="font-semibold text-slate-800">Medical History</h3>
+              <button
+                type="button"
+                onClick={() => openCreate("medicalHistory")}
+                className="text-sm text-indigo-600"
+              >
+                + Add
+              </button>
+            </div>
+            {(data.medicalHistory || []).length === 0 ? (
+              <p className="p-5 text-sm text-slate-500">No medical history.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-slate-50 text-slate-600">
+                    <tr>
+                      <th className="text-left px-4 py-2">Condition</th>
+                      <th className="text-left px-4 py-2">Diagnosed</th>
+                      <th className="text-left px-4 py-2">Status</th>
+                      <th className="text-left px-4 py-2">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {(data.medicalHistory || []).map((m) => (
+                      <tr key={m.medicalHistoryID}>
+                        <td className="px-4 py-2">{m.conditionName}</td>
+                        <td className="px-4 py-2">
+                          {m.diagnosedDate
+                            ? new Date(m.diagnosedDate).toLocaleDateString()
+                            : "—"}
+                        </td>
+                        <td className="px-4 py-2">{m.status || "—"}</td>
+                        <td className="px-4 py-2 space-x-2">
+                          <button
+                            type="button"
+                            className="text-indigo-600 text-xs"
+                            onClick={() => openEdit("medicalHistory", m)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="text-red-600 text-xs"
+                            onClick={() =>
+                              setConfirmDelete({
+                                type: "medicalHistory",
+                                id: m.medicalHistoryID,
+                              })
+                            }
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ========== FAMILY HISTORY ========== */}
+        {section === "familyHistory" && (
+          <div className="bg-white border rounded-xl shadow-sm">
+            <div className="px-5 py-4 border-b flex justify-between items-center">
+              <h3 className="font-semibold text-slate-800">Family History</h3>
+              <button
+                type="button"
+                onClick={() => openCreate("familyHistory")}
+                className="text-sm text-indigo-600"
+              >
+                + Add
+              </button>
+            </div>
+            {(data.familyMedicalHistory || []).length === 0 ? (
+              <p className="p-5 text-sm text-slate-500">No family history.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-slate-50 text-slate-600">
+                    <tr>
+                      <th className="text-left px-4 py-2">Relative</th>
+                      <th className="text-left px-4 py-2">Condition</th>
+                      <th className="text-left px-4 py-2">Notes</th>
+                      <th className="text-left px-4 py-2">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {(data.familyMedicalHistory || []).map((f) => (
+                      <tr key={f.familyMedicalHistoryID}>
+                        <td className="px-4 py-2">{f.relative}</td>
+                        <td className="px-4 py-2">{f.conditionName}</td>
+                        <td className="px-4 py-2">{f.notes || "—"}</td>
+                        <td className="px-4 py-2 space-x-2">
+                          <button
+                            type="button"
+                            className="text-indigo-600 text-xs"
+                            onClick={() => openEdit("familyHistory", f)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="text-red-600 text-xs"
+                            onClick={() =>
+                              setConfirmDelete({
+                                type: "familyHistory",
+                                id: f.familyMedicalHistoryID,
+                              })
+                            }
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ========== SOCIAL HISTORY ========== */}
+        {section === "socialHistory" && (
+          <div className="bg-white border rounded-xl shadow-sm">
+            <div className="px-5 py-4 border-b flex justify-between items-center">
+              <h3 className="font-semibold text-slate-800">Social History</h3>
+              <button
+                type="button"
+                onClick={() => openCreate("socialHistory")}
+                className="text-sm text-indigo-600"
+              >
+                + Add / Update
+              </button>
+            </div>
+            {(data.socialHistory || []).length === 0 ? (
+              <p className="p-5 text-sm text-slate-500">No social history.</p>
+            ) : (
+              <div className="p-5 space-y-2 text-sm">
+                {(data.socialHistory || []).map((s) => (
+                  <div key={s.socialHistoryID} className="border rounded-lg p-3">
+                    <p>Smoking: {s.smokingStatus || "—"}</p>
+                    <p>Alcohol: {s.alcoholUse || "—"}</p>
+                    <p>Occupation: {s.occupation || "—"}</p>
+                    <p>Living: {s.livingSituation || "—"}</p>
+                    <p>Activity: {s.physicalActivity || "—"}</p>
+                    <p>Notes: {s.notes || "—"}</p>
+                    <div className="mt-2 space-x-2">
+                      <button
+                        type="button"
+                        className="text-indigo-600 text-xs"
+                        onClick={() => openEdit("socialHistory", s)}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        className="text-red-600 text-xs"
+                        onClick={() =>
+                          setConfirmDelete({
+                            type: "socialHistory",
+                            id: s.socialHistoryID,
+                          })
+                        }
+                      >
+                        Delete
+                      </button>
                     </div>
-                    <p className="mt-2 text-slate-600">
-                      <span className="text-slate-400">Chief complaint:</span>{" "}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ========== CONSULTATION ========== */}
+        {section === "consultation" && (
+          <div className="bg-white border rounded-xl shadow-sm">
+            <div className="px-5 py-4 border-b flex justify-between items-center">
+              <h3 className="font-semibold text-slate-800">Consultations</h3>
+              <button
+                type="button"
+                onClick={() => openCreate("consultation")}
+                className="text-sm text-indigo-600"
+              >
+                + New consultation
+              </button>
+            </div>
+            {consultations.length === 0 ? (
+              <p className="p-5 text-sm text-slate-500">No consultations yet.</p>
+            ) : (
+              <div className="divide-y">
+                {consultations.map((c) => (
+                  <div key={c.consultationID} className="p-5 text-sm space-y-1">
+                    <p className="font-medium">
+                      #{c.consultationID} ·{" "}
+                      {c.consultationDate
+                        ? new Date(c.consultationDate).toLocaleString()
+                        : "—"}
+                    </p>
+                    <p>
+                      <span className="text-slate-500">Chief complaint:</span>{" "}
                       {c.chiefComplaint || "—"}
                     </p>
-                    <p className="text-slate-600">
-                      <span className="text-slate-400">HPI:</span>{" "}
+                    <p>
+                      <span className="text-slate-500">HPI:</span>{" "}
                       {c.historyOfPresentIllness || "—"}
                     </p>
-                    <p className="text-slate-600">
-                      <span className="text-slate-400">Assessment:</span>{" "}
+                    <p>
+                      <span className="text-slate-500">Assessment:</span>{" "}
                       {c.assessment || "—"}
                     </p>
-                    <p className="text-slate-600">
-                      <span className="text-slate-400">Plan:</span>{" "}
+                    <p>
+                      <span className="text-slate-500">Plan:</span>{" "}
                       {c.treatmentPlan || "—"}
+                    </p>
+                    <p>
+                      <span className="text-slate-500">Notes:</span>{" "}
+                      {c.clinicalNotes || "—"}
                     </p>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+          </div>
+        )}
 
-          {section === "physicalExam" && (
-            <div className="bg-white border rounded-xl shadow-sm">
-              <div className="flex items-center justify-between px-5 py-4 border-b">
-                <h3 className="font-semibold text-slate-800">Physical Examination</h3>
-                <button
-                  type="button"
-                  disabled={!primaryConsultationId}
-                  onClick={() =>
-                    openCreate("physicalExam", {
-                      consultationID: primaryConsultationId,
-                    })
-                  }
-                  className="px-3 py-1.5 text-xs rounded-lg bg-indigo-600 text-white disabled:opacity-40"
-                >
-                  + Add examination
-                </button>
-              </div>
-              <div className="p-5 space-y-2 text-sm">
-                {!primaryConsultationId && (
-                  <p className="text-amber-600">Start a consultation first.</p>
-                )}
-                {consultations.flatMap((c) =>
+        {/* ========== PHYSICAL EXAM ========== */}
+        {section === "physicalExam" && (
+          <div className="bg-white border rounded-xl shadow-sm">
+            <div className="px-5 py-4 border-b flex justify-between items-center">
+              <h3 className="font-semibold text-slate-800">Physical Examination</h3>
+              <button
+                type="button"
+                disabled={!primaryConsultationId}
+                onClick={() =>
+                  openCreate("physicalExam", { consultationID: primaryConsultationId })
+                }
+                className="text-sm text-indigo-600 disabled:opacity-40"
+              >
+                + Add finding
+              </button>
+            </div>
+            {visitConsultations.length === 0 ? (
+              <p className="p-5 text-sm text-slate-500">Start a consultation first.</p>
+            ) : (
+              <div className="divide-y">
+                {visitConsultations.map((c) =>
                   (c.physicalExaminations || []).map((pe) => (
-                    <div key={pe.physicalExaminationID} className="border rounded-lg p-3">
-                      <p className="font-medium">
-                        {pe.examinationArea}{" "}
-                        <span className="text-xs text-slate-400">
-                          (Consultation #{pe.consultationID})
-                        </span>
-                      </p>
-                      <p className="text-slate-600">{pe.findings}</p>
-                      {pe.notes && <p className="text-slate-400 text-xs">{pe.notes}</p>}
+                    <div key={pe.physicalExaminationID} className="p-4 text-sm">
+                      <p className="font-medium">{pe.examinationArea}</p>
+                      <p>{pe.findings}</p>
+                      {pe.notes && <p className="text-slate-500">{pe.notes}</p>}
                     </div>
                   ))
                 )}
               </div>
-            </div>
-          )}
+            )}
+          </div>
+        )}
 
-          {section === "diagnosis" && (
+        {/* ========== DIAGNOSIS ========== */}
+        {section === "diagnosis" && (
+          <div className="bg-white border rounded-xl shadow-sm">
+            <div className="px-5 py-4 border-b flex justify-between items-center">
+              <h3 className="font-semibold text-slate-800">Diagnosis</h3>
+              <button
+                type="button"
+                disabled={!primaryConsultationId}
+                onClick={() =>
+                  openCreate("diagnosis", { consultationID: primaryConsultationId })
+                }
+                className="text-sm text-indigo-600 disabled:opacity-40"
+              >
+                + Add diagnosis
+              </button>
+            </div>
+            {visitConsultations.length === 0 ? (
+              <p className="p-5 text-sm text-slate-500">Start a consultation first.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-slate-50 text-slate-600">
+                    <tr>
+                      <th className="text-left px-4 py-2">Code</th>
+                      <th className="text-left px-4 py-2">Description</th>
+                      <th className="text-left px-4 py-2">Type</th>
+                      <th className="text-left px-4 py-2">Primary</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {visitConsultations.flatMap((c) =>
+                      (c.diagnoses || []).map((d) => (
+                        <tr key={d.diagnosisID}>
+                          <td className="px-4 py-2">{d.code}</td>
+                          <td className="px-4 py-2">{d.description}</td>
+                          <td className="px-4 py-2">{d.diagnosisType || "—"}</td>
+                          <td className="px-4 py-2">{d.isPrimary ? "Yes" : "No"}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ========== PROBLEM LIST ========== */}
+        {section === "problemList" && (
+          <div className="bg-white border rounded-xl shadow-sm">
+            <div className="px-5 py-4 border-b flex justify-between items-center">
+              <h3 className="font-semibold text-slate-800">Problem List</h3>
+              <button
+                type="button"
+                onClick={() => openCreate("problemList")}
+                className="text-sm text-indigo-600"
+              >
+                + Add
+              </button>
+            </div>
+            {(data.problemList || []).length === 0 ? (
+              <p className="p-5 text-sm text-slate-500">No problems recorded.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-slate-50 text-slate-600">
+                    <tr>
+                      <th className="text-left px-4 py-2">Problem</th>
+                      <th className="text-left px-4 py-2">Code</th>
+                      <th className="text-left px-4 py-2">Status</th>
+                      <th className="text-left px-4 py-2">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {(data.problemList || []).map((p) => (
+                      <tr key={p.problemListID}>
+                        <td className="px-4 py-2">{p.problemName}</td>
+                        <td className="px-4 py-2">{p.code || "—"}</td>
+                        <td className="px-4 py-2">{p.status || "—"}</td>
+                        <td className="px-4 py-2 space-x-2">
+                          <button
+                            type="button"
+                            className="text-indigo-600 text-xs"
+                            onClick={() => openEdit("problemList", p)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="text-red-600 text-xs"
+                            onClick={() =>
+                              setConfirmDelete({
+                                type: "problemList",
+                                id: p.problemListID,
+                              })
+                            }
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ========== PRESCRIPTION ========== */}
+        {section === "prescription" && (
+          <div className="space-y-4">
+            {data.latestPrescription && (
+              <div className="bg-white border rounded-xl shadow-sm p-5">
+                <h3 className="font-semibold text-slate-800 mb-3">Latest Prescription</h3>
+                <PrescriptionDetails prescription={data.latestPrescription} />
+              </div>
+            )}
+
             <div className="bg-white border rounded-xl shadow-sm">
-              <div className="flex items-center justify-between px-5 py-4 border-b">
-                <h3 className="font-semibold text-slate-800">Diagnosis</h3>
-                <button
-                  type="button"
-                  disabled={!primaryConsultationId}
-                  onClick={() =>
-                    openCreate("diagnosis", {
-                      consultationID: primaryConsultationId,
-                      isPrimary: false,
-                    })
-                  }
-                  className="px-3 py-1.5 text-xs rounded-lg bg-indigo-600 text-white disabled:opacity-40"
-                >
-                  + Add diagnosis
-                </button>
+              <div className="px-5 py-4 border-b">
+                <h3 className="font-semibold text-slate-800">New Prescription</h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Consultation #{primaryConsultationId || "—"}
+                </p>
               </div>
-              <div className="p-5 space-y-2 text-sm">
+              <form onSubmit={submitPrescription} className="p-5 space-y-4">
                 {!primaryConsultationId && (
-                  <p className="text-amber-600">Start a consultation first.</p>
+                  <p className="text-amber-600 text-sm">Start a consultation first.</p>
                 )}
-                {consultations.flatMap((c) =>
-                  (c.diagnoses || []).map((d) => (
-                    <div key={d.diagnosisID} className="border rounded-lg p-3">
-                      <p className="font-medium">
-                        {d.code} — {d.description}
-                        {d.isPrimary && (
-                          <span className="ml-2 text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">
-                            Primary
-                          </span>
-                        )}
-                      </p>
-                      <p className="text-xs text-slate-400">
-                        {d.codingSystem} · {d.diagnosisType || "—"} · Consultation #
-                        {d.consultationID}
-                      </p>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
+                <Field label="Branch pharmacy">
+                  <select
+                    className={inputCls}
+                    value={rxBranchId}
+                    onChange={(e) => setRxBranchId(e.target.value)}
+                    required
+                    disabled={!primaryConsultationId}
+                  >
+                    <option value="">Select branch</option>
+                    {branchPharmacies.map((b) => (
+                      <option key={b.branchPharmacyID} value={b.branchPharmacyID}>
+                        {b.branchName} {b.location ? `(${b.location})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
 
-          {/* ========== PRESCRIPTION ========== */}
-          {section === "prescription" && (
-            <div className="space-y-4">
-              <PrescriptionDetails prescription={data.latestPrescription} />
-
-              <div className="bg-white border rounded-xl shadow-sm">
-                <div className="px-5 py-4 border-b">
-                  <h3 className="font-semibold text-slate-800">New Prescription</h3>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Consultation #{primaryConsultationId || "—"} · Select pharmacy and
-                    medicines by name
-                  </p>
-                </div>
-                <form onSubmit={submitPrescription} className="p-5 space-y-4">
-                  {!primaryConsultationId && (
-                    <p className="text-amber-600 text-sm">Start a consultation first.</p>
-                  )}
-                  <Field label="Branch Pharmacy">
-                    <select
-                      className={inputCls}
-                      value={rxBranchId}
-                      onChange={(e) => setRxBranchId(e.target.value)}
-                      required
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-slate-700">Medicines</span>
+                    <button
+                      type="button"
+                      onClick={() => setRxItems([...rxItems, emptyMedicineRow()])}
+                      className="text-xs text-indigo-600"
                       disabled={!primaryConsultationId}
                     >
-                      <option value="">Select branch pharmacy</option>
-                      {branchPharmacies.map((b) => (
-                        <option key={b.branchPharmacyID} value={b.branchPharmacyID}>
-                          {b.branchName}
-                          {b.location ? ` (${b.location})` : ""}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-slate-700">Medicines</span>
-                      <button
-                        type="button"
-                        onClick={() => setRxItems([...rxItems, emptyMedicineRow()])}
-                        className="text-xs text-indigo-600"
-                        disabled={!primaryConsultationId}
-                      >
-                        + Add medicine
-                      </button>
-                    </div>
-                    {rxItems.map((row, idx) => (
-                      <div
-                        key={idx}
-                        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2 p-3 border border-slate-100 rounded-lg"
-                      >
-                        <Field label="Medicine">
-                          <select
-                            className={inputCls}
-                            value={row.medicineID}
-                            onChange={(e) => {
-                              const next = [...rxItems];
-                              next[idx] = { ...next[idx], medicineID: e.target.value };
-                              setRxItems(next);
-                            }}
-                            required
-                          >
-                            <option value="">Select medicine</option>
-                            {medicines.map((m) => (
-                              <option key={m.medicineID} value={m.medicineID}>
-                                {m.medicineName}
-                                {m.genericName ? ` (${m.genericName})` : ""}
-                              </option>
-                            ))}
-                          </select>
-                        </Field>
-                        <Field label="Dosage">
+                      + Add medicine
+                    </button>
+                  </div>
+                  {rxItems.map((row, idx) => (
+                    <div
+                      key={idx}
+                      className="grid grid-cols-1 sm:grid-cols-5 gap-2 p-3 border border-slate-100 rounded-lg"
+                    >
+                      <Field label="Medicine">
+                        <select
+                          className={inputCls}
+                          value={row.medicineID}
+                          onChange={(e) => {
+                            const next = [...rxItems];
+                            next[idx] = { ...next[idx], medicineID: e.target.value };
+                            setRxItems(next);
+                          }}
+                          required
+                        >
+                          <option value="">Select</option>
+                          {medicines.map((m) => (
+                            <option key={m.medicineID} value={m.medicineID}>
+                              {m.medicineName}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                      <Field label="Dosage">
+                        <input
+                          className={inputCls}
+                          value={row.dosage}
+                          onChange={(e) => {
+                            const next = [...rxItems];
+                            next[idx] = { ...next[idx], dosage: e.target.value };
+                            setRxItems(next);
+                          }}
+                        />
+                      </Field>
+                      <Field label="Frequency">
+                        <input
+                          type="number"
+                          className={inputCls}
+                          value={row.frequency}
+                          onChange={(e) => {
+                            const next = [...rxItems];
+                            next[idx] = { ...next[idx], frequency: e.target.value };
+                            setRxItems(next);
+                          }}
+                        />
+                      </Field>
+                      <Field label="Duration">
+                        <input
+                          type="number"
+                          className={inputCls}
+                          value={row.duration}
+                          onChange={(e) => {
+                            const next = [...rxItems];
+                            next[idx] = { ...next[idx], duration: e.target.value };
+                            setRxItems(next);
+                          }}
+                        />
+                      </Field>
+                      <div className="flex items-end gap-2">
+                        <Field label="Qty">
                           <input
-                            className={inputCls}
-                            value={row.dosage}
-                            onChange={(e) => {
-                              const next = [...rxItems];
-                              next[idx] = { ...next[idx], dosage: e.target.value };
-                              setRxItems(next);
-                            }}
-                            placeholder="500 mg"
-                          />
-                        </Field>
-                        <Field label="Frequency">
-                          <input
-                            className={inputCls}
                             type="number"
-                            step="0.1"
-                            value={row.frequency}
-                            onChange={(e) => {
-                              const next = [...rxItems];
-                              next[idx] = { ...next[idx], frequency: e.target.value };
-                              setRxItems(next);
-                            }}
-                          />
-                        </Field>
-                        <Field label="Duration">
-                          <input
                             className={inputCls}
-                            type="number"
-                            step="0.1"
-                            value={row.duration}
-                            onChange={(e) => {
-                              const next = [...rxItems];
-                              next[idx] = { ...next[idx], duration: e.target.value };
-                              setRxItems(next);
-                            }}
-                          />
-                        </Field>
-                        <Field label="Quantity">
-                          <input
-                            className={inputCls}
-                            type="number"
-                            step="0.1"
                             value={row.quantity}
                             onChange={(e) => {
                               const next = [...rxItems];
@@ -916,386 +1121,419 @@ export default function ConsultationPatient() {
                             }}
                           />
                         </Field>
-                        <div className="flex items-end">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setRxItems(rxItems.filter((_, i) => i !== idx))
-                            }
-                            className="text-xs text-red-600 px-2 py-2"
-                            disabled={rxItems.length === 1}
-                          >
-                            Remove
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setRxItems(rxItems.filter((_, i) => i !== idx))}
+                          className="text-xs text-red-600 px-2 py-2"
+                          disabled={rxItems.length === 1}
+                        >
+                          ✕
+                        </button>
                       </div>
-                    ))}
-                  </div>
-
-                  <div className="flex justify-end">
-                    <button
-                      type="submit"
-                      disabled={saving || !primaryConsultationId}
-                      className="px-4 py-2 text-sm rounded-lg bg-indigo-600 text-white disabled:opacity-50"
-                    >
-                      {saving ? "Saving..." : "Create prescription"}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          )}
-
-          {/* ========== LABORATORY ========== */}
-          {section === "laboratory" && (
-            <div className="space-y-4">
-              <div className="bg-white border rounded-xl shadow-sm">
-                <div className="px-5 py-4 border-b">
-                  <h3 className="font-semibold text-slate-800">Laboratory Tests</h3>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Existing requests and results for this patient
-                  </p>
-                </div>
-                {laboratoryTests.length === 0 ? (
-                  <p className="p-5 text-sm text-slate-500">No laboratory tests yet.</p>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full text-sm">
-                      <thead className="bg-slate-50 text-slate-600">
-                        <tr>
-                          <th className="text-left px-4 py-2 font-medium">ID</th>
-                          <th className="text-left px-4 py-2 font-medium">Section</th>
-                          <th className="text-left px-4 py-2 font-medium">Test</th>
-                          <th className="text-left px-4 py-2 font-medium">Status</th>
-                          <th className="text-left px-4 py-2 font-medium">Date</th>
-                          <th className="text-left px-4 py-2 font-medium">Consultation</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {laboratoryTests.map((t) => (
-                          <Fragment key={t.testID}>
-                            <tr>
-                              <td className="px-4 py-2">{t.testID}</td>
-                              <td className="px-4 py-2">{t.sectionName || "—"}</td>
-                              <td className="px-4 py-2">{t.testName || "—"}</td>
-                              <td className="px-4 py-2">{t.status || "—"}</td>
-                              <td className="px-4 py-2">
-                                {t.requestDate
-                                  ? new Date(t.requestDate).toLocaleString()
-                                  : "—"}
-                              </td>
-                              <td className="px-4 py-2">#{t.consultationID}</td>
-                            </tr>
-                            <tr>
-                              <td colSpan={6} className="bg-slate-50 px-4 py-2 text-xs text-slate-600">
-                                <span className="font-medium text-slate-500">Results: </span>
-                                {(t.results || []).length === 0 ? (
-                                  <span className="text-slate-400">No result yet</span>
-                                ) : (
-                                  (t.results || []).map((r) => (
-                                    <div key={r.resultID} className="mt-1">
-                                      <strong>
-                                        {r.resultDate
-                                          ? new Date(r.resultDate).toLocaleString()
-                                          : ""}
-                                      </strong>
-                                      {" · "}
-                                      {r.technicianName || "Technician"}
-                                      {": "}
-                                      {r.resultDescription || "—"}
-                                    </div>
-                                  ))
-                                )}
-                              </td>
-                            </tr>
-                          </Fragment>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-
-              <div className="bg-white border rounded-xl shadow-sm">
-                <div className="px-5 py-4 border-b">
-                  <h3 className="font-semibold text-slate-800">Request Laboratory Tests</h3>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Consultation #{primaryConsultationId || "—"} · Select tests by name
-                    (section shown)
-                  </p>
-                </div>
-                <form onSubmit={submitLaboratory} className="p-5 space-y-4">
-                  {!primaryConsultationId && (
-                    <p className="text-amber-600 text-sm">Start a consultation first.</p>
-                  )}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-slate-700">Tests</span>
-                      <button
-                        type="button"
-                        onClick={() => setLabItems([...labItems, emptyLabRow()])}
-                        className="text-xs text-indigo-600"
-                        disabled={!primaryConsultationId}
-                      >
-                        + Add test
-                      </button>
                     </div>
-                    {labItems.map((row, idx) => (
-                      <div
-                        key={idx}
-                        className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-3 border border-slate-100 rounded-lg"
-                      >
-                        <Field label="Test type">
-                          <select
-                            className={inputCls}
-                            value={row.laboratoryTestTypeID}
-                            onChange={(e) => {
-                              const next = [...labItems];
-                              next[idx] = {
-                                ...next[idx],
-                                laboratoryTestTypeID: e.target.value,
-                              };
-                              setLabItems(next);
-                            }}
-                            required
-                          >
-                            <option value="">Select test type</option>
-                            {labTestTypes.map((t) => (
-                              <option
-                                key={t.laboratoryTestTypeID}
-                                value={t.laboratoryTestTypeID}
-                              >
-                                {t.sectionName ? `${t.sectionName} — ` : ""}
-                                {t.testName}
-                              </option>
-                            ))}
-                          </select>
-                        </Field>
-                        <Field label="Status / Priority">
-                          <select
-                            className={inputCls}
-                            value={row.status}
-                            onChange={(e) => {
-                              const next = [...labItems];
-                              next[idx] = { ...next[idx], status: e.target.value };
-                              setLabItems(next);
-                            }}
-                          >
-                            <option value="Requested">Requested</option>
-                            <option value="Urgent">Urgent</option>
-                            <option value="STAT">STAT</option>
-                          </select>
-                        </Field>
-                        <div className="flex items-end">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setLabItems(labItems.filter((_, i) => i !== idx))
-                            }
-                            className="text-xs text-red-600 px-2 py-2"
-                            disabled={labItems.length === 1}
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex justify-end">
-                    <button
-                      type="submit"
-                      disabled={saving || !primaryConsultationId}
-                      className="px-4 py-2 text-sm rounded-lg bg-indigo-600 text-white disabled:opacity-50"
-                    >
-                      {saving ? "Saving..." : "Submit laboratory request"}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          )}
-
-          {/* ========== RADIOLOGY ========== */}
-          {section === "radiology" && (
-            <div className="space-y-4">
-              <div className="bg-white border rounded-xl shadow-sm">
-                <div className="px-5 py-4 border-b">
-                  <h3 className="font-semibold text-slate-800">Radiology Requests</h3>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Existing requests and results for this patient
-                  </p>
+                  ))}
                 </div>
-                {radiologyRequests.length === 0 ? (
-                  <p className="p-5 text-sm text-slate-500">No radiology requests yet.</p>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full text-sm">
-                      <thead className="bg-slate-50 text-slate-600">
-                        <tr>
-                          <th className="text-left px-4 py-2 font-medium">ID</th>
-                          <th className="text-left px-4 py-2 font-medium">Test</th>
-                          <th className="text-left px-4 py-2 font-medium">Status</th>
-                          <th className="text-left px-4 py-2 font-medium">Date</th>
-                          <th className="text-left px-4 py-2 font-medium">Consultation</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {radiologyRequests.map((r) => (
-                          <Fragment key={r.radiologyRequestID}>
-                            <tr>
-                              <td className="px-4 py-2">{r.radiologyRequestID}</td>
-                              <td className="px-4 py-2">{r.testName || "—"}</td>
-                              <td className="px-4 py-2">{r.status || "—"}</td>
-                              <td className="px-4 py-2">
-                                {r.requestDate
-                                  ? new Date(r.requestDate).toLocaleString()
-                                  : "—"}
-                              </td>
-                              <td className="px-4 py-2">#{r.consultationID}</td>
-                            </tr>
-                            <tr>
-                              <td colSpan={5} className="bg-slate-50 px-4 py-2 text-xs text-slate-600">
-                                <span className="font-medium text-slate-500">Results: </span>
-                                {(r.results || []).length === 0 ? (
-                                  <span className="text-slate-400">No result yet</span>
-                                ) : (
-                                  (r.results || []).map((res) => (
-                                    <div key={res.radiologyResultID} className="mt-1">
-                                      <strong>
-                                        {res.resultDate
-                                          ? new Date(res.resultDate).toLocaleString()
-                                          : ""}
-                                      </strong>
-                                      {" · "}
-                                      {res.radiologyTechnicianName || "Technician"}
-                                      {": "}
-                                      {res.resultDescription || "—"}
-                                      {res.imageName ? (
-                                        <span className="text-slate-400">
-                                          {" "}
-                                          · Image: {res.imageName}
-                                        </span>
-                                      ) : null}
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={saving || !primaryConsultationId}
+                    className="px-4 py-2 text-sm rounded-lg bg-indigo-600 text-white disabled:opacity-50"
+                  >
+                    {saving ? "Saving..." : "Create prescription"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ========== LABORATORY ========== */}
+        {section === "laboratory" && (
+          <div className="space-y-4">
+            <div className="bg-white border rounded-xl shadow-sm">
+              <div className="px-5 py-4 border-b">
+                <h3 className="font-semibold text-slate-800">Laboratory Tests</h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Existing requests and results for this patient
+                </p>
+              </div>
+              {laboratoryTests.length === 0 ? (
+                <p className="p-5 text-sm text-slate-500">No laboratory tests yet.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead className="bg-slate-50 text-slate-600">
+                      <tr>
+                        <th className="text-left px-4 py-2 font-medium">ID</th>
+                        <th className="text-left px-4 py-2 font-medium">Section</th>
+                        <th className="text-left px-4 py-2 font-medium">Test</th>
+                        <th className="text-left px-4 py-2 font-medium">Status</th>
+                        <th className="text-left px-4 py-2 font-medium">Date</th>
+                        <th className="text-left px-4 py-2 font-medium">Consultation</th>
+                        <th className="text-left px-4 py-2 font-medium">Result</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {laboratoryTests.map((t) => {
+                        const results = t.results || [];
+                        const latest = results[0];
+                        return (
+                          <tr key={t.testID}>
+                            <td className="px-4 py-2">{t.testID}</td>
+                            <td className="px-4 py-2">{t.sectionName || "—"}</td>
+                            <td className="px-4 py-2">{t.testName || "—"}</td>
+                            <td className="px-4 py-2">
+                              <span
+                                className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
+                                  t.status === "Completed"
+                                    ? "bg-emerald-50 text-emerald-700"
+                                    : t.status === "Urgent" || t.status === "STAT"
+                                    ? "bg-red-50 text-red-700"
+                                    : "bg-slate-100 text-slate-600"
+                                }`}
+                              >
+                                {t.status || "—"}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2">
+                              {t.requestDate
+                                ? new Date(t.requestDate).toLocaleString()
+                                : "—"}
+                            </td>
+                            <td className="px-4 py-2">#{t.consultationID}</td>
+                            <td className="px-4 py-2 text-xs max-w-xs">
+                              {latest ? (
+                                <div>
+                                  <div className="font-medium text-slate-800">
+                                    {latest.resultDescription || "—"}
+                                  </div>
+                                  <div className="text-slate-400 mt-0.5">
+                                    {latest.resultDate
+                                      ? new Date(latest.resultDate).toLocaleString()
+                                      : ""}
+                                    {latest.technicianName
+                                      ? ` · ${latest.technicianName}`
+                                      : ""}
+                                  </div>
+                                  {results.length > 1 && (
+                                    <div className="text-indigo-600 mt-1">
+                                      +{results.length - 1} more result(s)
                                     </div>
-                                  ))
-                                )}
-                              </td>
-                            </tr>
-                          </Fragment>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-
-              <div className="bg-white border rounded-xl shadow-sm">
-                <div className="px-5 py-4 border-b">
-                  <h3 className="font-semibold text-slate-800">Request Radiology</h3>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Consultation #{primaryConsultationId || "—"} · Select tests by name
-                  </p>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-slate-400">No result yet</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
-                <form onSubmit={submitRadiology} className="p-5 space-y-4">
-                  {!primaryConsultationId && (
-                    <p className="text-amber-600 text-sm">Start a consultation first.</p>
-                  )}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-slate-700">Tests</span>
-                      <button
-                        type="button"
-                        onClick={() => setRadItems([...radItems, emptyRadRow()])}
-                        className="text-xs text-indigo-600"
-                        disabled={!primaryConsultationId}
-                      >
-                        + Add test
-                      </button>
-                    </div>
-                    {radItems.map((row, idx) => (
-                      <div
-                        key={idx}
-                        className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-3 border border-slate-100 rounded-lg"
-                      >
-                        <Field label="Radiology test">
-                          <select
-                            className={inputCls}
-                            value={row.radiologyTestTypeID}
-                            onChange={(e) => {
-                              const next = [...radItems];
-                              next[idx] = {
-                                ...next[idx],
-                                radiologyTestTypeID: e.target.value,
-                              };
-                              setRadItems(next);
-                            }}
-                            required
-                          >
-                            <option value="">Select radiology test</option>
-                            {radTestTypes.map((t) => (
-                              <option
-                                key={t.radiologyTestTypeID}
-                                value={t.radiologyTestTypeID}
-                              >
-                                {t.testName}
-                                {t.departmentName ? ` (${t.departmentName})` : ""}
-                              </option>
-                            ))}
-                          </select>
-                        </Field>
-                        <Field label="Status / Priority">
-                          <select
-                            className={inputCls}
-                            value={row.status}
-                            onChange={(e) => {
-                              const next = [...radItems];
-                              next[idx] = { ...next[idx], status: e.target.value };
-                              setRadItems(next);
-                            }}
-                          >
-                            <option value="Requested">Requested</option>
-                            <option value="Urgent">Urgent</option>
-                            <option value="STAT">STAT</option>
-                          </select>
-                        </Field>
-                        <div className="flex items-end">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setRadItems(radItems.filter((_, i) => i !== idx))
-                            }
-                            className="text-xs text-red-600 px-2 py-2"
-                            disabled={radItems.length === 1}
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex justify-end">
+              )}
+            </div>
+
+            <div className="bg-white border rounded-xl shadow-sm">
+              <div className="px-5 py-4 border-b">
+                <h3 className="font-semibold text-slate-800">Request Laboratory Tests</h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Consultation #{primaryConsultationId || "—"}
+                </p>
+              </div>
+              <form onSubmit={submitLaboratory} className="p-5 space-y-4">
+                {!primaryConsultationId && (
+                  <p className="text-amber-600 text-sm">Start a consultation first.</p>
+                )}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-slate-700">Tests</span>
                     <button
-                      type="submit"
-                      disabled={saving || !primaryConsultationId}
-                      className="px-4 py-2 text-sm rounded-lg bg-indigo-600 text-white disabled:opacity-50"
+                      type="button"
+                      onClick={() => setLabItems([...labItems, emptyLabRow()])}
+                      className="text-xs text-indigo-600"
+                      disabled={!primaryConsultationId}
                     >
-                      {saving ? "Saving..." : "Submit radiology request"}
+                      + Add test
                     </button>
                   </div>
-                </form>
-              </div>
+                  {labItems.map((row, idx) => (
+                    <div
+                      key={idx}
+                      className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-3 border border-slate-100 rounded-lg"
+                    >
+                      <Field label="Test type">
+                        <select
+                          className={inputCls}
+                          value={row.laboratoryTestTypeID}
+                          onChange={(e) => {
+                            const next = [...labItems];
+                            next[idx] = {
+                              ...next[idx],
+                              laboratoryTestTypeID: e.target.value,
+                            };
+                            setLabItems(next);
+                          }}
+                          required
+                        >
+                          <option value="">Select test type</option>
+                          {labTestTypes.map((t) => (
+                            <option
+                              key={t.laboratoryTestTypeID}
+                              value={t.laboratoryTestTypeID}
+                            >
+                              {t.sectionName ? `${t.sectionName} — ` : ""}
+                              {t.testName}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                      <Field label="Status / Priority">
+                        <select
+                          className={inputCls}
+                          value={row.status}
+                          onChange={(e) => {
+                            const next = [...labItems];
+                            next[idx] = { ...next[idx], status: e.target.value };
+                            setLabItems(next);
+                          }}
+                        >
+                          <option value="Requested">Requested</option>
+                          <option value="Urgent">Urgent</option>
+                          <option value="STAT">STAT</option>
+                        </select>
+                      </Field>
+                      <div className="flex items-end">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setLabItems(labItems.filter((_, i) => i !== idx))
+                          }
+                          className="text-xs text-red-600 px-2 py-2"
+                          disabled={labItems.length === 1}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={saving || !primaryConsultationId}
+                    className="px-4 py-2 text-sm rounded-lg bg-indigo-600 text-white disabled:opacity-50"
+                  >
+                    {saving ? "Saving..." : "Submit laboratory request"}
+                  </button>
+                </div>
+              </form>
             </div>
-          )}
-        </div>
+          </div>
+        )}
+
+        {/* ========== RADIOLOGY ========== */}
+        {section === "radiology" && (
+          <div className="space-y-4">
+            <div className="bg-white border rounded-xl shadow-sm">
+              <div className="px-5 py-4 border-b">
+                <h3 className="font-semibold text-slate-800">Radiology Requests</h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Existing requests and results for this patient
+                </p>
+              </div>
+              {radiologyRequests.length === 0 ? (
+                <p className="p-5 text-sm text-slate-500">No radiology requests yet.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead className="bg-slate-50 text-slate-600">
+                      <tr>
+                        <th className="text-left px-4 py-2 font-medium">ID</th>
+                        <th className="text-left px-4 py-2 font-medium">Test</th>
+                        <th className="text-left px-4 py-2 font-medium">Status</th>
+                        <th className="text-left px-4 py-2 font-medium">Date</th>
+                        <th className="text-left px-4 py-2 font-medium">Consultation</th>
+                        <th className="text-left px-4 py-2 font-medium">Result</th>
+                        <th className="text-left px-4 py-2 font-medium">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {radiologyRequests.map((r) => {
+                        const results = r.results || [];
+                        const latest = results[0];
+                        return (
+                          <tr key={r.radiologyRequestID}>
+                            <td className="px-4 py-2">{r.radiologyRequestID}</td>
+                            <td className="px-4 py-2">{r.testName || "—"}</td>
+                            <td className="px-4 py-2">
+                              <span
+                                className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
+                                  r.status === "Completed"
+                                    ? "bg-emerald-50 text-emerald-700"
+                                    : r.status === "InProgress"
+                                    ? "bg-amber-50 text-amber-700"
+                                    : "bg-slate-100 text-slate-600"
+                                }`}
+                              >
+                                {r.status || "—"}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2">
+                              {r.requestDate
+                                ? new Date(r.requestDate).toLocaleString()
+                                : "—"}
+                            </td>
+                            <td className="px-4 py-2">#{r.consultationID}</td>
+                            <td className="px-4 py-2 text-xs max-w-xs">
+                              {latest ? (
+                                <div>
+                                  <div className="font-medium text-slate-800 line-clamp-2">
+                                    {latest.resultDescription || "—"}
+                                  </div>
+                                  <div className="text-slate-400 mt-0.5">
+                                    {latest.resultDate
+                                      ? new Date(latest.resultDate).toLocaleString()
+                                      : ""}
+                                  </div>
+                                </div>
+                              ) : (
+                                <span className="text-slate-400">No result yet</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-2">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setModal({
+                                    type: "radiologyResults",
+                                    request: r,
+                                  })
+                                }
+                                className="text-xs text-indigo-600 hover:underline font-medium"
+                              >
+                                View Results
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white border rounded-xl shadow-sm">
+              <div className="px-5 py-4 border-b">
+                <h3 className="font-semibold text-slate-800">Request Radiology</h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Consultation #{primaryConsultationId || "—"}
+                </p>
+              </div>
+              <form onSubmit={submitRadiology} className="p-5 space-y-4">
+                {!primaryConsultationId && (
+                  <p className="text-amber-600 text-sm">Start a consultation first.</p>
+                )}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-slate-700">Tests</span>
+                    <button
+                      type="button"
+                      onClick={() => setRadItems([...radItems, emptyRadRow()])}
+                      className="text-xs text-indigo-600"
+                      disabled={!primaryConsultationId}
+                    >
+                      + Add test
+                    </button>
+                  </div>
+                  {radItems.map((row, idx) => (
+                    <div
+                      key={idx}
+                      className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-3 border border-slate-100 rounded-lg"
+                    >
+                      <Field label="Radiology test">
+                        <select
+                          className={inputCls}
+                          value={row.radiologyTestTypeID}
+                          onChange={(e) => {
+                            const next = [...radItems];
+                            next[idx] = {
+                              ...next[idx],
+                              radiologyTestTypeID: e.target.value,
+                            };
+                            setRadItems(next);
+                          }}
+                          required
+                        >
+                          <option value="">Select radiology test</option>
+                          {radTestTypes.map((t) => (
+                            <option
+                              key={t.radiologyTestTypeID}
+                              value={t.radiologyTestTypeID}
+                            >
+                              {t.testName}
+                              {t.departmentName ? ` (${t.departmentName})` : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                      <Field label="Status">
+                        <select
+                          className={inputCls}
+                          value={row.status}
+                          onChange={(e) => {
+                            const next = [...radItems];
+                            next[idx] = { ...next[idx], status: e.target.value };
+                            setRadItems(next);
+                          }}
+                        >
+                          <option value="Requested">Requested</option>
+                          <option value="Urgent">Urgent</option>
+                        </select>
+                      </Field>
+                      <div className="flex items-end">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setRadItems(radItems.filter((_, i) => i !== idx))
+                          }
+                          className="text-xs text-red-600 px-2 py-2"
+                          disabled={radItems.length === 1}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={saving || !primaryConsultationId}
+                    className="px-4 py-2 text-sm rounded-lg bg-indigo-600 text-white disabled:opacity-50"
+                  >
+                    {saving ? "Saving..." : "Submit radiology request"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Create / Edit modal */}
-      {modal && (
+      {/* ========== FORM MODALS (create/edit) ========== */}
+      {modal && modal.type !== "radiologyResults" && (
         <Modal
-          title={`${modal.mode === "create" ? "Add" : "Edit"} ${modal.type}`}
+          title={
+            modal.mode === "create"
+              ? `Add ${modal.type}`
+              : `Edit ${modal.type}`
+          }
           onClose={closeModal}
+          wide={modal.type === "consultation"}
         >
-          <form onSubmit={submitModal} className="space-y-3">
+          <form onSubmit={submitModal} className="space-y-4">
             {modal.type === "allergy" && (
               <>
                 <Field label="Allergen">
@@ -1314,29 +1552,64 @@ export default function ConsultationPatient() {
                   />
                 </Field>
                 <Field label="Severity">
-                  <input
+                  <select
                     className={inputCls}
                     value={form.severity || ""}
                     onChange={(e) => setForm({ ...form, severity: e.target.value })}
-                  />
+                  >
+                    <option value="">—</option>
+                    <option value="Mild">Mild</option>
+                    <option value="Moderate">Moderate</option>
+                    <option value="Severe">Severe</option>
+                  </select>
+                </Field>
+                <Field label="Active">
+                  <select
+                    className={inputCls}
+                    value={form.isActive === false ? "false" : "true"}
+                    onChange={(e) =>
+                      setForm({ ...form, isActive: e.target.value === "true" })
+                    }
+                  >
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                  </select>
                 </Field>
                 <Field label="Notes">
                   <textarea
                     className={inputCls}
+                    rows={2}
                     value={form.notes || ""}
                     onChange={(e) => setForm({ ...form, notes: e.target.value })}
                   />
                 </Field>
               </>
             )}
+
             {modal.type === "medicalHistory" && (
               <>
-                <Field label="Condition">
+                <Field label="Condition name">
                   <input
                     className={inputCls}
                     value={form.conditionName || ""}
-                    onChange={(e) => setForm({ ...form, conditionName: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, conditionName: e.target.value })
+                    }
                     required
+                  />
+                </Field>
+                <Field label="Diagnosed date">
+                  <input
+                    type="date"
+                    className={inputCls}
+                    value={
+                      form.diagnosedDate
+                        ? String(form.diagnosedDate).slice(0, 10)
+                        : ""
+                    }
+                    onChange={(e) =>
+                      setForm({ ...form, diagnosedDate: e.target.value })
+                    }
                   />
                 </Field>
                 <Field label="Status">
@@ -1356,12 +1629,14 @@ export default function ConsultationPatient() {
                 <Field label="Notes">
                   <textarea
                     className={inputCls}
+                    rows={2}
                     value={form.notes || ""}
                     onChange={(e) => setForm({ ...form, notes: e.target.value })}
                   />
                 </Field>
               </>
             )}
+
             {modal.type === "familyHistory" && (
               <>
                 <Field label="Relative">
@@ -1376,26 +1651,32 @@ export default function ConsultationPatient() {
                   <input
                     className={inputCls}
                     value={form.conditionName || ""}
-                    onChange={(e) => setForm({ ...form, conditionName: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, conditionName: e.target.value })
+                    }
                     required
                   />
                 </Field>
                 <Field label="Notes">
                   <textarea
                     className={inputCls}
+                    rows={2}
                     value={form.notes || ""}
                     onChange={(e) => setForm({ ...form, notes: e.target.value })}
                   />
                 </Field>
               </>
             )}
+
             {modal.type === "socialHistory" && (
               <>
                 <Field label="Smoking status">
                   <input
                     className={inputCls}
                     value={form.smokingStatus || ""}
-                    onChange={(e) => setForm({ ...form, smokingStatus: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, smokingStatus: e.target.value })
+                    }
                   />
                 </Field>
                 <Field label="Alcohol use">
@@ -1416,32 +1697,40 @@ export default function ConsultationPatient() {
                   <input
                     className={inputCls}
                     value={form.livingSituation || ""}
-                    onChange={(e) => setForm({ ...form, livingSituation: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, livingSituation: e.target.value })
+                    }
                   />
                 </Field>
                 <Field label="Physical activity">
                   <input
                     className={inputCls}
                     value={form.physicalActivity || ""}
-                    onChange={(e) => setForm({ ...form, physicalActivity: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, physicalActivity: e.target.value })
+                    }
                   />
                 </Field>
                 <Field label="Notes">
                   <textarea
                     className={inputCls}
+                    rows={2}
                     value={form.notes || ""}
                     onChange={(e) => setForm({ ...form, notes: e.target.value })}
                   />
                 </Field>
               </>
             )}
+
             {modal.type === "problemList" && (
               <>
                 <Field label="Problem name">
                   <input
                     className={inputCls}
                     value={form.problemName || ""}
-                    onChange={(e) => setForm({ ...form, problemName: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, problemName: e.target.value })
+                    }
                     required
                   />
                 </Field>
@@ -1452,36 +1741,39 @@ export default function ConsultationPatient() {
                     onChange={(e) => setForm({ ...form, code: e.target.value })}
                   />
                 </Field>
-                <Field label="Coding system">
-                  <input
-                    className={inputCls}
-                    value={form.codingSystem || ""}
-                    onChange={(e) => setForm({ ...form, codingSystem: e.target.value })}
-                  />
-                </Field>
                 <Field label="Status">
-                  <input
+                  <select
                     className={inputCls}
                     value={form.status || "Active"}
                     onChange={(e) => setForm({ ...form, status: e.target.value })}
-                  />
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Resolved">Resolved</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
                 </Field>
                 <Field label="Notes">
                   <textarea
                     className={inputCls}
+                    rows={2}
                     value={form.notes || ""}
                     onChange={(e) => setForm({ ...form, notes: e.target.value })}
                   />
                 </Field>
               </>
             )}
+
             {modal.type === "consultation" && (
               <>
                 <Field label="Chief complaint">
-                  <input
+                  <textarea
                     className={inputCls}
+                    rows={2}
                     value={form.chiefComplaint || ""}
-                    onChange={(e) => setForm({ ...form, chiefComplaint: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, chiefComplaint: e.target.value })
+                    }
+                    required
                   />
                 </Field>
                 <Field label="History of present illness">
@@ -1497,6 +1789,7 @@ export default function ConsultationPatient() {
                 <Field label="Assessment">
                   <textarea
                     className={inputCls}
+                    rows={2}
                     value={form.assessment || ""}
                     onChange={(e) => setForm({ ...form, assessment: e.target.value })}
                   />
@@ -1504,43 +1797,42 @@ export default function ConsultationPatient() {
                 <Field label="Treatment plan">
                   <textarea
                     className={inputCls}
+                    rows={2}
                     value={form.treatmentPlan || ""}
-                    onChange={(e) => setForm({ ...form, treatmentPlan: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, treatmentPlan: e.target.value })
+                    }
                   />
                 </Field>
                 <Field label="Clinical notes">
                   <textarea
                     className={inputCls}
+                    rows={2}
                     value={form.clinicalNotes || ""}
-                    onChange={(e) => setForm({ ...form, clinicalNotes: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, clinicalNotes: e.target.value })
+                    }
                   />
                 </Field>
               </>
             )}
+
             {modal.type === "physicalExam" && (
               <>
-                <Field label="Consultation ID">
-                  <input
-                    className={inputCls}
-                    type="number"
-                    value={form.consultationID || ""}
-                    onChange={(e) =>
-                      setForm({ ...form, consultationID: Number(e.target.value) })
-                    }
-                    required
-                  />
-                </Field>
                 <Field label="Examination area">
                   <input
                     className={inputCls}
                     value={form.examinationArea || ""}
-                    onChange={(e) => setForm({ ...form, examinationArea: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, examinationArea: e.target.value })
+                    }
                     required
                   />
                 </Field>
                 <Field label="Findings">
                   <textarea
                     className={inputCls}
+                    rows={3}
                     value={form.findings || ""}
                     onChange={(e) => setForm({ ...form, findings: e.target.value })}
                     required
@@ -1549,37 +1841,31 @@ export default function ConsultationPatient() {
                 <Field label="Notes">
                   <textarea
                     className={inputCls}
+                    rows={2}
                     value={form.notes || ""}
                     onChange={(e) => setForm({ ...form, notes: e.target.value })}
                   />
                 </Field>
               </>
             )}
+
             {modal.type === "diagnosis" && (
               <>
-                <Field label="Consultation ID">
-                  <input
-                    className={inputCls}
-                    type="number"
-                    value={form.consultationID || ""}
-                    onChange={(e) =>
-                      setForm({ ...form, consultationID: Number(e.target.value) })
-                    }
-                    required
-                  />
-                </Field>
                 <Field label="Code">
                   <input
                     className={inputCls}
                     value={form.code || ""}
                     onChange={(e) => setForm({ ...form, code: e.target.value })}
+                    required
                   />
                 </Field>
                 <Field label="Description">
                   <input
                     className={inputCls}
                     value={form.description || ""}
-                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, description: e.target.value })
+                    }
                     required
                   />
                 </Field>
@@ -1587,33 +1873,39 @@ export default function ConsultationPatient() {
                   <input
                     className={inputCls}
                     value={form.codingSystem || ""}
-                    onChange={(e) => setForm({ ...form, codingSystem: e.target.value })}
-                    placeholder="ICD-10 / ICD-11"
+                    onChange={(e) =>
+                      setForm({ ...form, codingSystem: e.target.value })
+                    }
+                    placeholder="e.g. ICD-10"
                   />
                 </Field>
                 <Field label="Diagnosis type">
                   <input
                     className={inputCls}
                     value={form.diagnosisType || ""}
-                    onChange={(e) => setForm({ ...form, diagnosisType: e.target.value })}
-                    placeholder="Primary / Secondary"
+                    onChange={(e) =>
+                      setForm({ ...form, diagnosisType: e.target.value })
+                    }
                   />
                 </Field>
                 <label className="flex items-center gap-2 text-sm">
                   <input
                     type="checkbox"
                     checked={!!form.isPrimary}
-                    onChange={(e) => setForm({ ...form, isPrimary: e.target.checked })}
+                    onChange={(e) =>
+                      setForm({ ...form, isPrimary: e.target.checked })
+                    }
                   />
                   Primary diagnosis
                 </label>
               </>
             )}
+
             <div className="flex justify-end gap-2 pt-2">
               <button
                 type="button"
                 onClick={closeModal}
-                className="px-4 py-2 text-sm rounded-lg border border-slate-200"
+                className="px-4 py-2 text-sm rounded-lg border"
               >
                 Cancel
               </button>
@@ -1629,10 +1921,144 @@ export default function ConsultationPatient() {
         </Modal>
       )}
 
+      {/* ========== RADIOLOGY RESULTS MODAL ========== */}
+      {modal?.type === "radiologyResults" && (
+        <Modal
+          title={`Radiology Results — ${modal.request?.testName || "Request"} #${
+            modal.request?.radiologyRequestID
+          }`}
+          onClose={closeModal}
+          wide
+        >
+          <div className="space-y-4">
+            <div className="bg-slate-50 rounded-lg p-3 text-sm grid grid-cols-2 gap-2">
+              <div>
+                <span className="text-slate-500">Status:</span>{" "}
+                <strong>{modal.request?.status || "—"}</strong>
+              </div>
+              <div>
+                <span className="text-slate-500">Request date:</span>{" "}
+                {modal.request?.requestDate
+                  ? new Date(modal.request.requestDate).toLocaleString()
+                  : "—"}
+              </div>
+              <div>
+                <span className="text-slate-500">Consultation:</span> #
+                {modal.request?.consultationID}
+              </div>
+              <div>
+                <span className="text-slate-500">Results count:</span>{" "}
+                {(modal.request?.results || []).length}
+              </div>
+            </div>
+
+            {(modal.request?.results || []).length === 0 ? (
+              <p className="text-sm text-slate-500 py-6 text-center">
+                No results recorded yet for this request.
+              </p>
+            ) : (
+              <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+                {(modal.request.results || []).map((res, idx) => {
+                  const imageUrl = buildRadiologyImageUrl(res);
+                  return (
+                    <div
+                      key={res.radiologyResultID || idx}
+                      className="border border-slate-200 rounded-xl p-4 space-y-3"
+                    >
+                      <div>
+                        <p className="text-xs text-slate-400">
+                          Result #{res.radiologyResultID}
+                        </p>
+                        <p className="font-medium text-slate-800 mt-0.5">
+                          {res.radiologyTechnicianName || "Technician"}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {res.resultDate
+                            ? new Date(res.resultDate).toLocaleString()
+                            : "—"}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-medium text-slate-500 mb-1">
+                          Report / Description
+                        </p>
+                        <p className="text-sm text-slate-800 whitespace-pre-wrap">
+                          {res.resultDescription || "—"}
+                        </p>
+                      </div>
+
+                      {imageUrl ? (
+  <div>
+    <p className="text-xs font-medium text-slate-500 mb-2">
+      Image
+      {res.imageName ? ` — ${res.imageName}` : ""}
+    </p>
+
+    <div className="space-y-2">
+      <img
+        src={imageUrl}
+        alt={res.imageName || "Radiology image"}
+        className="max-w-full max-h-80 rounded-lg border border-slate-200 object-contain bg-slate-50"
+        onError={(e) => {
+          e.currentTarget.style.display = "none";
+          const fallback = e.currentTarget.nextElementSibling;
+          if (fallback) fallback.classList.remove("hidden");
+        }}
+      />
+
+      {/* Fallback message — NOT nested inside an <a> */}
+      <p className="hidden text-xs text-red-500">
+        Image could not be loaded.{" "}
+        <a
+          href={imageUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline"
+        >
+          Open image in new tab
+        </a>
+      </p>
+
+      {/* Always available open link (not wrapping the img) */}
+      <a
+        href={imageUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:underline"
+      >
+        <i className="bi bi-box-arrow-up-right" />
+        Open full image
+      </a>
+    </div>
+  </div>
+) : (
+  <p className="text-xs text-slate-400">No image attached.</p>
+)}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={closeModal}
+                className="px-4 py-2 text-sm rounded-lg border border-slate-200 hover:bg-slate-50"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Confirm delete */}
       {confirmDelete && (
         <Modal title="Confirm delete" onClose={() => setConfirmDelete(null)}>
           <p className="text-sm text-slate-600 mb-4">
-            Are you sure you want to delete this record? This cannot be undone.
+            Are you sure you want to delete this record?
           </p>
           <div className="flex justify-end gap-2">
             <button
@@ -1651,68 +2077,6 @@ export default function ConsultationPatient() {
             </button>
           </div>
         </Modal>
-      )}
-    </div>
-  );
-}
-
-function RecordPanel({ title, onAdd, rows, columns, idKey, onEdit, onDelete }) {
-  return (
-    <div className="bg-white border rounded-xl shadow-sm">
-      <div className="flex items-center justify-between px-5 py-4 border-b">
-        <h3 className="font-semibold text-slate-800">{title}</h3>
-        <button
-          type="button"
-          onClick={onAdd}
-          className="px-3 py-1.5 text-xs rounded-lg bg-indigo-600 text-white"
-        >
-          + Add
-        </button>
-      </div>
-      {rows.length === 0 ? (
-        <p className="p-5 text-sm text-slate-500">No records.</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-slate-50 text-slate-600">
-              <tr>
-                {columns.map((c) => (
-                  <th key={c.key} className="text-left px-4 py-2 font-medium">
-                    {c.label}
-                  </th>
-                ))}
-                <th className="text-right px-4 py-2 font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {rows.map((r) => (
-                <tr key={r[idKey]}>
-                  {columns.map((c) => (
-                    <td key={c.key} className="px-4 py-2 text-slate-700">
-                      {c.render ? c.render(r[c.key], r) : r[c.key] ?? "—"}
-                    </td>
-                  ))}
-                  <td className="px-4 py-2 text-right space-x-2">
-                    <button
-                      type="button"
-                      onClick={() => onEdit(r)}
-                      className="text-indigo-600 text-xs"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onDelete(r)}
-                      className="text-red-600 text-xs"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
       )}
     </div>
   );

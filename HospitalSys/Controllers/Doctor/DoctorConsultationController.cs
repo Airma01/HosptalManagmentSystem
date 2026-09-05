@@ -269,43 +269,67 @@ namespace HospitalSys.Controllers.Doctor
                     .FirstOrDefaultAsync();
 
                 // Laboratory tests linked to consultations of this patient (current + previous)
-                var laboratoryTests = await _context.LaboratoryTests
-                    .AsNoTracking()
-                    .Where(lt => lt.PatientID == patientId)
-                    .OrderByDescending(lt => lt.RequestDate)
-                    .Select(lt => new LaboratoryTestViewDto
-                    {
-                        TestID = lt.TestID,
-                        ConsultationID = lt.ConsultationID,
-                        PatientID = lt.PatientID,
-                        DoctorID = lt.DoctorID,
-                        LaboratoryTestTypeID = lt.LaboratoryTestTypeID,
-                        TestName = lt.LaboratoryTestType != null ? lt.LaboratoryTestType.TestName : "",
-                        LaboratorySectionID = lt.LaboratoryTestType != null ? lt.LaboratoryTestType.LaboratorySectionID : 0,
-                        SectionName = lt.LaboratoryTestType != null && lt.LaboratoryTestType.LaboratorySection != null
-                            ? lt.LaboratoryTestType.LaboratorySection.SectionName : "",
-                        RequestDate = lt.RequestDate,
-                        Status = lt.Status
-                    })
-                    .ToListAsync();
+                // Laboratory tests + results
+           // Laboratory tests + results
+var laboratoryTests = await _context.LaboratoryTests
+    .AsNoTracking()
+    .Where(lt => lt.PatientID == patientId)
+    .OrderByDescending(lt => lt.RequestDate)
+    .Select(lt => new LaboratoryTestViewDto
+    {
+        TestID = lt.TestID,
+        ConsultationID = lt.ConsultationID,
+        PatientID = lt.PatientID,
+        DoctorID = lt.DoctorID,
+        LaboratoryTestTypeID = lt.LaboratoryTestTypeID,
+        TestName = lt.LaboratoryTestType != null ? lt.LaboratoryTestType.TestName : "",
+        LaboratorySectionID = lt.LaboratoryTestType != null ? lt.LaboratoryTestType.LaboratorySectionID : 0,
+        SectionName = lt.LaboratoryTestType != null && lt.LaboratoryTestType.LaboratorySection != null
+            ? lt.LaboratoryTestType.LaboratorySection.SectionName : "",
+        RequestDate = lt.RequestDate,
+        Status = lt.Status,
+        Results = lt.LaboratoryResult   // <-- singular
+            .OrderByDescending(r => r.ResultDate)
+            .Select(r => new LaboratoryResultViewDto
+            {
+                ResultID = r.ResultID,
+                TestID = r.TestID,
+                TechnicianName = r.TechnicianName ?? "",
+                ResultDescription = r.ResultDescription ?? "",
+                ResultDate = r.ResultDate
+            }).ToList()
+    })
+    .ToListAsync();
 
-                var radiologyRequests = await _context.RadiologyRequests
-                    .AsNoTracking()
-                    .Where(rr => rr.PatientID == patientId)
-                    .OrderByDescending(rr => rr.RequestDate)
-                    .Select(rr => new RadiologyRequestViewDto
-                    {
-                        RadiologyRequestID = rr.RadiologyRequestID,
-                        ConsultationID = rr.ConsultationID,
-                        PatientID = rr.PatientID,
-                        DoctorID = rr.DoctorID,
-                        RadiologyTestTypeID = rr.RadiologyTestTypeID,
-                        TestName = rr.RadiologyTestType != null ? rr.RadiologyTestType.TestName : "",
-                        RequestDate = rr.RequestDate,
-                        Status = rr.Status
-                    })
-                    .ToListAsync();
-
+// Radiology requests + results
+var radiologyRequests = await _context.RadiologyRequests
+    .AsNoTracking()
+    .Where(rr => rr.PatientID == patientId)
+    .OrderByDescending(rr => rr.RequestDate)
+    .Select(rr => new RadiologyRequestViewDto
+    {
+        RadiologyRequestID = rr.RadiologyRequestID,
+        ConsultationID = rr.ConsultationID,
+        PatientID = rr.PatientID,
+        DoctorID = rr.DoctorID,
+        RadiologyTestTypeID = rr.RadiologyTestTypeID,
+        TestName = rr.RadiologyTestType != null ? rr.RadiologyTestType.TestName : "",
+        RequestDate = rr.RequestDate,
+        Status = rr.Status,
+        Results = rr.RadiologyResult   // <-- singular
+            .OrderByDescending(r => r.ResultDate)
+            .Select(r => new RadiologyResultViewDto
+            {
+                RadiologyResultID = r.RadiologyResultID,
+                RadiologyRequestID = r.RadiologyRequestID,
+                RadiologyTechnicianName = r.RadiologyTechnicianName ?? "",
+                ImageName = r.ImageName,
+                ImagePath = r.ImagePath,
+                ResultDescription = r.ResultDescription ?? "",
+                ResultDate = r.ResultDate
+            }).ToList()
+    })
+    .ToListAsync();
                 var result = new DoctorPatientVisitDetailsDto
                 {
                     Patient = new PatientSummaryDto

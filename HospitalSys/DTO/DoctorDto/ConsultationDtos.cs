@@ -281,6 +281,8 @@ namespace HospitalSys.Dto.DoctorDtos
         public string SectionName { get; set; } = "";
         public DateTime RequestDate { get; set; }
         public string Status { get; set; } = "";
+
+        public List<LaboratoryResultViewDto> Results { get; set; } = new();
     }
 
     // ---------- Radiology (flat model → collection of requests) ----------
@@ -305,6 +307,8 @@ namespace HospitalSys.Dto.DoctorDtos
         public string TestName { get; set; } = "";
         public DateTime RequestDate { get; set; }
         public string Status { get; set; } = "";
+
+        public List<RadiologyResultViewDto> Results { get; set; } = new();
     }
 
     // Lookups for doctor dropdowns
