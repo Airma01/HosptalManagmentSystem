@@ -75,6 +75,24 @@ export default function DoctorDashboard() {
           </Link>
         </div>
 
+        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col">
+          <div className="w-12 h-12 rounded-xl bg-violet-100 text-violet-600 flex items-center justify-center mb-4">
+            <i className="bi bi-arrow-left-right text-2xl" />
+          </div>
+          <h3 className="text-lg font-semibold text-slate-800">Referrals</h3>
+          <p className="text-slate-500 text-sm mt-2 flex-1">
+            Review incoming referrals to your department, open patient details,
+            select an existing visit, and continue in clinical modules.
+          </p>
+          <Link
+            to="/doctor/referrals"
+            className="mt-5 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition"
+          >
+            View Referrals
+            <i className="bi bi-arrow-right" />
+          </Link>
+        </div>
+
       </div>
     </div>
   );

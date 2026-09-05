@@ -10,11 +10,11 @@ const linkClass = ({ isActive }) =>
 export default function DoctorSidebar({ open, onClose }) {
   return (
     <aside
-      className={`fixed lg:static inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 transform transition-transform duration-200 ${
+      className={`fixed lg:static inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 transform transition-transform duration-200 flex flex-col ${
         open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       }`}
     >
-      <div className="h-16 flex items-center gap-2 px-5 border-b border-slate-200">
+      <div className="h-16 flex items-center gap-2 px-5 border-b border-slate-200 shrink-0">
         <div className="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center text-white">
           <i className="bi bi-heart-pulse-fill text-lg" />
         </div>
@@ -31,10 +31,22 @@ export default function DoctorSidebar({ open, onClose }) {
         </button>
       </div>
 
-      <nav className="p-3 space-y-1">
+      <nav className="p-3 space-y-1 flex-1 overflow-y-auto">
         <NavLink to="/doctor" end className={linkClass} onClick={onClose}>
           <i className="bi bi-house" />
           Dashboard
+        </NavLink>
+
+        <p className="px-4 pt-4 pb-1 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+          Referrals
+        </p>
+        <NavLink to="/doctor/referrals" className={linkClass} onClick={onClose}>
+          <i className="bi bi-arrow-left-right" />
+          Referral Queue
+        </NavLink>
+        <NavLink to="/doctor/referrals/create" className={linkClass} onClick={onClose}>
+          <i className="bi bi-plus-circle" />
+          Create Referral
         </NavLink>
 
         <p className="px-4 pt-4 pb-1 text-xs font-semibold text-slate-400 uppercase tracking-wider">

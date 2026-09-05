@@ -38,6 +38,9 @@ import {
   PNCVisit,
   FamilyPlanning,
   ChildHealthDashboard,
+  ReferralQueue,
+  ReferralDetails,
+  CreateReferral,
 } from "./Pages/Dashboard/DoctorDashboard";
 import CSMProtectRoute from './ProtectRoute/CSMProtectRoute';
 
@@ -262,6 +265,7 @@ function App() {
 
         {/* Doctor routes – protected */}
        {/* Doctor routes */}
+{/* Doctor routes */}
 <Route path="/doctor" element={<DoctorLayout />}>
   <Route index element={<DoctorDashboard />} />
   <Route path="consultation/triage" element={<ConsultationQueue />} />
@@ -294,6 +298,12 @@ function App() {
   <Route path="maternal/patient/:patientId/:visitId/pnc" element={<PNCVisit />} />
   <Route path="maternal/patient/:patientId/:visitId/family-planning" element={<FamilyPlanning />} />
   <Route path="maternal/patient/:patientId/:visitId/child-health" element={<ChildHealthDashboard />} />
+
+  {/* Referrals — create MUST be above :referralId */}
+  <Route path="referrals" element={<ReferralQueue />} />
+  <Route path="referrals/create" element={<CreateReferral />} />
+  <Route path="referrals/new" element={<CreateReferral />} />
+  <Route path="referrals/:referralId" element={<ReferralDetails />} />
 </Route>
 
         {/* ===== CSM routes – protected with sidebar ===== */}

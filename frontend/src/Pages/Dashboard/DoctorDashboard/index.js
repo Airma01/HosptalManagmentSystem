@@ -33,3 +33,7 @@ export { default as ChildBirth } from "./MaternalChildHealth/Delivery/ChildBirth
 export { default as PNCVisit } from "./MaternalChildHealth/PNC/PNCVisit";
 export { default as FamilyPlanning } from "./MaternalChildHealth/FamilyPlanning/FamilyPlanning";
 export { default as ChildHealthDashboard } from "./MaternalChildHealth/ChildHealth/ChildHealthDashboard";
+
+export { default as ReferralQueue } from "./Referral/ReferralQueue";
+export { default as ReferralDetails } from "./Referral/ReferralDetails";
+export { default as CreateReferral } from "./Referral/CreateReferral";
