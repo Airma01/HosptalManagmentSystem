@@ -72,6 +72,11 @@ export default function DoctorSidebar({ open, onClose }) {
           <i className="bi bi-gender-female" />
           Maternal & Child Queue
         </NavLink>
+        {/* Add this inside the <nav> */}
+        <NavLink to="/doctor/appointments" className={linkClass} onClick={onClose}>
+          <i className="bi bi-calendar-check" />
+          Appointments
+        </NavLink>
       </nav>
     </aside>
   );

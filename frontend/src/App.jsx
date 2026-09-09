@@ -205,6 +205,7 @@ import CreateRadiologyRequest from './Pages/Dashboard/RadiologyDashboard/Request
 import RadiologyRequestDetails from './Pages/Dashboard/RadiologyDashboard/Request/RadiologyRequestDetails';
 import UpdateRadiologyRequest from './Pages/Dashboard/RadiologyDashboard/Request/UpdateRadiologyRequest';
 import RadiologyResultDetails from './Pages/Dashboard/RadiologyDashboard/Result/RadiologyResultDetails';
+import Appointments from "./Pages/Dashboard/DoctorDashboard/Appointments/Appointments";
 
 // ─── ⚠️ PLACEHOLDER COMPONENTS FOR MISSING NURSE ROUTES ───
 const AssignDepartment = () => (
@@ -304,6 +305,7 @@ function App() {
   <Route path="referrals/create" element={<CreateReferral />} />
   <Route path="referrals/new" element={<CreateReferral />} />
   <Route path="referrals/:referralId" element={<ReferralDetails />} />
+  <Route path="appointments" element={<Appointments />} />
 </Route>
 
         {/* ===== CSM routes – protected with sidebar ===== */}
