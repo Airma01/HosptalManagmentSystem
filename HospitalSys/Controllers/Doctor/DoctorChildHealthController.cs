@@ -27,23 +27,155 @@ namespace HospitalSys.Controllers.Doctor
             return id;
         }
 
+        /// <summary>
+        /// Allows access when:
+        /// 1) the patient has a triage in this doctor's department (standard path), OR
+        /// 2) the patient is a registered newborn (ChildBirth.ChildPatientID) whose mother
+        ///    has a triage in this doctor's department (MCH child-health path).
+        /// Newborns created at delivery often have no triage of their own yet.
+        /// </summary>
         private async Task EnsurePatientAccessAsync(int patientId)
         {
             int departmentId = GetDepartmentId();
-            bool ok = await _context.Triages.AsNoTracking()
+
+            // Standard: patient themselves triaged into this department
+            bool hasOwnTriage = await _context.Triages.AsNoTracking()
                 .AnyAsync(t => t.ClinicalDepartmentID == departmentId
                             && t.PatientVisit != null
                             && t.PatientVisit.PatientID == patientId);
-            if (!ok)
-                throw new KeyNotFoundException("Patient not found.");
+            if (hasOwnTriage)
+                return;
+
+            // MCH newborn: ChildBirth → Delivery → Pregnancy → mother PatientID
+            // Allow if the mother has a triage in this department.
+            var motherIds = await _context.ChildBirths.AsNoTracking()
+                .Where(c => c.ChildPatientID == patientId
+                         && c.Delivery != null
+                         && c.Delivery.Pregnancy != null)
+                .Select(c => c.Delivery!.Pregnancy!.PatientID)
+                .Distinct()
+                .ToListAsync();
+
+            if (motherIds.Count > 0)
+            {
+                bool motherAccessible = await _context.Triages.AsNoTracking()
+                    .AnyAsync(t => t.ClinicalDepartmentID == departmentId
+                                && t.PatientVisit != null
+                                && motherIds.Contains(t.PatientVisit.PatientID));
+                if (motherAccessible)
+                    return;
+            }
+
+            throw new KeyNotFoundException("Patient not found.");
         }
 
-        private async Task EnsureVisitBelongsToPatientAsync(int patientId, int patientVisitId)
+        /// <summary>
+        /// Optional visit: if the ID is missing, zero, or belongs to another patient (e.g. mother),
+        /// return null instead of failing. Newborns often have no visit of their own.
+        /// </summary>
+        private async Task<int?> ResolveOptionalVisitIdAsync(int patientId, int? patientVisitId)
         {
+            if (!patientVisitId.HasValue || patientVisitId.Value <= 0)
+                return null;
+
             bool ok = await _context.PatientVisits.AsNoTracking()
-                .AnyAsync(v => v.VisitID == patientVisitId && v.PatientID == patientId);
-            if (!ok)
-                throw new KeyNotFoundException("Patient visit not found.");
+                .AnyAsync(v => v.VisitID == patientVisitId.Value && v.PatientID == patientId);
+            return ok ? patientVisitId : null;
+        }
+
+        /// <summary>
+        /// Required visit (IMNCI): use provided visit if it belongs to the child;
+        /// otherwise create a lightweight "Child Health" visit for the child.
+        /// </summary>
+        private async Task<int> ResolveRequiredVisitIdAsync(int patientId, int? patientVisitId)
+        {
+            if (patientVisitId.HasValue && patientVisitId.Value > 0)
+            {
+                bool ok = await _context.PatientVisits.AsNoTracking()
+                    .AnyAsync(v => v.VisitID == patientVisitId.Value && v.PatientID == patientId);
+                if (ok)
+                    return patientVisitId.Value;
+            }
+
+            var visit = new HospitalSys.Models.PatientManagment.PatientVisit
+            {
+                PatientID = patientId,
+                VisitDate = DateTime.UtcNow,
+                VisitType = "Child Health",
+                Status = "Open",
+                Created_at = DateTime.UtcNow
+            };
+            _context.PatientVisits.Add(visit);
+            await _context.SaveChangesAsync();
+            return visit.VisitID;
+        }
+
+        // ============================================================
+        // CHILD PATIENT VISITS (for newborns without prior triage/visit)
+        // ============================================================
+
+        /// <summary>Create a PatientVisit for this child (VisitType = Child Health).</summary>
+        [HttpPost("visits")]
+        public async Task<IActionResult> CreateChildVisit(int patientId)
+        {
+            try
+            {
+                await EnsurePatientAccessAsync(patientId);
+
+                var visit = new HospitalSys.Models.PatientManagment.PatientVisit
+                {
+                    PatientID = patientId,
+                    VisitDate = DateTime.UtcNow,
+                    VisitType = "Child Health",
+                    Status = "Open",
+                    Created_at = DateTime.UtcNow
+                };
+                _context.PatientVisits.Add(visit);
+                await _context.SaveChangesAsync();
+
+                return StatusCode(201, new
+                {
+                    visitID = visit.VisitID,
+                    patientID = visit.PatientID,
+                    visitDate = visit.VisitDate,
+                    visitType = visit.VisitType,
+                    status = visit.Status
+                });
+            }
+            catch (UnauthorizedAccessException) { return Unauthorized(new { message = "Unauthorized" }); }
+            catch (KeyNotFoundException) { return NotFound(new { message = "Patient not found." }); }
+            catch { return StatusCode(500, new { message = "Error creating child visit." }); }
+        }
+
+        /// <summary>Latest PatientVisit for this child, or 404 if none.</summary>
+        [HttpGet("visits/latest")]
+        public async Task<IActionResult> GetLatestChildVisit(int patientId)
+        {
+            try
+            {
+                await EnsurePatientAccessAsync(patientId);
+
+                var visit = await _context.PatientVisits.AsNoTracking()
+                    .Where(v => v.PatientID == patientId)
+                    .OrderByDescending(v => v.VisitDate)
+                    .ThenByDescending(v => v.VisitID)
+                    .FirstOrDefaultAsync();
+
+                if (visit == null)
+                    return NotFound(new { message = "No visit found for this child. Create a visit first." });
+
+                return Ok(new
+                {
+                    visitID = visit.VisitID,
+                    patientID = visit.PatientID,
+                    visitDate = visit.VisitDate,
+                    visitType = visit.VisitType,
+                    status = visit.Status
+                });
+            }
+            catch (UnauthorizedAccessException) { return Unauthorized(new { message = "Unauthorized" }); }
+            catch (KeyNotFoundException) { return NotFound(new { message = "Patient not found." }); }
+            catch { return StatusCode(500, new { message = "Error retrieving child visit." }); }
         }
 
         // ============================================================
@@ -91,9 +223,7 @@ namespace HospitalSys.Controllers.Doctor
             {
                 await EnsurePatientAccessAsync(patientId);
 
-                if (dto.PatientVisitID.HasValue)
-                    await EnsureVisitBelongsToPatientAsync(patientId, dto.PatientVisitID.Value);
-
+                var resolvedVisitId = await ResolveOptionalVisitIdAsync(patientId, dto.PatientVisitID);
                 if (dto.ChildBirthID.HasValue)
                 {
                     bool childBirthOk = await _context.ChildBirths.AsNoTracking()
@@ -118,7 +248,7 @@ namespace HospitalSys.Controllers.Doctor
                 {
                     PatientID = patientId,
                     ChildBirthID = dto.ChildBirthID,
-                    PatientVisitID = dto.PatientVisitID,
+                    PatientVisitID = resolvedVisitId,
                     AssessmentDate = DateTime.UtcNow,
                     AgeInDays = dto.AgeInDays,
                     GeneralCondition = dto.GeneralCondition,
@@ -232,13 +362,11 @@ namespace HospitalSys.Controllers.Doctor
             try
             {
                 await EnsurePatientAccessAsync(patientId);
-                if (dto.PatientVisitID.HasValue)
-                    await EnsureVisitBelongsToPatientAsync(patientId, dto.PatientVisitID.Value);
-
+                var resolvedVisitId = await ResolveOptionalVisitIdAsync(patientId, dto.PatientVisitID);
                 var entity = new GrowthMonitoring
                 {
                     PatientID = patientId,
-                    PatientVisitID = dto.PatientVisitID,
+                    PatientVisitID = resolvedVisitId,
                     MeasurementDate = DateTime.UtcNow,
                     AgeInMonths = dto.AgeInMonths,
                     WeightKg = dto.WeightKg,
@@ -344,13 +472,11 @@ namespace HospitalSys.Controllers.Doctor
             try
             {
                 await EnsurePatientAccessAsync(patientId);
-                if (dto.PatientVisitID.HasValue)
-                    await EnsureVisitBelongsToPatientAsync(patientId, dto.PatientVisitID.Value);
-
+                var resolvedVisitId = await ResolveOptionalVisitIdAsync(patientId, dto.PatientVisitID);
                 var entity = new DevelopmentAssessment
                 {
                     PatientID = patientId,
-                    PatientVisitID = dto.PatientVisitID,
+                    PatientVisitID = resolvedVisitId,
                     AssessmentDate = DateTime.UtcNow,
                     AgeInMonths = dto.AgeInMonths,
                     GrossMotor = dto.GrossMotor,
@@ -450,16 +576,14 @@ namespace HospitalSys.Controllers.Doctor
             try
             {
                 await EnsurePatientAccessAsync(patientId);
-                if (dto.PatientVisitID.HasValue)
-                    await EnsureVisitBelongsToPatientAsync(patientId, dto.PatientVisitID.Value);
-
+                var resolvedVisitId = await ResolveOptionalVisitIdAsync(patientId, dto.PatientVisitID);
                 if (string.IsNullOrWhiteSpace(dto.VaccineName))
                     return BadRequest(new { message = "VaccineName is required." });
 
                 var entity = new Immunization
                 {
                     PatientID = patientId,
-                    PatientVisitID = dto.PatientVisitID,
+                    PatientVisitID = resolvedVisitId,
                     VaccinationDate = dto.VaccinationDate,
                     VaccineName = dto.VaccineName,
                     VaccineCode = dto.VaccineCode,
@@ -560,13 +684,11 @@ namespace HospitalSys.Controllers.Doctor
             try
             {
                 await EnsurePatientAccessAsync(patientId);
-                if (dto.PatientVisitID.HasValue)
-                    await EnsureVisitBelongsToPatientAsync(patientId, dto.PatientVisitID.Value);
-
+                var resolvedVisitId = await ResolveOptionalVisitIdAsync(patientId, dto.PatientVisitID);
                 var entity = new NutritionAssessment
                 {
                     PatientID = patientId,
-                    PatientVisitID = dto.PatientVisitID,
+                    PatientVisitID = resolvedVisitId,
                     AssessmentDate = DateTime.UtcNow,
                     WeightKg = dto.WeightKg,
                     HeightCm = dto.HeightCm,
@@ -672,12 +794,12 @@ namespace HospitalSys.Controllers.Doctor
             try
             {
                 await EnsurePatientAccessAsync(patientId);
-                await EnsureVisitBelongsToPatientAsync(patientId, dto.PatientVisitID);
+                var resolvedVisitId = await ResolveRequiredVisitIdAsync(patientId, dto.PatientVisitID);
 
                 var entity = new IMNCIEncounter
                 {
                     PatientID = patientId,
-                    PatientVisitID = dto.PatientVisitID,
+                    PatientVisitID = resolvedVisitId,
                     EncounterDate = DateTime.UtcNow,
                     AgeInMonths = dto.AgeInMonths,
                     MainSymptoms = dto.MainSymptoms,
@@ -889,4 +1011,4 @@ namespace HospitalSys.Controllers.Doctor
             AssessedByUserID = i.AssessedByUserID
         };
     }
-}
+    }

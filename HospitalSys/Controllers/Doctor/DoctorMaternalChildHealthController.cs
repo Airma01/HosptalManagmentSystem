@@ -1,6 +1,7 @@
 using HospitalSys.Data;
 using HospitalSys.Dto.DoctorDtos;
 using HospitalSys.Models.MaternalChildHealth;
+using HospitalSys.Models.PatientManagment;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -1462,6 +1463,7 @@ namespace HospitalSys.Controllers.Doctor
                     return NotFound(new { message = "Delivery not found." });
 
                 var list = await _context.ChildBirths.AsNoTracking()
+                    .Include(c => c.ChildPatient)
                     .Where(c => c.DeliveryID == deliveryId)
                     .ToListAsync();
                 return Ok(list.Select(ToChildBirthDto));
@@ -1559,7 +1561,7 @@ namespace HospitalSys.Controllers.Doctor
                 var writeDenied = await CheckWritePermissionAsync();
                 if (writeDenied != null) return writeDenied;
                 await EnsurePatientAccessAsync(patientId);
-                var delivery = await _context.Deliveries.AsNoTracking()
+                var delivery = await _context.Deliveries
                     .Include(d => d.Pregnancy)
                     .FirstOrDefaultAsync(d => d.DeliveryID == deliveryId
                         && d.Pregnancy != null
@@ -1570,18 +1572,58 @@ namespace HospitalSys.Controllers.Doctor
                 if (dto.DeliveryID != deliveryId)
                     return BadRequest(new { message = "DeliveryID in body does not match route." });
 
-                if (dto.ChildPatientID.HasValue)
+                int? childPatientId = dto.ChildPatientID;
+
+                // Link to an existing patient if provided
+                if (childPatientId.HasValue)
                 {
                     bool childExists = await _context.Patients.AsNoTracking()
-                        .AnyAsync(p => p.PatientID == dto.ChildPatientID.Value);
+                        .AnyAsync(p => p.PatientID == childPatientId.Value);
                     if (!childExists)
                         return BadRequest(new { message = "Child patient not found." });
+                }
+                // Otherwise register a new newborn Patient when FirstName/LastName are supplied
+                else if (!string.IsNullOrWhiteSpace(dto.FirstName) && !string.IsNullOrWhiteSpace(dto.LastName))
+                {
+                    if (dto.BirthDate == default)
+                        return BadRequest(new { message = "BirthDate is required when registering a newborn." });
+
+                    // Reuse existing MRN generation convention from NurseController
+                    var mrn = $"MRN{DateTime.UtcNow.Ticks}";
+                    while (await _context.Patients.AnyAsync(p => p.MRN == mrn))
+                        mrn = $"MRN{DateTime.UtcNow.Ticks + new Random().Next(1000)}";
+
+                    Gender gender = Gender.Male;
+                    if (!string.IsNullOrWhiteSpace(dto.Sex))
+                    {
+                        var sexNorm = dto.Sex.Trim().ToLowerInvariant();
+                        if (sexNorm is "f" or "female" or "girl")
+                            gender = Gender.Female;
+                        else if (sexNorm is "m" or "male" or "boy")
+                            gender = Gender.Male;
+                    }
+
+                    var newborn = new Patient
+                    {
+                        MRN = mrn,
+                        FirstName = dto.FirstName.Trim(),
+                        LastName = dto.LastName.Trim(),
+                        Gender = gender,
+                        DateOfBirth = ToUtc(dto.BirthDate),
+                        Phone = "",
+                        Address = "",
+                        EmergencyContact = "",
+                        Created_at = DateTime.UtcNow
+                    };
+                    _context.Patients.Add(newborn);
+                    await _context.SaveChangesAsync(); // obtain PatientID
+                    childPatientId = newborn.PatientID;
                 }
 
                 var entity = new ChildBirth
                 {
                     DeliveryID = deliveryId,
-                    ChildPatientID = dto.ChildPatientID,
+                    ChildPatientID = childPatientId,
                     Sex = dto.Sex,
                     BirthDate = ToUtc(dto.BirthDate),
                     BirthWeight = dto.BirthWeight,
@@ -1594,11 +1636,85 @@ namespace HospitalSys.Controllers.Doctor
                 };
                 _context.ChildBirths.Add(entity);
                 await _context.SaveChangesAsync();
+
+                // Reload with ChildPatient for response enrichment
+                await _context.Entry(entity).Reference(c => c.ChildPatient).LoadAsync();
                 return StatusCode(201, ToChildBirthDto(entity));
             }
             catch (UnauthorizedAccessException) { return Unauthorized(new { message = "Unauthorized" }); }
             catch (KeyNotFoundException) { return NotFound(new { message = "Patient not found." }); }
-            catch { return StatusCode(500, new { message = "Error creating child birth." }); }
+            catch (Exception) { return StatusCode(500, new { message = "Error creating child birth." }); }
+        }
+
+        // ============================================================
+        // MOTHER'S CHILDREN (all deliveries → child births → child patients)
+        // ============================================================
+
+        [HttpGet("children")]
+        public async Task<IActionResult> GetMotherChildren(int patientId)
+        {
+            try
+            {
+                await EnsurePatientAccessAsync(patientId);
+
+                var motherExists = await _context.Patients.AsNoTracking()
+                    .AnyAsync(p => p.PatientID == patientId);
+                if (!motherExists)
+                    return NotFound(new { message = "Mother patient not found." });
+
+                // Mother → Pregnancies → Deliveries → ChildBirths (with ChildPatient)
+                var children = await _context.ChildBirths.AsNoTracking()
+                    .Include(c => c.ChildPatient)
+                    .Include(c => c.Delivery)
+                        .ThenInclude(d => d!.Pregnancy)
+                    .Where(c => c.Delivery != null
+                             && c.Delivery.Pregnancy != null
+                             && c.Delivery.Pregnancy.PatientID == patientId
+                             && c.ChildPatientID != null
+                             && c.ChildPatient != null)
+                    .OrderByDescending(c => c.BirthDate)
+                    .Select(c => new MotherChildListItemDto
+                    {
+                        DeliveryID = c.DeliveryID,
+                        ChildBirthID = c.ChildBirthID,
+                        ChildPatientID = c.ChildPatientID!.Value,
+                        ChildMRN = c.ChildPatient!.MRN,
+                        FirstName = c.ChildPatient.FirstName,
+                        LastName = c.ChildPatient.LastName,
+                        Sex = c.Sex ?? c.ChildPatient.Gender.ToString(),
+                        BirthDate = c.BirthDate,
+                        DeliveryDate = c.Delivery != null ? c.Delivery.DeliveryDate : (DateTime?)null,
+                        BirthWeight = c.BirthWeight,
+                        ApgarScore = c.ApgarScore
+                    })
+                    .ToListAsync();
+
+                // Attach latest PatientVisit per child (if any)
+                var childIds = children.Select(c => c.ChildPatientID).Distinct().ToList();
+                if (childIds.Count > 0)
+                {
+                    var latestVisits = await _context.PatientVisits.AsNoTracking()
+                        .Where(v => childIds.Contains(v.PatientID))
+                        .GroupBy(v => v.PatientID)
+                        .Select(g => g.OrderByDescending(v => v.VisitDate).ThenByDescending(v => v.VisitID).First())
+                        .ToListAsync();
+
+                    var byPatient = latestVisits.ToDictionary(v => v.PatientID);
+                    foreach (var child in children)
+                    {
+                        if (byPatient.TryGetValue(child.ChildPatientID, out var visit))
+                        {
+                            child.LatestVisitID = visit.VisitID;
+                            child.LatestVisitDate = visit.VisitDate;
+                        }
+                    }
+                }
+
+                return Ok(children);
+            }
+            catch (UnauthorizedAccessException) { return Unauthorized(new { message = "Unauthorized" }); }
+            catch (KeyNotFoundException) { return NotFound(new { message = "Patient not found." }); }
+            catch { return StatusCode(500, new { message = "Error retrieving mother's children." }); }
         }
 
         // ============================================================
@@ -2052,6 +2168,9 @@ namespace HospitalSys.Controllers.Doctor
             ChildBirthID = c.ChildBirthID,
             DeliveryID = c.DeliveryID,
             ChildPatientID = c.ChildPatientID,
+            ChildMRN = c.ChildPatient?.MRN,
+            ChildFirstName = c.ChildPatient?.FirstName,
+            ChildLastName = c.ChildPatient?.LastName,
             Sex = c.Sex,
             BirthDate = c.BirthDate,
             BirthWeight = c.BirthWeight,

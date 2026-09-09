@@ -90,19 +90,19 @@ function ethiopianToGregorianDate(year, month, day) {
 }
 
 const ETH_MONTHS = [
-  "Meskerem",
-  "Tikimt",
-  "Hidar",
-  "Tahsas",
-  "Tir",
-  "Yekatit",
-  "Megabit",
-  "Miazia",
-  "Ginbot",
-  "Sene",
-  "Hamle",
-  "Nehase",
-  "Pagumen",
+  "መስከረም",
+  "ጥቅምት",
+  "ህዳር",
+  "ታህሳስ",
+  "ጥር",
+  "የካቲት",
+  "መጋቢት",
+  "ሚያዚያ",
+  "ግንቦት",
+  "ሰኔ",
+  "ሐምሌ",
+  "ነሐሴ",
+  "ጷግሜ",
 ];
 
 // ETHIOPIAN DISPLAY
