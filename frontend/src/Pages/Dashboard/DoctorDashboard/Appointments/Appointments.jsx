@@ -1,31 +1,162 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   getDoctorAppointments,
   getDoctorAppointmentDetails,
   startDoctorAppointment,
   createDoctorAppointment,
+  getPatientsForSearch,
 } from "../Services/appointmentApi";
 
-function formatDateTime(v) {
-  if (!v) return "—";
-  try {
-    return new Date(v).toLocaleString();
-  } catch {
-    return String(v);
-  }
+// ETHIOPIAN CALENDAR
+import { DayPicker } from "@daypicker/ethiopic";
+import "@daypicker/react/style.css";
+
+// ============================================================
+// FIXED Ethiopian calendar conversion (no +2 day bug)
+// JDN epoch 1723856 = 1 Meskerem 1
+// Months: Meskerem=1 … Pagumen=13
+// ============================================================
+
+function gregorianToJdn(year, month, day) {
+  // month: 1–12
+  const a = Math.floor((14 - month) / 12);
+  const y = year + 4800 - a;
+  const m = month + 12 * a - 3;
+  return (
+    day +
+    Math.floor((153 * m + 2) / 5) +
+    365 * y +
+    Math.floor(y / 4) -
+    Math.floor(y / 100) +
+    Math.floor(y / 400) -
+    32045
+  );
 }
 
-function formatTime(v) {
-  if (!v) return "—";
-  try {
-    return new Date(v).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return String(v);
+function jdnToGregorian(jdn) {
+  const a = jdn + 32044;
+  const b = Math.floor((4 * a + 3) / 146097);
+  const c = a - Math.floor((146097 * b) / 4);
+  const d = Math.floor((4 * c + 3) / 1461);
+  const e = c - Math.floor((1461 * d) / 4);
+  const m = Math.floor((5 * e + 2) / 153);
+  const day = e - Math.floor((153 * m + 2) / 5) + 1;
+  const month = m + 3 - 12 * Math.floor(m / 10);
+  const year = 100 * b + d - 4800 + Math.floor(m / 10);
+  return { year, month, day };
+}
+
+function jdnToEthiopian(jdn) {
+  const offset = jdn - 1723856;
+  const r = ((offset % 1461) + 1461) % 1461;
+  const n = (r % 365) + 365 * Math.floor(r / 1460);
+  const year =
+    4 * Math.floor(offset / 1461) +
+    Math.floor(r / 365) -
+    Math.floor(r / 1460);
+  const month = Math.floor(n / 30) + 1;
+  const day = (n % 30) + 1;
+  return { year, month, day };
+}
+
+function ethiopianToJdn(year, month, day) {
+  // month: 1–13 (Pagumen = 13)
+  return (
+    1723856 +
+    365 * (year - 1) +
+    Math.floor(year / 4) +
+    30 * (month - 1) +
+    (day - 1)
+  );
+}
+
+/** GC Date (local Y/M/D) → EC { year, month, day } */
+function gregorianToEthiopian(date) {
+  if (!date || isNaN(date.getTime())) return null;
+  const jdn = gregorianToJdn(
+    date.getFullYear(),
+    date.getMonth() + 1,
+    date.getDate()
+  );
+  return jdnToEthiopian(jdn);
+}
+
+/** EC Y/M/D → local JS Date at midnight (calendar date only) */
+function ethiopianToGregorianDate(year, month, day) {
+  const jdn = ethiopianToJdn(year, month, day);
+  const g = jdnToGregorian(jdn);
+  return new Date(g.year, g.month - 1, g.day);
+}
+
+const ETH_MONTHS = [
+  "Meskerem",
+  "Tikimt",
+  "Hidar",
+  "Tahsas",
+  "Tir",
+  "Yekatit",
+  "Megabit",
+  "Miazia",
+  "Ginbot",
+  "Sene",
+  "Hamle",
+  "Nehase",
+  "Pagumen",
+];
+
+// ETHIOPIAN DISPLAY
+function formatEthiopianShort(date) {
+  const eth = gregorianToEthiopian(date);
+  if (!eth) return "—";
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${eth.year}/${pad(eth.month)}/${pad(eth.day)}`;
+}
+
+function formatEthiopianDate(date, withTime = false) {
+  const eth = gregorianToEthiopian(date);
+  if (!eth) return "—";
+  const name = ETH_MONTHS[eth.month - 1] || eth.month;
+  const datePart = `${eth.day} ${name} ${eth.year}`;
+  if (!withTime) return datePart;
+  const time = date.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  return `${datePart} ${time}`;
+}
+
+/**
+ * Parse API DateTime WITHOUT timezone day-shift.
+ * Uses YYYY-MM-DD only → local calendar Date.
+ */
+function parseApiDate(value) {
+  if (!value) return null;
+  if (value instanceof Date && !isNaN(value.getTime())) {
+    return new Date(value.getFullYear(), value.getMonth(), value.getDate());
   }
+  const s = String(value);
+  const m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) {
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return null;
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  }
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+}
+
+/**
+ * API GREGORIAN DATE – local YYYY-MM-DDTHH:mm:00
+ * DO NOT use toISOString() (UTC can shift the day).
+ */
+function toLocalDateTimeString(date, timeStr) {
+  if (!date || isNaN(date.getTime())) return null;
+  const [h = 0, m = 0] = (timeStr || "00:00").split(":").map(Number);
+  const y = date.getFullYear();
+  const mo = date.getMonth() + 1;
+  const d = date.getDate();
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${y}-${pad(mo)}-${pad(d)}T${pad(h)}:${pad(m)}:00`;
 }
 
 function StatusBadge({ status }) {
@@ -48,7 +179,7 @@ function StatusBadge({ status }) {
 export default function Appointments() {
   const navigate = useNavigate();
 
-  // List state
+  // List
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -61,15 +192,39 @@ export default function Appointments() {
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState("");
 
-  // Create modal
+  // Create modal + patient search
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState("");
   const [createForm, setCreateForm] = useState({
     patientID: "",
-    appointmentDate: "",
     reason: "",
   });
+
+  // ETHIOPIAN CALENDAR state
+  // selectedDate = Gregorian JS Date for the selected EC day (from DayPicker)
+  const [selectedDate, setSelectedDate] = useState(undefined);
+  const [appointmentTime, setAppointmentTime] = useState("09:00");
+  const [showCalendar, setShowCalendar] = useState(false);
+  const calendarRef = useRef(null);
+
+  const [allPatients, setAllPatients] = useState([]);
+  const [patientSearch, setPatientSearch] = useState("");
+  const [patientsLoading, setPatientsLoading] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState(null);
+
+  // Close calendar on outside click
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (calendarRef.current && !calendarRef.current.contains(e.target)) {
+        setShowCalendar(false);
+      }
+    }
+    if (showCalendar) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showCalendar]);
 
   // Load appointments
   useEffect(() => {
@@ -99,6 +254,53 @@ export default function Appointments() {
     };
   }, []);
 
+  // Load patients when Create modal opens
+  useEffect(() => {
+    if (!showCreate) return;
+
+    let cancelled = false;
+    (async () => {
+      setPatientsLoading(true);
+      try {
+        const res = await getPatientsForSearch();
+        if (!cancelled) setAllPatients(Array.isArray(res.data) ? res.data : []);
+      } catch {
+        if (!cancelled) setCreateError("Failed to load patients for search.");
+      } finally {
+        if (!cancelled) setPatientsLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [showCreate]);
+
+  // Client-side patient filter
+  const filteredPatients = useMemo(() => {
+    const q = patientSearch.trim().toLowerCase();
+    if (!q) return allPatients.slice(0, 30);
+
+    return allPatients
+      .filter((p) => {
+        const first = (p.firstName || "").toLowerCase();
+        const last = (p.lastName || "").toLowerCase();
+        const mrn = (p.mrn || "").toLowerCase();
+        const fayda = (p.faydaFIN || "").toLowerCase();
+        const full = `${first} ${last}`;
+
+        return (
+          first.includes(q) ||
+          last.includes(q) ||
+          full.includes(q) ||
+          mrn.includes(q) ||
+          fayda.includes(q) ||
+          String(p.patientID).includes(q)
+        );
+      })
+      .slice(0, 50);
+  }, [allPatients, patientSearch]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return rows.filter((r) => {
@@ -122,7 +324,6 @@ export default function Appointments() {
     return Array.from(s);
   }, [rows]);
 
-  // Open details
   async function openDetails(appointmentId) {
     setDetailsLoading(true);
     setStartError("");
@@ -139,50 +340,86 @@ export default function Appointments() {
     }
   }
 
-  // Start or Continue
   async function handleStartOrContinue() {
-  if (!details) return;
-  setStarting(true);
-  setStartError("");
-  try {
-    const res = await startDoctorAppointment(details.appointmentID);
-    const data = res.data;
-
-    setDetails(null);
-
-    // Correct path matching your App.jsx route
-    navigate(`/doctor/consultation/patient/${data.patientID}/${data.visitID}`);
-  } catch (err) {
-    setStartError(
-      err.response?.data?.message ||
-        "Failed to start appointment. Please try again."
-    );
-  } finally {
-    setStarting(false);
+    if (!details) return;
+    setStarting(true);
+    setStartError("");
+    try {
+      const res = await startDoctorAppointment(details.appointmentID);
+      const data = res.data;
+      setDetails(null);
+      navigate(
+        `/doctor/consultation/patient/${data.patientID}/${data.visitID}`
+      );
+    } catch (err) {
+      setStartError(
+        err.response?.data?.message ||
+          "Failed to start appointment. Please try again."
+      );
+    } finally {
+      setStarting(false);
+    }
   }
-}
 
-  // Create appointment
+  function selectPatient(p) {
+    setSelectedPatient(p);
+    setCreateForm((prev) => ({
+      ...prev,
+      patientID: String(p.patientID),
+    }));
+    setPatientSearch(`${p.firstName} ${p.lastName}`);
+  }
+
+  // DayPicker already returns Gregorian Date for selected EC day — no extra conversion
+  function handleDateSelect(date) {
+    if (date) {
+      setSelectedDate(date);
+      setShowCalendar(false);
+    }
+  }
+
   async function handleCreate(e) {
     e.preventDefault();
     setCreating(true);
     setCreateError("");
 
+    if (!createForm.patientID) {
+      setCreateError("Please select a patient.");
+      setCreating(false);
+      return;
+    }
+
+    if (!selectedDate) {
+      setCreateError("Please select an appointment date.");
+      setCreating(false);
+      return;
+    }
+
     try {
+      // EC → GC already done by DayPicker (selectedDate is Gregorian calendar day)
+      // API GREGORIAN DATE — local string, no toISOString()
+      const appointmentDate = toLocalDateTimeString(
+        selectedDate,
+        appointmentTime
+      );
+
       const payload = {
         patientID: Number(createForm.patientID),
-        appointmentDate: new Date(createForm.appointmentDate).toISOString(),
+        appointmentDate,
         reason: createForm.reason.trim(),
       };
 
       await createDoctorAppointment(payload);
 
-      // Refresh list
       const res = await getDoctorAppointments();
       setRows(Array.isArray(res.data) ? res.data : []);
 
       setShowCreate(false);
-      setCreateForm({ patientID: "", appointmentDate: "", reason: "" });
+      setCreateForm({ patientID: "", reason: "" });
+      setSelectedPatient(null);
+      setPatientSearch("");
+      setSelectedDate(undefined);
+      setAppointmentTime("09:00");
     } catch (err) {
       setCreateError(
         err.response?.data?.message || "Failed to create appointment."
@@ -272,6 +509,12 @@ export default function Appointments() {
             type="button"
             onClick={() => {
               setCreateError("");
+              setSelectedPatient(null);
+              setPatientSearch("");
+              setCreateForm({ patientID: "", reason: "" });
+              setSelectedDate(undefined);
+              setAppointmentTime("09:00");
+              setShowCalendar(false);
               setShowCreate(true);
             }}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition whitespace-nowrap"
@@ -282,7 +525,6 @@ export default function Appointments() {
         </div>
       </div>
 
-      {/* Loading */}
       {loading && (
         <div className="bg-white border border-slate-200 rounded-xl p-10 text-center text-slate-500">
           <i className="bi bi-arrow-repeat animate-spin text-2xl" />
@@ -290,7 +532,6 @@ export default function Appointments() {
         </div>
       )}
 
-      {/* Error */}
       {!loading && error && (
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm">
           <i className="bi bi-exclamation-triangle me-2" />
@@ -298,7 +539,6 @@ export default function Appointments() {
         </div>
       )}
 
-      {/* Empty */}
       {!loading && !error && filtered.length === 0 && (
         <div className="bg-white border border-slate-200 rounded-xl p-10 text-center text-slate-500">
           <i className="bi bi-calendar-x text-3xl" />
@@ -306,13 +546,14 @@ export default function Appointments() {
         </div>
       )}
 
-      {/* Table */}
+      {/* Table – ETHIOPIAN DISPLAY via parseApiDate + formatEthiopianShort */}
       {!loading && !error && filtered.length > 0 && (
         <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
               <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                 <tr>
+                  <th className="px-4 py-3 font-medium">Date (EC)</th>
                   <th className="px-4 py-3 font-medium">Time</th>
                   <th className="px-4 py-3 font-medium">Patient</th>
                   <th className="px-4 py-3 font-medium">MRN</th>
@@ -323,39 +564,50 @@ export default function Appointments() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filtered.map((item) => (
-                  <tr
-                    key={item.appointmentID}
-                    className="hover:bg-slate-50/80 transition"
-                  >
-                    <td className="px-4 py-3 whitespace-nowrap text-slate-700">
-                      {formatTime(item.appointmentDate)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-slate-800">
-                        {item.patientName || "—"}
-                      </div>
-                      <div className="text-xs text-slate-400">
-                        ID: {item.patientID}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-slate-600">
-                      {item.mrn || "—"}
-                    </td>
-                    <td className="px-4 py-3 text-slate-600">
-                      {item.departmentName || "—"}
-                    </td>
-                    <td className="px-4 py-3 text-slate-600 max-w-[200px] truncate">
-                      {item.reason || "—"}
-                    </td>
-                    <td className="px-4 py-3">
-                      <StatusBadge status={item.status} />
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <ActionButton item={item} />
-                    </td>
-                  </tr>
-                ))}
+                {filtered.map((item) => {
+                  const d = parseApiDate(item.appointmentDate);
+                  return (
+                    <tr
+                      key={item.appointmentID}
+                      className="hover:bg-slate-50/80 transition"
+                    >
+                      <td className="px-4 py-3 whitespace-nowrap text-slate-700">
+                        {formatEthiopianShort(d)}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-slate-700">
+                        {d
+                          ? d.toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "—"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-slate-800">
+                          {item.patientName || "—"}
+                        </div>
+                        <div className="text-xs text-slate-400">
+                          ID: {item.patientID}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-slate-600">
+                        {item.mrn || "—"}
+                      </td>
+                      <td className="px-4 py-3 text-slate-600">
+                        {item.departmentName || "—"}
+                      </td>
+                      <td className="px-4 py-3 text-slate-600 max-w-[200px] truncate">
+                        {item.reason || "—"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <StatusBadge status={item.status} />
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <ActionButton item={item} />
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -369,8 +621,8 @@ export default function Appointments() {
             className="absolute inset-0 bg-black/40"
             onClick={() => !creating && setShowCreate(false)}
           />
-          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 shrink-0">
               <h3 className="text-lg font-semibold text-slate-800">
                 New Appointment
               </h3>
@@ -384,48 +636,144 @@ export default function Appointments() {
               </button>
             </div>
 
-            <form onSubmit={handleCreate} className="p-5 space-y-4">
+            <form
+              onSubmit={handleCreate}
+              className="p-5 space-y-4 overflow-y-auto"
+            >
+              {/* Patient Search */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Patient ID <span className="text-red-500">*</span>
+                  Search Patient <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="number"
-                  required
-                  value={createForm.patientID}
-                  onChange={(e) =>
-                    setCreateForm((p) => ({
-                      ...p,
-                      patientID: e.target.value,
-                    }))
-                  }
-                  placeholder="Enter Patient ID"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-                <p className="text-xs text-slate-400 mt-1">
-                  Find Patient ID from the patient list or search.
-                </p>
+                <div className="relative">
+                  <i className="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={patientSearch}
+                    onChange={(e) => {
+                      setPatientSearch(e.target.value);
+                      setSelectedPatient(null);
+                      setCreateForm((p) => ({ ...p, patientID: "" }));
+                    }}
+                    placeholder="Search by First Name, Last Name, MRN or Fayda ID..."
+                    className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+
+                {selectedPatient && (
+                  <div className="mt-2 flex items-center gap-2 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2 text-sm">
+                    <i className="bi bi-person-check text-indigo-600" />
+                    <span className="font-medium text-indigo-800">
+                      {selectedPatient.firstName} {selectedPatient.lastName}
+                    </span>
+                    <span className="text-indigo-600 text-xs">
+                      MRN: {selectedPatient.mrn}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedPatient(null);
+                        setCreateForm((p) => ({ ...p, patientID: "" }));
+                        setPatientSearch("");
+                      }}
+                      className="ml-auto text-indigo-400 hover:text-indigo-600"
+                    >
+                      <i className="bi bi-x" />
+                    </button>
+                  </div>
+                )}
+
+                {!selectedPatient && (
+                  <div className="mt-2 border border-slate-200 rounded-lg max-h-48 overflow-y-auto">
+                    {patientsLoading ? (
+                      <div className="p-4 text-center text-slate-500 text-sm">
+                        <i className="bi bi-arrow-repeat animate-spin me-1" />
+                        Loading patients...
+                      </div>
+                    ) : filteredPatients.length === 0 ? (
+                      <div className="p-4 text-center text-slate-500 text-sm">
+                        No patients found
+                      </div>
+                    ) : (
+                      filteredPatients.map((p) => (
+                        <button
+                          key={p.patientID}
+                          type="button"
+                          onClick={() => selectPatient(p)}
+                          className="w-full text-left px-3 py-2.5 hover:bg-slate-50 border-b border-slate-100 last:border-0 transition"
+                        >
+                          <div className="font-medium text-slate-800 text-sm">
+                            {p.firstName} {p.lastName}
+                          </div>
+                          <div className="text-xs text-slate-500 flex flex-wrap gap-x-3 mt-0.5">
+                            <span>MRN: {p.mrn || "—"}</span>
+                            {p.faydaFIN && <span>Fayda: {p.faydaFIN}</span>}
+                            <span>ID: {p.patientID}</span>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
 
+              {/* ETHIOPIAN CALENDAR – Date picker */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Appointment Date & Time{" "}
+                  Appointment Date (Ethiopian){" "}
                   <span className="text-red-500">*</span>
                 </label>
+                <div className="relative" ref={calendarRef}>
+                  <button
+                    type="button"
+                    onClick={() => setShowCalendar((v) => !v)}
+                    className="w-full flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg text-sm text-left hover:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                  >
+                    <i className="bi bi-calendar3 text-indigo-600" />
+                    <span
+                      className={
+                        selectedDate ? "text-slate-800" : "text-slate-400"
+                      }
+                    >
+                      {selectedDate
+                        ? formatEthiopianShort(selectedDate) + " EC"
+                        : "Select Ethiopian date..."}
+                    </span>
+                  </button>
+
+                  {showCalendar && (
+                    <div className="absolute z-20 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg p-3">
+                      <DayPicker
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={handleDateSelect}
+                        numerals="latn"
+                      />
+                    </div>
+                  )}
+                </div>
+                {selectedDate && (
+                  <p className="text-xs text-slate-400 mt-1">
+                    {formatEthiopianDate(selectedDate)} EC
+                  </p>
+                )}
+              </div>
+
+              {/* Time */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Appointment Time <span className="text-red-500">*</span>
+                </label>
                 <input
-                  type="datetime-local"
+                  type="time"
                   required
-                  value={createForm.appointmentDate}
-                  onChange={(e) =>
-                    setCreateForm((p) => ({
-                      ...p,
-                      appointmentDate: e.target.value,
-                    }))
-                  }
+                  value={appointmentTime}
+                  onChange={(e) => setAppointmentTime(e.target.value)}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
+              {/* Reason */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
                   Reason
@@ -459,7 +807,7 @@ export default function Appointments() {
                 </button>
                 <button
                   type="submit"
-                  disabled={creating}
+                  disabled={creating || !createForm.patientID || !selectedDate}
                   className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60 transition"
                 >
                   {creating ? (
@@ -532,7 +880,11 @@ export default function Appointments() {
                     <div>
                       <p className="text-slate-400 text-xs">Date of Birth</p>
                       <p className="text-slate-700">
-                        {formatDateTime(details.dateOfBirth).split(",")[0]}
+                        {details.dateOfBirth
+                          ? formatEthiopianShort(
+                              parseApiDate(details.dateOfBirth)
+                            )
+                          : "—"}
                       </p>
                     </div>
                     <div>
@@ -549,10 +901,15 @@ export default function Appointments() {
                     </div>
                     <div className="col-span-2">
                       <p className="text-slate-400 text-xs">
-                        Appointment Date
+                        Appointment Date (EC)
                       </p>
                       <p className="text-slate-700">
-                        {formatDateTime(details.appointmentDate)}
+                        {details.appointmentDate
+                          ? formatEthiopianDate(
+                              parseApiDate(details.appointmentDate),
+                              true
+                            )
+                          : "—"}
                       </p>
                     </div>
                     <div className="col-span-2">

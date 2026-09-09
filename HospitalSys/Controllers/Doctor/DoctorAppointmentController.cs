@@ -300,7 +300,6 @@ namespace HospitalSys.Controllers.Doctor
             {
                 int doctorId = GetDoctorId();
 
-                // Verify patient exists
                 var patient = await _context.Patients
                     .AsNoTracking()
                     .FirstOrDefaultAsync(p => p.PatientID == dto.PatientID);
@@ -308,15 +307,16 @@ namespace HospitalSys.Controllers.Doctor
                 if (patient == null)
                     return NotFound(new { message = "Patient not found." });
 
-                // Optional: prevent creating appointment in the past
-                if (dto.AppointmentDate < DateTime.UtcNow.AddMinutes(-5))
-                    return BadRequest(new { message = "Cannot create appointment in the past." });
+                // PostgreSQL-safe: force UTC
+                var appointmentDateUtc = dto.AppointmentDate.Kind == DateTimeKind.Utc
+                    ? dto.AppointmentDate
+                    : DateTime.SpecifyKind(dto.AppointmentDate, DateTimeKind.Utc);
 
                 var appointment = new Appointment
                 {
                     PatientID = dto.PatientID,
-                    DoctorID = doctorId,                 // always from JWT
-                    AppointmentDate = dto.AppointmentDate,
+                    DoctorID = doctorId,
+                    AppointmentDate = appointmentDateUtc,
                     Status = "Scheduled",
                     Reason = dto.Reason?.Trim() ?? ""
                 };
@@ -340,9 +340,52 @@ namespace HospitalSys.Controllers.Doctor
             {
                 return Unauthorized(new { message = "Unauthorized" });
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while creating the appointment." });
+                // TEMP: return real error so you can see it in Network tab
+                return StatusCode(500, new
+                {
+                    message = "An error occurred while creating the appointment.",
+                    detail = ex.Message,
+                    inner = ex.InnerException?.Message
+                });
+            }
+        }
+
+                // GET /api/doctor/patients
+                // Lightweight list for appointment patient search
+            [HttpGet("patients")]
+        public async Task<IActionResult> GetPatientsForSearch()
+        {
+            try
+            {
+                var patients = await _context.Patients
+                    .AsNoTracking()
+                    .OrderBy(p => p.FirstName)
+                    .ThenBy(p => p.LastName)
+                    .Select(p => new
+                    {
+                        p.PatientID,
+                        p.MRN,
+                        FaydaFIN = p.FaydaFIN ?? "",
+                        p.FirstName,
+                        p.LastName,
+                        Gender = p.Gender.ToString(),
+                        p.Phone,
+                        p.DateOfBirth
+                    })
+                    .ToListAsync();
+
+                return Ok(patients);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = "Failed to load patients.",
+                    detail = ex.Message,
+                    inner = ex.InnerException?.Message
+                });
             }
         }
     }
