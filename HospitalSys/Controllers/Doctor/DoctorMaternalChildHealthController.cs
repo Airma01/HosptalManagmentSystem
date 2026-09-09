@@ -54,6 +54,60 @@ namespace HospitalSys.Controllers.Doctor
                 throw new KeyNotFoundException("Patient visit not found.");
         }
 
+        /// <summary>
+        /// Write (POST/PUT/DELETE) permission for Maternal &amp; Child Health.
+        /// Resolves the doctor's department from the database using the DoctorID JWT claim
+        /// (never trusts department data from the client).
+        /// Returns null when allowed; otherwise Unauthorized or Forbid.
+        /// </summary>
+        private async Task<IActionResult?> CheckWritePermissionAsync()
+        {
+            var doctorIdClaim = User.FindFirst("DoctorID")?.Value;
+            if (string.IsNullOrEmpty(doctorIdClaim) || !int.TryParse(doctorIdClaim, out int doctorId))
+                return Unauthorized(new { message = "Unauthorized" });
+
+            var doctor = await _context.Doctors
+                .AsNoTracking()
+                .Include(d => d.ClinicalDepartment)
+                .FirstOrDefaultAsync(d => d.DoctorID == doctorId);
+
+            if (doctor == null)
+                return Unauthorized(new { message = "Unauthorized" });
+
+            // No department assigned → treat as not permitted for writes
+            var deptName = doctor.ClinicalDepartment?.DepartmentName?.Trim() ?? string.Empty;
+            if (!IsMchOrGeneralDepartment(deptName))
+                return Forbid();
+
+            return null;
+        }
+
+        /// <summary>
+        /// ClinicalDepartment has only DepartmentName (no code field).
+        /// Allowed write departments: MCH / Maternal &amp; Child Health variants, and General.
+        /// </summary>
+        private static bool IsMchOrGeneralDepartment(string departmentName)
+        {
+            if (string.IsNullOrWhiteSpace(departmentName))
+                return false;
+
+            return departmentName.Equals("MCH", StringComparison.OrdinalIgnoreCase)
+                || departmentName.Equals("General", StringComparison.OrdinalIgnoreCase)
+                || departmentName.Equals("Maternal & Child Health", StringComparison.OrdinalIgnoreCase)
+                || departmentName.Equals("Maternal and Child Health", StringComparison.OrdinalIgnoreCase)
+                || departmentName.Equals("Maternal Child Health", StringComparison.OrdinalIgnoreCase);
+        }
+
+
+        private static DateTime ToUtc(DateTime value)
+            => value.Kind == DateTimeKind.Utc
+                ? value
+                : DateTime.SpecifyKind(value, DateTimeKind.Utc);
+
+        private static DateTime? ToUtc(DateTime? value)
+            => value.HasValue ? ToUtc(value.Value) : null;
+
+
         // ============================================================
         // PREGNANCY
         // ============================================================
@@ -167,6 +221,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var writeDenied = await CheckWritePermissionAsync();
+                if (writeDenied != null) return writeDenied;
                 await EnsurePatientAccessAsync(patientId);
                 var patientExists = await _context.Patients.AsNoTracking()
                     .AnyAsync(p => p.PatientID == patientId);
@@ -176,8 +232,8 @@ namespace HospitalSys.Controllers.Doctor
                 var pregnancy = new Pregnancy
                 {
                     PatientID = patientId,
-                    LastMenstrualPeriod = dto.LastMenstrualPeriod,
-                    ExpectedDeliveryDate = dto.ExpectedDeliveryDate,
+                    LastMenstrualPeriod = ToUtc(dto.LastMenstrualPeriod),
+                    ExpectedDeliveryDate = ToUtc(dto.ExpectedDeliveryDate),
                     Gravida = dto.Gravida,
                     Para = dto.Para,
                     Abortions = dto.Abortions,
@@ -222,14 +278,16 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var writeDenied = await CheckWritePermissionAsync();
+                if (writeDenied != null) return writeDenied;
                 await EnsurePatientAccessAsync(patientId);
                 var entity = await _context.Pregnancies
                     .FirstOrDefaultAsync(p => p.PregnancyID == pregnancyId && p.PatientID == patientId);
                 if (entity == null)
                     return NotFound(new { message = "Pregnancy not found." });
 
-                entity.LastMenstrualPeriod = dto.LastMenstrualPeriod;
-                entity.ExpectedDeliveryDate = dto.ExpectedDeliveryDate;
+                entity.LastMenstrualPeriod = ToUtc(dto.LastMenstrualPeriod);
+                entity.ExpectedDeliveryDate = ToUtc(dto.ExpectedDeliveryDate);
                 entity.Gravida = dto.Gravida;
                 entity.Para = dto.Para;
                 entity.Abortions = dto.Abortions;
@@ -272,6 +330,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var writeDenied = await CheckWritePermissionAsync();
+                if (writeDenied != null) return writeDenied;
                 await EnsurePatientAccessAsync(patientId);
                 await EnsurePregnancyBelongsToPatientAsync(patientId, pregnancyId);
                 if (dto.PregnancyID != pregnancyId)
@@ -383,6 +443,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var writeDenied = await CheckWritePermissionAsync();
+                if (writeDenied != null) return writeDenied;
                 await EnsurePatientAccessAsync(patientId);
                 await EnsurePregnancyBelongsToPatientAsync(patientId, dto.PregnancyID);
                 await EnsureVisitBelongsToPatientAsync(patientId, dto.PatientVisitID);
@@ -417,6 +479,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var writeDenied = await CheckWritePermissionAsync();
+                if (writeDenied != null) return writeDenied;
                 await EnsurePatientAccessAsync(patientId);
                 var entity = await _context.ANCVisits
                     .Include(a => a.Pregnancy)
@@ -493,6 +557,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var writeDenied = await CheckWritePermissionAsync();
+                if (writeDenied != null) return writeDenied;
                 await EnsurePatientAccessAsync(patientId);
                 await EnsurePregnancyBelongsToPatientAsync(patientId, dto.PregnancyID);
 
@@ -573,6 +639,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var writeDenied = await CheckWritePermissionAsync();
+                if (writeDenied != null) return writeDenied;
                 await EnsurePatientAccessAsync(patientId);
                 await EnsurePregnancyBelongsToPatientAsync(patientId, dto.PregnancyID);
 
@@ -603,6 +671,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var writeDenied = await CheckWritePermissionAsync();
+                if (writeDenied != null) return writeDenied;
                 await EnsurePatientAccessAsync(patientId);
                 var entity = await _context.HighRiskPregnancies
                     .Include(h => h.Pregnancy)
@@ -619,7 +689,7 @@ namespace HospitalSys.Controllers.Doctor
                 entity.ReferralPlan = dto.ReferralPlan;
                 entity.FollowUpFrequency = dto.FollowUpFrequency;
                 entity.Active = dto.Active;
-                entity.ResolvedDate = dto.ResolvedDate;
+                entity.ResolvedDate = ToUtc(dto.ResolvedDate);
                 entity.Outcome = dto.Outcome;
                 entity.Notes = dto.Notes;
 
@@ -678,6 +748,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var writeDenied = await CheckWritePermissionAsync();
+                if (writeDenied != null) return writeDenied;
                 await EnsurePatientAccessAsync(patientId);
                 await EnsurePregnancyBelongsToPatientAsync(patientId, dto.PregnancyID);
 
@@ -711,6 +783,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var writeDenied = await CheckWritePermissionAsync();
+                if (writeDenied != null) return writeDenied;
                 await EnsurePatientAccessAsync(patientId);
                 var entity = await _context.BirthPreparednessPlans
                     .Include(b => b.Pregnancy)
@@ -789,6 +863,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var writeDenied = await CheckWritePermissionAsync();
+                if (writeDenied != null) return writeDenied;
                 await EnsurePatientAccessAsync(patientId);
                 await EnsurePregnancyBelongsToPatientAsync(patientId, dto.PregnancyID);
 
@@ -873,6 +949,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var writeDenied = await CheckWritePermissionAsync();
+                if (writeDenied != null) return writeDenied;
                 await EnsurePatientAccessAsync(patientId);
                 await EnsurePregnancyBelongsToPatientAsync(patientId, dto.PregnancyID);
 
@@ -958,6 +1036,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var writeDenied = await CheckWritePermissionAsync();
+                if (writeDenied != null) return writeDenied;
                 await EnsurePatientAccessAsync(patientId);
                 await EnsurePregnancyBelongsToPatientAsync(patientId, dto.PregnancyID);
 
@@ -970,8 +1050,8 @@ namespace HospitalSys.Controllers.Doctor
                 {
                     PregnancyID = dto.PregnancyID,
                     MedicineID = dto.MedicineID,
-                    StartDate = dto.StartDate,
-                    EndDate = dto.EndDate,
+                    StartDate = ToUtc(dto.StartDate),
+                    EndDate = ToUtc(dto.EndDate),
                     Dosage = dto.Dosage,
                     Frequency = dto.Frequency,
                     Route = dto.Route,
@@ -994,6 +1074,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var writeDenied = await CheckWritePermissionAsync();
+                if (writeDenied != null) return writeDenied;
                 await EnsurePatientAccessAsync(patientId);
                 var entity = await _context.PregnancyMedications
                     .Include(m => m.Pregnancy)
@@ -1004,7 +1086,7 @@ namespace HospitalSys.Controllers.Doctor
                 if (entity == null)
                     return NotFound(new { message = "Medication not found." });
 
-                entity.EndDate = dto.EndDate;
+                entity.EndDate = ToUtc(dto.EndDate);
                 entity.Dosage = dto.Dosage;
                 entity.Frequency = dto.Frequency;
                 entity.Route = dto.Route;
@@ -1087,15 +1169,17 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var writeDenied = await CheckWritePermissionAsync();
+                if (writeDenied != null) return writeDenied;
                 await EnsurePatientAccessAsync(patientId);
                 await EnsurePregnancyBelongsToPatientAsync(patientId, dto.PregnancyID);
 
                 var entity = new LaborRecord
                 {
                     PregnancyID = dto.PregnancyID,
-                    AdmissionDate = dto.AdmissionDate,
-                    LaborStartDate = dto.LaborStartDate,
-                    MembraneRuptureDate = dto.MembraneRuptureDate,
+                    AdmissionDate = ToUtc(dto.AdmissionDate),
+                    LaborStartDate = ToUtc(dto.LaborStartDate),
+                    MembraneRuptureDate = ToUtc(dto.MembraneRuptureDate),
                     MembraneStatus = dto.MembraneStatus,
                     CervicalDilation = dto.CervicalDilation,
                     ContractionPattern = dto.ContractionPattern,
@@ -1119,6 +1203,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var writeDenied = await CheckWritePermissionAsync();
+                if (writeDenied != null) return writeDenied;
                 await EnsurePatientAccessAsync(patientId);
                 var entity = await _context.LaborRecords
                     .Include(l => l.Pregnancy)
@@ -1128,8 +1214,8 @@ namespace HospitalSys.Controllers.Doctor
                 if (entity == null)
                     return NotFound(new { message = "Labor record not found." });
 
-                entity.LaborStartDate = dto.LaborStartDate;
-                entity.MembraneRuptureDate = dto.MembraneRuptureDate;
+                entity.LaborStartDate = ToUtc(dto.LaborStartDate);
+                entity.MembraneRuptureDate = ToUtc(dto.MembraneRuptureDate);
                 entity.MembraneStatus = dto.MembraneStatus;
                 entity.CervicalDilation = dto.CervicalDilation;
                 entity.ContractionPattern = dto.ContractionPattern;
@@ -1214,6 +1300,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var writeDenied = await CheckWritePermissionAsync();
+                if (writeDenied != null) return writeDenied;
                 await EnsurePatientAccessAsync(patientId);
                 await EnsurePregnancyBelongsToPatientAsync(patientId, dto.PregnancyID);
 
@@ -1229,7 +1317,7 @@ namespace HospitalSys.Controllers.Doctor
                 {
                     PregnancyID = dto.PregnancyID,
                     LaborRecordID = dto.LaborRecordID,
-                    DeliveryDate = dto.DeliveryDate,
+                    DeliveryDate = ToUtc(dto.DeliveryDate),
                     DeliveryMode = dto.DeliveryMode,
                     DeliveryLocation = dto.DeliveryLocation,
                     NumberOfBabies = dto.NumberOfBabies,
@@ -1252,6 +1340,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var writeDenied = await CheckWritePermissionAsync();
+                if (writeDenied != null) return writeDenied;
                 await EnsurePatientAccessAsync(patientId);
                 var entity = await _context.Deliveries
                     .Include(d => d.Pregnancy)
@@ -1261,7 +1351,7 @@ namespace HospitalSys.Controllers.Doctor
                 if (entity == null)
                     return NotFound(new { message = "Delivery not found." });
 
-                entity.DeliveryDate = dto.DeliveryDate;
+                entity.DeliveryDate = ToUtc(dto.DeliveryDate);
                 entity.DeliveryMode = dto.DeliveryMode;
                 entity.DeliveryLocation = dto.DeliveryLocation;
                 entity.NumberOfBabies = dto.NumberOfBabies;
@@ -1319,6 +1409,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var writeDenied = await CheckWritePermissionAsync();
+                if (writeDenied != null) return writeDenied;
                 await EnsurePatientAccessAsync(patientId);
                 var delivery = await _context.Deliveries.AsNoTracking()
                     .Include(d => d.Pregnancy)
@@ -1464,6 +1556,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var writeDenied = await CheckWritePermissionAsync();
+                if (writeDenied != null) return writeDenied;
                 await EnsurePatientAccessAsync(patientId);
                 var delivery = await _context.Deliveries.AsNoTracking()
                     .Include(d => d.Pregnancy)
@@ -1489,7 +1583,7 @@ namespace HospitalSys.Controllers.Doctor
                     DeliveryID = deliveryId,
                     ChildPatientID = dto.ChildPatientID,
                     Sex = dto.Sex,
-                    BirthDate = dto.BirthDate,
+                    BirthDate = ToUtc(dto.BirthDate),
                     BirthWeight = dto.BirthWeight,
                     BirthLength = dto.BirthLength,
                     HeadCircumference = dto.HeadCircumference,
@@ -1572,6 +1666,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var writeDenied = await CheckWritePermissionAsync();
+                if (writeDenied != null) return writeDenied;
                 await EnsurePatientAccessAsync(patientId);
                 await EnsurePregnancyBelongsToPatientAsync(patientId, dto.PregnancyID);
                 await EnsureVisitBelongsToPatientAsync(patientId, dto.PatientVisitID);
@@ -1615,6 +1711,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var writeDenied = await CheckWritePermissionAsync();
+                if (writeDenied != null) return writeDenied;
                 await EnsurePatientAccessAsync(patientId);
                 var entity = await _context.PNCVisits
                     .Include(p => p.Pregnancy)
@@ -1686,6 +1784,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var writeDenied = await CheckWritePermissionAsync();
+                if (writeDenied != null) return writeDenied;
                 await EnsurePatientAccessAsync(patientId);
 
                 if (dto.PregnancyID.HasValue)
@@ -1698,8 +1798,8 @@ namespace HospitalSys.Controllers.Doctor
                     VisitDate = DateTime.UtcNow,
                     Method = dto.Method,
                     MethodType = dto.MethodType,
-                    StartDate = dto.StartDate,
-                    DiscontinuationDate = dto.DiscontinuationDate,
+                    StartDate = ToUtc(dto.StartDate),
+                    DiscontinuationDate = ToUtc(dto.DiscontinuationDate),
                     ReasonForDiscontinuation = dto.ReasonForDiscontinuation,
                     CounselingProvided = dto.CounselingProvided,
                     SideEffects = dto.SideEffects,
@@ -1719,6 +1819,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var writeDenied = await CheckWritePermissionAsync();
+                if (writeDenied != null) return writeDenied;
                 await EnsurePatientAccessAsync(patientId);
                 var entity = await _context.FamilyPlannings
                     .FirstOrDefaultAsync(f => f.FamilyPlanningID == id && f.PatientID == patientId);
@@ -1727,8 +1829,8 @@ namespace HospitalSys.Controllers.Doctor
 
                 entity.Method = dto.Method;
                 entity.MethodType = dto.MethodType;
-                entity.StartDate = dto.StartDate;
-                entity.DiscontinuationDate = dto.DiscontinuationDate;
+                entity.StartDate = ToUtc(dto.StartDate);
+                entity.DiscontinuationDate = ToUtc(dto.DiscontinuationDate);
                 entity.ReasonForDiscontinuation = dto.ReasonForDiscontinuation;
                 entity.CounselingProvided = dto.CounselingProvided;
                 entity.SideEffects = dto.SideEffects;

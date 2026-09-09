@@ -22,6 +22,8 @@ namespace HospitalSys.Controllers.ReferralManagement
             _context = context;
         }
 
+        // ── Authentication helpers (same pattern as DoctorTriageController) ──
+
         private int GetDoctorId()
         {
             var claim = User.FindFirst("DoctorID")?.Value;
@@ -100,9 +102,12 @@ namespace HospitalSys.Controllers.ReferralManagement
             };
         }
 
+        // ── CREATE ──────────────────────────────────────────────────────────
+
         /// <summary>
         /// POST /api/referral
-        /// Create a referral from the authenticated doctor's department to a destination department.
+        /// Doctor A creates a referral using an EXISTING PatientVisit.
+        /// ReferringDoctorID / ReferringDepartmentID come from authentication, never from the body.
         /// </summary>
         [HttpPost]
         public async Task<IActionResult> CreateReferral([FromBody] CreateReferralDto dto)
@@ -190,9 +195,11 @@ namespace HospitalSys.Controllers.ReferralManagement
             }
         }
 
+        // ── GET BY ID ───────────────────────────────────────────────────────
+
         /// <summary>
         /// GET /api/referral/{id}
-        /// Get a referral by ID. Accessible by referring or receiving department.
+        /// Accessible only by referring or receiving department.
         /// </summary>
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetReferralById(int id)
@@ -227,10 +234,13 @@ namespace HospitalSys.Controllers.ReferralManagement
             }
         }
 
+        // ── UPDATE (content only — does NOT perform clinical handover) ──────
+
         /// <summary>
         /// PUT /api/referral/{id}
-        /// Update editable fields of a referral. Referring department can update while Pending/Draft.
-        /// Receiving department can update status-related fields when appropriate.
+        /// Referring doctor may edit clinical content while Pending/Draft.
+        /// Receiving doctor may update notes / receiving doctor assignment.
+        /// Status = Accepted is NOT allowed here; use POST .../accept for the clinical handover.
         /// </summary>
         [HttpPut("{id:int}")]
         public async Task<IActionResult> UpdateReferral(int id, [FromBody] UpdateReferralDto dto)
@@ -258,6 +268,15 @@ namespace HospitalSys.Controllers.ReferralManagement
                 if (referral.Status == ReferralStatus.Completed || referral.Status == ReferralStatus.Cancelled)
                     return Conflict(new { message = "Cannot update a completed or cancelled referral." });
 
+                // Block silent acceptance via PUT — acceptance must go through /accept
+                if (dto.Status.HasValue && dto.Status.Value == ReferralStatus.Accepted)
+                {
+                    return BadRequest(new
+                    {
+                        message = "Use POST /api/referral/{id}/accept to accept a referral. Status cannot be set to Accepted via update."
+                    });
+                }
+
                 // Referring doctor may edit clinical content while still pending/draft
                 if (isReferring &&
                     (referral.Status == ReferralStatus.Pending || referral.Status == ReferralStatus.Draft))
@@ -271,14 +290,18 @@ namespace HospitalSys.Controllers.ReferralManagement
                     if (dto.DestinationFacility != null) referral.DestinationFacility = dto.DestinationFacility;
                 }
 
-                // Receiving doctor may set status / receiving doctor / notes
+                // Receiving doctor may update notes / optional receiving doctor assignment
+                // (but not perform the clinical handover)
                 if (isReceiving)
                 {
-                    if (dto.Status.HasValue)
+                    if (dto.Status.HasValue &&
+                        dto.Status.Value != ReferralStatus.Accepted &&
+                        dto.Status.Value != ReferralStatus.Pending &&
+                        dto.Status.Value != ReferralStatus.Draft)
                     {
+                        // Allow other non-acceptance status changes only if they make sense
+                        // (e.g. InTransit, Completed) — still no triage move
                         referral.Status = dto.Status.Value;
-                        if (dto.Status.Value == ReferralStatus.Accepted && referral.ReceivingDoctorID == null)
-                            referral.ReceivingDoctorID = doctorId;
                     }
 
                     if (dto.ReceivingDoctorID.HasValue)
@@ -303,9 +326,12 @@ namespace HospitalSys.Controllers.ReferralManagement
             }
         }
 
+        // ── ACCEPT (clinical handover) ──────────────────────────────────────
+
         /// <summary>
         /// POST /api/referral/{id}/accept
-        /// Receiving department accepts the referral.
+        /// Receiving department accepts the referral and reassigns the EXISTING Triage
+        /// to the receiving department. No new PatientVisit or Triage is created.
         /// </summary>
         [HttpPost("{id:int}/accept")]
         public async Task<IActionResult> AcceptReferral(int id)
@@ -321,15 +347,56 @@ namespace HospitalSys.Controllers.ReferralManagement
                 if (referral == null)
                     return NotFound(new { message = "Referral not found." });
 
+                // Only the receiving department may accept
                 if (referral.ReceivingDepartmentID != departmentId)
                     return Forbid();
 
                 if (referral.Status != ReferralStatus.Pending && referral.Status != ReferralStatus.Draft)
                     return Conflict(new { message = $"Referral cannot be accepted from status '{referral.Status}'." });
 
+                if (referral.PatientVisitID <= 0)
+                    return BadRequest(new { message = "Referral has no associated patient visit." });
+
+                // Locate EXISTING PatientVisit — never create
+                var visit = await _context.PatientVisits
+                    .FirstOrDefaultAsync(v => v.VisitID == referral.PatientVisitID);
+
+                if (visit == null)
+                    return NotFound(new { message = "Associated patient visit not found." });
+
+                if (visit.PatientID != referral.PatientID)
+                    return BadRequest(new { message = "Patient visit does not match the referral patient." });
+
+                // Locate EXISTING Triage for this visit — never create
+                var triage = await _context.Triages
+                    .FirstOrDefaultAsync(t => t.VisitID == referral.PatientVisitID);
+
+                if (triage == null)
+                    return NotFound(new { message = "Triage record for the referred visit was not found. Cannot reassign department." });
+
+                // Optional consistency check: triage should still belong to referring department
+                if (referral.ReferringDepartmentID.HasValue &&
+                    triage.ClinicalDepartmentID != referral.ReferringDepartmentID.Value)
+                {
+                    // Soft warning path: still allow if already moved, but only if it matches receiving
+                    // (idempotent / concurrent-accept protection)
+                    if (triage.ClinicalDepartmentID != departmentId)
+                    {
+                        return Conflict(new
+                        {
+                            message = "Triage is not currently assigned to the referring department and cannot be safely reassigned."
+                        });
+                    }
+                }
+
+                // 1. Accept referral (history fields remain unchanged)
                 referral.Status = ReferralStatus.Accepted;
                 referral.ReceivingDoctorID = doctorId;
 
+                // 2. Reassign EXISTING Triage so normal department-based authorization grants access
+                triage.ClinicalDepartmentID = referral.ReceivingDepartmentID ?? departmentId;
+
+                // Single SaveChanges keeps both changes together
                 await _context.SaveChangesAsync();
 
                 var response = await MapToResponseDtoAsync(referral);
@@ -345,9 +412,11 @@ namespace HospitalSys.Controllers.ReferralManagement
             }
         }
 
+        // ── REJECT ──────────────────────────────────────────────────────────
+
         /// <summary>
         /// POST /api/referral/{id}/reject
-        /// Receiving department rejects the referral. Optional notes can be sent in body.
+        /// Receiving department rejects. Triage is NOT moved.
         /// </summary>
         [HttpPost("{id:int}/reject")]
         public async Task<IActionResult> RejectReferral(int id, [FromBody] UpdateReferralDto? dto)
@@ -390,9 +459,11 @@ namespace HospitalSys.Controllers.ReferralManagement
             }
         }
 
+        // ── CANCEL ──────────────────────────────────────────────────────────
+
         /// <summary>
         /// POST /api/referral/{id}/cancel
-        /// Referring department cancels a pending/draft referral.
+        /// Referring department cancels a pending/draft referral. Triage is NOT moved.
         /// </summary>
         [HttpPost("{id:int}/cancel")]
         public async Task<IActionResult> CancelReferral(int id)
@@ -430,9 +501,11 @@ namespace HospitalSys.Controllers.ReferralManagement
             }
         }
 
+        // ── MY REFERRALS (outgoing) ─────────────────────────────────────────
+
         /// <summary>
         /// GET /api/referral/mine
-        /// Referrals created by the authenticated doctor's department (outgoing).
+        /// Outgoing referrals for the authenticated doctor's department.
         /// </summary>
         [HttpGet("mine")]
         public async Task<IActionResult> GetMyReferrals()
@@ -465,122 +538,137 @@ namespace HospitalSys.Controllers.ReferralManagement
             }
         }
 
+        // ── DEPARTMENTS ─────────────────────────────────────────────────────
+
+        /// <summary>
+        /// GET /api/referral/departments
+        /// </summary>
         [HttpGet("departments")]
-public async Task<IActionResult> GetDepartments()
-{
-    try
-    {
-        _ = GetDoctorId();
-
-        var departments = await _context.ClinicalDepartments
-            .AsNoTracking()
-            .OrderBy(d => d.DepartmentName)
-            .Select(d => new
+        public async Task<IActionResult> GetDepartments()
+        {
+            try
             {
-                clinicalDepartmentID = d.ClinicalDepartmentID,
-                departmentName = d.DepartmentName,
-                description = d.Description
-            })
-            .ToListAsync();
+                _ = GetDoctorId(); // ensure authenticated
 
-        return Ok(departments);
-    }
-    catch (UnauthorizedAccessException ex)
-    {
-        return Unauthorized(new { message = ex.Message });
-    }
-    catch (Exception)
-    {
-        return StatusCode(500, new { message = "An error occurred while retrieving departments." });
-    }
-}
+                var departments = await _context.ClinicalDepartments
+                    .AsNoTracking()
+                    .OrderBy(d => d.DepartmentName)
+                    .Select(d => new
+                    {
+                        clinicalDepartmentID = d.ClinicalDepartmentID,
+                        departmentName = d.DepartmentName
+                    })
+                    .ToListAsync();
 
-[HttpGet("patients/search")]
-public async Task<IActionResult> SearchPatients([FromQuery] string? q)
-{
-    try
-    {
-        _ = GetDoctorId();
-
-        if (string.IsNullOrWhiteSpace(q) || q.Trim().Length < 2)
-            return BadRequest(new { message = "Enter at least 2 characters to search." });
-
-        var term = q.Trim().ToLower();
-
-        var patients = await _context.Patients
-            .AsNoTracking()
-            .Where(p =>
-                p.MRN.ToLower().Contains(term) ||
-                (p.FaydaFIN != null && p.FaydaFIN.ToLower().Contains(term)) ||
-                p.FirstName.ToLower().Contains(term) ||
-                p.LastName.ToLower().Contains(term) ||
-                (p.FirstName + " " + p.LastName).ToLower().Contains(term) ||
-                p.Phone.Contains(term))
-            .OrderBy(p => p.FirstName)
-            .Take(20)
-            .Select(p => new
+                return Ok(departments);
+            }
+            catch (UnauthorizedAccessException ex)
             {
-                patientID = p.PatientID,
-                mrn = p.MRN,
-                faydaFIN = p.FaydaFIN,
-                firstName = p.FirstName,
-                lastName = p.LastName,
-                patientName = p.FirstName + " " + p.LastName,
-                gender = p.Gender.ToString(),
-                dateOfBirth = p.DateOfBirth,
-                phone = p.Phone
-            })
-            .ToListAsync();
-
-        return Ok(patients);
-    }
-    catch (UnauthorizedAccessException ex)
-    {
-        return Unauthorized(new { message = ex.Message });
-    }
-    catch (Exception)
-    {
-        return StatusCode(500, new { message = "An error occurred while searching patients." });
-    }
-}
-
-[HttpGet("patients/{patientId:int}/visits")]
-public async Task<IActionResult> GetPatientVisitsForCreate(int patientId)
-{
-    try
-    {
-        _ = GetDoctorId();
-
-        var exists = await _context.Patients.AsNoTracking()
-            .AnyAsync(p => p.PatientID == patientId);
-        if (!exists)
-            return NotFound(new { message = "Patient not found." });
-
-        var visits = await _context.PatientVisits
-            .AsNoTracking()
-            .Where(v => v.PatientID == patientId)
-            .OrderByDescending(v => v.VisitDate)
-            .Take(20)
-            .Select(v => new
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (Exception)
             {
-                visitID = v.VisitID,
-                patientID = v.PatientID,
-                visitDate = v.VisitDate,
-                visitType = v.VisitType,
-                status = v.Status
-            })
-            .ToListAsync();
+                return StatusCode(500, new { message = "An error occurred while retrieving departments." });
+            }
+        }
 
-        return Ok(visits);
-    }
-    catch (UnauthorizedAccessException ex)
-    {
-        return Unauthorized(new { message = ex.Message });
-    }
-    catch (Exception)
-    {
-        return StatusCode(500, new { message = "An error occurred while retrieving visits." });
-    }
-}
+        // ── PATIENT SEARCH (for Create Referral UI) ─────────────────────────
+
+        /// <summary>
+        /// GET /api/referral/patients/search?q=...
+        /// </summary>
+        [HttpGet("patients/search")]
+        public async Task<IActionResult> SearchPatients([FromQuery] string? q)
+        {
+            try
+            {
+                _ = GetDoctorId();
+
+                if (string.IsNullOrWhiteSpace(q) || q.Trim().Length < 2)
+                    return BadRequest(new { message = "Enter at least 2 characters to search." });
+
+                var term = q.Trim().ToLower();
+
+                var patients = await _context.Patients
+                    .AsNoTracking()
+                    .Where(p =>
+                        p.MRN.ToLower().Contains(term) ||
+                        (p.FaydaFIN != null && p.FaydaFIN.ToLower().Contains(term)) ||
+                        p.FirstName.ToLower().Contains(term) ||
+                        p.LastName.ToLower().Contains(term) ||
+                        (p.FirstName + " " + p.LastName).ToLower().Contains(term) ||
+                        p.Phone.Contains(term))
+                    .OrderBy(p => p.FirstName)
+                    .Take(20)
+                    .Select(p => new
+                    {
+                        patientID = p.PatientID,
+                        mrn = p.MRN,
+                        faydaFIN = p.FaydaFIN,
+                        firstName = p.FirstName,
+                        lastName = p.LastName,
+                        patientName = p.FirstName + " " + p.LastName,
+                        gender = p.Gender.ToString(),
+                        dateOfBirth = p.DateOfBirth,
+                        phone = p.Phone
+                    })
+                    .ToListAsync();
+
+                return Ok(patients);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { message = "An error occurred while searching patients." });
+            }
+        }
+
+        // ── PATIENT VISITS (for Create Referral UI) ─────────────────────────
+
+        /// <summary>
+        /// GET /api/referral/patients/{patientId}/visits
+        /// Returns existing visits only. Does not create a visit.
+        /// </summary>
+        [HttpGet("patients/{patientId:int}/visits")]
+        public async Task<IActionResult> GetPatientVisitsForCreate(int patientId)
+        {
+            try
+            {
+                _ = GetDoctorId();
+
+                var exists = await _context.Patients.AsNoTracking()
+                    .AnyAsync(p => p.PatientID == patientId);
+                if (!exists)
+                    return NotFound(new { message = "Patient not found." });
+
+                var visits = await _context.PatientVisits
+                    .AsNoTracking()
+                    .Where(v => v.PatientID == patientId)
+                    .OrderByDescending(v => v.VisitDate)
+                    .Take(20)
+                    .Select(v => new
+                    {
+                        visitID = v.VisitID,
+                        patientID = v.PatientID,
+                        visitDate = v.VisitDate,
+                        visitType = v.VisitType,
+                        status = v.Status
+                    })
+                    .ToListAsync();
+
+                return Ok(visits);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { message = "An error occurred while retrieving visits." });
+            }
+        }
     }
 }

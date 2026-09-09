@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import API from "../../../../../Config/API";
+import { canWriteMaternalChildHealth } from "../../../../../utils/canWriteMaternalChildHealth";
 
 const inputCls = "w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500";
 
@@ -24,6 +25,16 @@ export default function BirthPreparedness() {
     bloodDonorIdentified: false, emergencyPlan: "", counselingProvided: "", notes: "",
   });
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+
+  const [canWrite, setCanWrite] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const ok = await canWriteMaternalChildHealth();
+      if (!cancelled) setCanWrite(ok);
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     API.get(`${api}/pregnancies`).then((res) => {
@@ -75,7 +86,9 @@ export default function BirthPreparedness() {
             <option value="">Pregnancy...</option>
             {pregnancies.map((p) => <option key={p.pregnancyID} value={p.pregnancyID}>#{p.pregnancyID}</option>)}
           </select>
+          {canWrite && (
           <button type="button" onClick={() => setShow(true)} disabled={!pregnancyId} className="px-3 py-2 rounded-lg bg-rose-600 text-white text-xs font-medium disabled:opacity-50">Add</button>
+        )}
         </div>
       </div>
       <h2 className="font-semibold">Birth Preparedness</h2>
@@ -93,7 +106,7 @@ export default function BirthPreparedness() {
           ))}
         </div>
       )}
-      {show && (
+      {canWrite && show && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
           <form onSubmit={submit} className="bg-white rounded-xl w-full max-w-md p-5 space-y-3 max-h-[90vh] overflow-y-auto">
             <h3 className="font-semibold">Birth preparedness plan</h3>

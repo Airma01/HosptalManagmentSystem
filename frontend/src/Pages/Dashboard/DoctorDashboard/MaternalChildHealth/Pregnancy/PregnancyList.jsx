@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import API from "../../../../../Config/API";
+import { canWriteMaternalChildHealth } from "../../../../../utils/canWriteMaternalChildHealth";
 
 export default function PregnancyList() {
   const { patientId, visitId } = useParams();
@@ -10,6 +11,16 @@ export default function PregnancyList() {
   const [error, setError] = useState("");
   const base = `/doctor/maternal/patient/${patientId}/${visitId}`;
   const apiBase = `/api/doctor/patient/${patientId}/maternal-child`;
+
+  const [canWrite, setCanWrite] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const ok = await canWriteMaternalChildHealth();
+      if (!cancelled) setCanWrite(ok);
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -36,9 +47,11 @@ export default function PregnancyList() {
         </div>
         <div className="flex gap-2">
           <button type="button" onClick={load} className="px-3 py-1.5 border rounded-lg text-xs text-slate-600"><i className="bi bi-arrow-clockwise" /></button>
+          {canWrite && (
           <Link to={`${base}/pregnancies/register`} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-medium hover:bg-rose-700">
             <i className="bi bi-plus-lg" /> Register
           </Link>
+        )}
         </div>
       </div>
       {loading && <div className="bg-white border rounded-xl p-8 text-center text-slate-500 text-sm">Loading pregnancies...</div>}
@@ -46,7 +59,9 @@ export default function PregnancyList() {
       {!loading && !error && rows.length === 0 && (
         <div className="bg-white border rounded-xl p-8 text-center text-slate-500 text-sm">
           No pregnancy records found.
-          <div className="mt-3"><Link to={`${base}/pregnancies/register`} className="text-rose-600 font-medium">Register Pregnancy</Link></div>
+          <div className="mt-3">{canWrite && (
+          <Link to={`${base}/pregnancies/register`} className="text-rose-600 font-medium">Register Pregnancy</Link>
+        )}</div>
         </div>
       )}
       {!loading && rows.length > 0 && (

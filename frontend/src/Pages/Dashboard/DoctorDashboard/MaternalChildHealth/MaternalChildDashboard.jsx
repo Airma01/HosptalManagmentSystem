@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import API from "../../../../Config/API";
+import { canWriteMaternalChildHealth } from "../../../../utils/canWriteMaternalChildHealth";
 
 function formatDate(v) {
   if (!v) return "—";
@@ -49,6 +50,16 @@ export default function MaternalChildDashboard() {
   const [pregnancies, setPregnancies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const [canWrite, setCanWrite] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const ok = await canWriteMaternalChildHealth();
+      if (!cancelled) setCanWrite(ok);
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -166,9 +177,11 @@ export default function MaternalChildDashboard() {
             {pregnancies.length === 0 ? (
               <div className="text-center py-6 text-slate-500 text-sm">
                 <p>No pregnancy records found.</p>
-                <Link to={`${base}/pregnancies/register`} className="inline-flex mt-3 items-center gap-1 px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-medium hover:bg-rose-700">
+                {canWrite && (
+          <Link to={`${base}/pregnancies/register`} className="inline-flex mt-3 items-center gap-1 px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-medium hover:bg-rose-700">
                   <i className="bi bi-plus-lg" /> Register Pregnancy
                 </Link>
+        )}
               </div>
             ) : (
               <div className="overflow-x-auto">

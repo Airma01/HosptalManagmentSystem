@@ -1,10 +1,21 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import API from "../../../../../Config/API";
+import { canWriteMaternalChildHealth } from "../../../../../utils/canWriteMaternalChildHealth";
 
 const inputCls = "w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500";
 
 export default function PregnancyRegistration() {
+  const [canWrite, setCanWrite] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const ok = await canWriteMaternalChildHealth();
+      if (!cancelled) setCanWrite(ok);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   const { patientId, visitId } = useParams();
   const navigate = useNavigate();
   const base = `/doctor/maternal/patient/${patientId}/${visitId}`;
@@ -64,6 +75,12 @@ export default function PregnancyRegistration() {
       </button>
       <div className="bg-white border rounded-xl shadow-sm p-5">
         <h2 className="text-lg font-semibold text-slate-800 mb-4">Register Pregnancy</h2>
+        {!canWrite ? (
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg px-3 py-3 text-sm">
+            Read-only access. Only doctors in MCH or General departments can register pregnancies.
+          </div>
+        ) : (
+        <>
         {error && <div className="mb-3 bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm">{error}</div>}
         <form onSubmit={submit} className="space-y-4">
           <div className="grid sm:grid-cols-2 gap-3">
@@ -119,6 +136,8 @@ export default function PregnancyRegistration() {
             </button>
           </div>
         </form>
+        </>
+        )}
       </div>
     </div>
   );

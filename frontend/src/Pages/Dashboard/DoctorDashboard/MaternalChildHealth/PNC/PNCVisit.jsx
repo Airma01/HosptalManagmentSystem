@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import API from "../../../../../Config/API";
+import { canWriteMaternalChildHealth } from "../../../../../utils/canWriteMaternalChildHealth";
 const inputCls = "w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500";
 export default function PNCVisit() {
   const { patientId, visitId } = useParams();
@@ -17,6 +18,16 @@ export default function PNCVisit() {
   const [formError, setFormError] = useState("");
   const [form, setForm] = useState({ pregnancyID: sp.get("pregnancyId") || "", patientVisitID: visitId || "", deliveryID: "", daysAfterDelivery: "", maternalCondition: "", bleedingStatus: "", breastfeedingStatus: "", uterusCondition: "", mentalHealthAssessment: "", counselingProvided: "", familyPlanningCounseling: "", treatmentPlan: "", notes: "" });
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+  const [canWrite, setCanWrite] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const ok = await canWriteMaternalChildHealth();
+      if (!cancelled) setCanWrite(ok);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   const load = useCallback(async () => {
     setLoading(true); setError("");
     try {
@@ -55,7 +66,9 @@ export default function PNCVisit() {
     <div className="space-y-4 max-w-4xl mx-auto">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <button type="button" onClick={() => navigate(base)} className="text-sm text-slate-500 hover:text-rose-600"><i className="bi bi-arrow-left" /> Dashboard</button>
-        <button type="button" onClick={() => setShow(true)} className="px-3 py-2 rounded-lg bg-rose-600 text-white text-xs font-medium">Add PNC</button>
+        {canWrite && (
+          <button type="button" onClick={() => setShow(true)} className="px-3 py-2 rounded-lg bg-rose-600 text-white text-xs font-medium">Add PNC</button>
+        )}
       </div>
       <h2 className="font-semibold">PNC Visits</h2>
       {loading && <div className="bg-white border rounded-xl p-6 text-center text-sm text-slate-500">Loading...</div>}
@@ -71,7 +84,7 @@ export default function PNCVisit() {
           </table>
         </div>
       )}
-      {show && (
+      {canWrite && show && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
           <form onSubmit={submit} className="bg-white rounded-xl w-full max-w-lg p-5 space-y-3 max-h-[90vh] overflow-y-auto">
             <h3 className="font-semibold">PNC visit</h3>

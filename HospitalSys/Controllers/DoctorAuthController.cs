@@ -22,6 +22,7 @@ namespace HospitalSys.Controllers
         [Authorize(Roles = "Doctor")]
         public IActionResult AuthMe()
         {
+            
             var token = Request.Cookies["jwt"];
             if(token == null)
             {

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import API from "../../../../../Config/API";
+import { canWriteMaternalChildHealth } from "../../../../../utils/canWriteMaternalChildHealth";
 
 const inputCls = "w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500";
 
@@ -32,6 +33,16 @@ export default function ANCQueue() {
     treatmentPlan: "",
     notes: "",
   });
+
+  const [canWrite, setCanWrite] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const ok = await canWriteMaternalChildHealth();
+      if (!cancelled) setCanWrite(ok);
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -95,9 +106,11 @@ export default function ANCQueue() {
           <span className="text-slate-300">/</span>
           <span className="font-medium">ANC Visits</span>
         </div>
-        <button type="button" onClick={() => setShowForm(true)} className="px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-medium">
+        {canWrite && (
+          <button type="button" onClick={() => setShowForm(true)} className="px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-medium">
           <i className="bi bi-plus-lg me-1" /> Add ANC Visit
         </button>
+        )}
       </div>
       {loading && <div className="bg-white border rounded-xl p-8 text-center text-slate-500 text-sm">Loading ANC visits...</div>}
       {error && !loading && <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">{error}</div>}
@@ -139,7 +152,7 @@ export default function ANCQueue() {
         </div>
       )}
 
-      {showForm && (
+      {canWrite && showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-5 py-4 border-b">

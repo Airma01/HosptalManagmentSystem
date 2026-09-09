@@ -44,7 +44,12 @@ function UrgencyBadge({ urgency }) {
   );
 }
 
-export default function ReferralTable({ rows, onView }) {
+export default function ReferralTable({ rows, onView, onAccept, acceptingId }) {
+  const isPending = (status) => {
+    const s = (status ?? "").toString().toLowerCase();
+    return s === "pending" || s === "draft";
+  };
+
   if (!rows?.length) {
     return (
       <div className="bg-white border border-slate-200 rounded-xl p-10 text-center shadow-sm">
@@ -101,14 +106,31 @@ export default function ReferralTable({ rows, onView }) {
                   <StatusBadge status={r.status} />
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <button
-                    type="button"
-                    onClick={() => onView?.(r.referralID)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition"
-                  >
-                    <i className="bi bi-eye" />
-                    View
-                  </button>
+                  <div className="inline-flex items-center gap-2 justify-end">
+                    {isPending(r.status) && (
+                      <button
+                        type="button"
+                        disabled={acceptingId === r.referralID}
+                        onClick={() => onAccept?.(r.referralID)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-700 transition disabled:opacity-60"
+                      >
+                        {acceptingId === r.referralID ? (
+                          <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <i className="bi bi-check-circle" />
+                        )}
+                        Accept
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => onView?.(r.referralID)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition"
+                    >
+                      <i className="bi bi-eye" />
+                      View
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

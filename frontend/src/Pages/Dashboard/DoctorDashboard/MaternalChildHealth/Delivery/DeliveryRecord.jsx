@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import API from "../../../../../Config/API";
+import { canWriteMaternalChildHealth } from "../../../../../utils/canWriteMaternalChildHealth";
 const inputCls = "w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500";
 const MODES = ["NormalVaginalDelivery", "AssistedVaginalDelivery", "CesareanSection", "Other"];
 export default function DeliveryRecord() {
@@ -19,6 +20,16 @@ export default function DeliveryRecord() {
   const [formError, setFormError] = useState("");
   const [form, setForm] = useState({ laborRecordID: "", deliveryDate: new Date().toISOString().slice(0, 16), deliveryMode: "NormalVaginalDelivery", deliveryLocation: "", numberOfBabies: "1", maternalCondition: "", placentaCondition: "", bloodLoss: "", deliveryNotes: "" });
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+  const [canWrite, setCanWrite] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const ok = await canWriteMaternalChildHealth();
+      if (!cancelled) setCanWrite(ok);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   useEffect(() => { API.get(`${api}/pregnancies`).then((res) => { const list = Array.isArray(res.data) ? res.data : []; setPregnancies(list); if (!pregnancyId && list.length) setPregnancyId(String(list[0].pregnancyID)); }).catch(() => {}); }, [api, pregnancyId]);
   const load = useCallback(async () => { if (!pregnancyId) { setRows([]); setLoading(false); return; } setLoading(true); setError(""); try { const res = await API.get(`${api}/pregnancies/${pregnancyId}/deliveries`); setRows(Array.isArray(res.data) ? res.data : []); } catch (err) { setError(err.response?.data?.message || "Unable to load deliveries."); } finally { setLoading(false); } }, [api, pregnancyId]);
   useEffect(() => { load(); }, [load]);
@@ -29,7 +40,9 @@ export default function DeliveryRecord() {
         <button type="button" onClick={() => navigate(base)} className="text-sm text-slate-500 hover:text-rose-600"><i className="bi bi-arrow-left" /> Dashboard</button>
         <div className="flex gap-2">
           <select className={inputCls + " w-auto"} value={pregnancyId} onChange={(e) => setPregnancyId(e.target.value)}><option value="">Pregnancy...</option>{pregnancies.map((p) => <option key={p.pregnancyID} value={p.pregnancyID}>#{p.pregnancyID}</option>)}</select>
+          {canWrite && (
           <button type="button" onClick={() => setShow(true)} disabled={!pregnancyId} className="px-3 py-2 rounded-lg bg-rose-600 text-white text-xs font-medium disabled:opacity-50">Record delivery</button>
+        )}
         </div>
       </div>
       <h2 className="font-semibold">Deliveries</h2>
@@ -49,7 +62,7 @@ export default function DeliveryRecord() {
           <p className="mt-1 text-slate-600">{r.maternalCondition || r.deliveryNotes || "—"}</p>
         </div>
       ))}
-      {show && (
+      {canWrite && show && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
           <form onSubmit={submit} className="bg-white rounded-xl w-full max-w-lg p-5 space-y-3 max-h-[90vh] overflow-y-auto">
             <h3 className="font-semibold">Delivery record</h3>

@@ -38,6 +38,15 @@ namespace HospitalSys.Controllers.Doctor
                 throw new KeyNotFoundException("Patient not found.");
         }
 
+
+        private static DateTime ToUtc(DateTime value)
+            => value.Kind == DateTimeKind.Utc
+                ? value
+                : DateTime.SpecifyKind(value, DateTimeKind.Utc);
+
+        private static DateTime? ToUtc(DateTime? value)
+            => value.HasValue ? ToUtc(value.Value) : null;
+
         // ASTHMA
         [HttpGet("asthma")]
         public async Task<IActionResult> GetAsthma(int patientId)
@@ -79,7 +88,7 @@ namespace HospitalSys.Controllers.Doctor
                 var entity = new AsthmaManagement
                 {
                     PatientID = patientId,
-                    DiagnosisDate = dto.DiagnosisDate,
+                    DiagnosisDate = ToUtc(dto.DiagnosisDate),
                     AsthmaSeverity = dto.AsthmaSeverity,
                     AsthmaControlStatus = dto.AsthmaControlStatus,
                     Symptoms = dto.Symptoms,
@@ -90,8 +99,8 @@ namespace HospitalSys.Controllers.Doctor
                     ManagementPlan = dto.ManagementPlan,
                     InhalerTechniqueEducation = dto.InhalerTechniqueEducation,
                     TreatmentStatus = dto.TreatmentStatus,
-                    LastFollowUpDate = dto.LastFollowUpDate,
-                    NextFollowUpDate = dto.NextFollowUpDate,
+                    LastFollowUpDate = ToUtc(dto.LastFollowUpDate),
+                    NextFollowUpDate = ToUtc(dto.NextFollowUpDate),
                     Active = dto.Active,
                     Notes = dto.Notes,
                     CreatedAt = DateTime.UtcNow
@@ -115,7 +124,7 @@ namespace HospitalSys.Controllers.Doctor
                     .FirstOrDefaultAsync(x => x.AsthmaManagementID == id && x.PatientID == patientId);
                 if (entity == null) return NotFound(new { message = "Asthma record not found." });
 
-                entity.DiagnosisDate = dto.DiagnosisDate;
+                entity.DiagnosisDate = ToUtc(dto.DiagnosisDate);
                 entity.AsthmaSeverity = dto.AsthmaSeverity;
                 entity.AsthmaControlStatus = dto.AsthmaControlStatus;
                 entity.Symptoms = dto.Symptoms;
@@ -126,8 +135,8 @@ namespace HospitalSys.Controllers.Doctor
                 entity.ManagementPlan = dto.ManagementPlan;
                 entity.InhalerTechniqueEducation = dto.InhalerTechniqueEducation;
                 entity.TreatmentStatus = dto.TreatmentStatus;
-                entity.LastFollowUpDate = dto.LastFollowUpDate;
-                entity.NextFollowUpDate = dto.NextFollowUpDate;
+                entity.LastFollowUpDate = ToUtc(dto.LastFollowUpDate);
+                entity.NextFollowUpDate = ToUtc(dto.NextFollowUpDate);
                 entity.Active = dto.Active;
                 entity.Notes = dto.Notes;
                 entity.UpdatedAt = DateTime.UtcNow;
@@ -202,7 +211,7 @@ namespace HospitalSys.Controllers.Doctor
                 var entity = new DiabetesManagement
                 {
                     PatientID = patientId,
-                    DiagnosisDate = dto.DiagnosisDate,
+                    DiagnosisDate = ToUtc(dto.DiagnosisDate),
                     DiabetesType = diabetesType,
                     DiagnosisMethod = dto.DiagnosisMethod,
                     LastFastingBloodGlucose = dto.LastFastingBloodGlucose,
@@ -214,8 +223,8 @@ namespace HospitalSys.Controllers.Doctor
                     ManagementPlan = dto.ManagementPlan,
                     LifestyleAdvice = dto.LifestyleAdvice,
                     TreatmentStatus = dto.TreatmentStatus,
-                    LastFollowUpDate = dto.LastFollowUpDate,
-                    NextFollowUpDate = dto.NextFollowUpDate,
+                    LastFollowUpDate = ToUtc(dto.LastFollowUpDate),
+                    NextFollowUpDate = ToUtc(dto.NextFollowUpDate),
                     Active = dto.Active,
                     Notes = dto.Notes,
                     CreatedAt = DateTime.UtcNow
@@ -242,7 +251,7 @@ namespace HospitalSys.Controllers.Doctor
                 if (!Enum.TryParse<DiabetesType>(dto.DiabetesType, true, out var diabetesType))
                     return BadRequest(new { message = "Invalid DiabetesType. Use Type1, Type2, Gestational, or Other." });
 
-                entity.DiagnosisDate = dto.DiagnosisDate;
+                entity.DiagnosisDate = ToUtc(dto.DiagnosisDate);
                 entity.DiabetesType = diabetesType;
                 entity.DiagnosisMethod = dto.DiagnosisMethod;
                 entity.LastFastingBloodGlucose = dto.LastFastingBloodGlucose;
@@ -254,8 +263,8 @@ namespace HospitalSys.Controllers.Doctor
                 entity.ManagementPlan = dto.ManagementPlan;
                 entity.LifestyleAdvice = dto.LifestyleAdvice;
                 entity.TreatmentStatus = dto.TreatmentStatus;
-                entity.LastFollowUpDate = dto.LastFollowUpDate;
-                entity.NextFollowUpDate = dto.NextFollowUpDate;
+                entity.LastFollowUpDate = ToUtc(dto.LastFollowUpDate);
+                entity.NextFollowUpDate = ToUtc(dto.NextFollowUpDate);
                 entity.Active = dto.Active;
                 entity.Notes = dto.Notes;
                 entity.UpdatedAt = DateTime.UtcNow;
@@ -327,20 +336,20 @@ namespace HospitalSys.Controllers.Doctor
                 var entity = new HIVCare
                 {
                     PatientID = patientId,
-                    EnrollmentDate = dto.EnrollmentDate ?? DateTime.UtcNow,
-                    DiagnosisDate = dto.DiagnosisDate,
+                    EnrollmentDate = ToUtc(dto.EnrollmentDate) ?? DateTime.UtcNow,
+                    DiagnosisDate = ToUtc(dto.DiagnosisDate),
                     CareStatus = dto.CareStatus,
                     ClinicalStage = dto.ClinicalStage,
                     TreatmentStatus = dto.TreatmentStatus,
-                    TreatmentStartDate = dto.TreatmentStartDate,
+                    TreatmentStartDate = ToUtc(dto.TreatmentStartDate),
                     AdherenceStatus = dto.AdherenceStatus,
                     TreatmentResponse = dto.TreatmentResponse,
                     OpportunisticConditions = dto.OpportunisticConditions,
                     Complications = dto.Complications,
                     CounselingProvided = dto.CounselingProvided,
                     FollowUpPlan = dto.FollowUpPlan,
-                    LastFollowUpDate = dto.LastFollowUpDate,
-                    NextFollowUpDate = dto.NextFollowUpDate,
+                    LastFollowUpDate = ToUtc(dto.LastFollowUpDate),
+                    NextFollowUpDate = ToUtc(dto.NextFollowUpDate),
                     Outcome = dto.Outcome,
                     Active = dto.Active,
                     Notes = dto.Notes,
@@ -365,20 +374,20 @@ namespace HospitalSys.Controllers.Doctor
                     .FirstOrDefaultAsync(x => x.HIVCareID == id && x.PatientID == patientId);
                 if (entity == null) return NotFound(new { message = "HIV record not found." });
 
-                if (dto.EnrollmentDate.HasValue) entity.EnrollmentDate = dto.EnrollmentDate.Value;
-                entity.DiagnosisDate = dto.DiagnosisDate;
+                if (dto.EnrollmentDate.HasValue) entity.EnrollmentDate = ToUtc(dto.EnrollmentDate.Value);
+                entity.DiagnosisDate = ToUtc(dto.DiagnosisDate);
                 entity.CareStatus = dto.CareStatus;
                 entity.ClinicalStage = dto.ClinicalStage;
                 entity.TreatmentStatus = dto.TreatmentStatus;
-                entity.TreatmentStartDate = dto.TreatmentStartDate;
+                entity.TreatmentStartDate = ToUtc(dto.TreatmentStartDate);
                 entity.AdherenceStatus = dto.AdherenceStatus;
                 entity.TreatmentResponse = dto.TreatmentResponse;
                 entity.OpportunisticConditions = dto.OpportunisticConditions;
                 entity.Complications = dto.Complications;
                 entity.CounselingProvided = dto.CounselingProvided;
                 entity.FollowUpPlan = dto.FollowUpPlan;
-                entity.LastFollowUpDate = dto.LastFollowUpDate;
-                entity.NextFollowUpDate = dto.NextFollowUpDate;
+                entity.LastFollowUpDate = ToUtc(dto.LastFollowUpDate);
+                entity.NextFollowUpDate = ToUtc(dto.NextFollowUpDate);
                 entity.Outcome = dto.Outcome;
                 entity.Active = dto.Active;
                 entity.Notes = dto.Notes;
@@ -451,7 +460,7 @@ namespace HospitalSys.Controllers.Doctor
                 var entity = new HepatitisManagement
                 {
                     PatientID = patientId,
-                    DiagnosisDate = dto.DiagnosisDate,
+                    DiagnosisDate = ToUtc(dto.DiagnosisDate),
                     HepatitisType = dto.HepatitisType,
                     DiagnosticMethod = dto.DiagnosticMethod,
                     DiseaseStatus = dto.DiseaseStatus,
@@ -461,8 +470,8 @@ namespace HospitalSys.Controllers.Doctor
                     TreatmentPlan = dto.TreatmentPlan,
                     TreatmentStatus = dto.TreatmentStatus,
                     LaboratoryMonitoringPlan = dto.LaboratoryMonitoringPlan,
-                    LastFollowUpDate = dto.LastFollowUpDate,
-                    NextFollowUpDate = dto.NextFollowUpDate,
+                    LastFollowUpDate = ToUtc(dto.LastFollowUpDate),
+                    NextFollowUpDate = ToUtc(dto.NextFollowUpDate),
                     Outcome = dto.Outcome,
                     Active = dto.Active,
                     Notes = dto.Notes,
@@ -487,7 +496,7 @@ namespace HospitalSys.Controllers.Doctor
                     .FirstOrDefaultAsync(x => x.HepatitisManagementID == id && x.PatientID == patientId);
                 if (entity == null) return NotFound(new { message = "Hepatitis record not found." });
 
-                entity.DiagnosisDate = dto.DiagnosisDate;
+                entity.DiagnosisDate = ToUtc(dto.DiagnosisDate);
                 entity.HepatitisType = dto.HepatitisType;
                 entity.DiagnosticMethod = dto.DiagnosticMethod;
                 entity.DiseaseStatus = dto.DiseaseStatus;
@@ -497,8 +506,8 @@ namespace HospitalSys.Controllers.Doctor
                 entity.TreatmentPlan = dto.TreatmentPlan;
                 entity.TreatmentStatus = dto.TreatmentStatus;
                 entity.LaboratoryMonitoringPlan = dto.LaboratoryMonitoringPlan;
-                entity.LastFollowUpDate = dto.LastFollowUpDate;
-                entity.NextFollowUpDate = dto.NextFollowUpDate;
+                entity.LastFollowUpDate = ToUtc(dto.LastFollowUpDate);
+                entity.NextFollowUpDate = ToUtc(dto.NextFollowUpDate);
                 entity.Outcome = dto.Outcome;
                 entity.Active = dto.Active;
                 entity.Notes = dto.Notes;
@@ -571,7 +580,7 @@ namespace HospitalSys.Controllers.Doctor
                 var entity = new HypertensionManagement
                 {
                     PatientID = patientId,
-                    DiagnosisDate = dto.DiagnosisDate,
+                    DiagnosisDate = ToUtc(dto.DiagnosisDate),
                     HypertensionType = dto.HypertensionType,
                     DiagnosisMethod = dto.DiagnosisMethod,
                     RiskFactors = dto.RiskFactors,
@@ -581,8 +590,8 @@ namespace HospitalSys.Controllers.Doctor
                     ManagementPlan = dto.ManagementPlan,
                     LifestyleAdvice = dto.LifestyleAdvice,
                     TreatmentStatus = dto.TreatmentStatus,
-                    LastFollowUpDate = dto.LastFollowUpDate,
-                    NextFollowUpDate = dto.NextFollowUpDate,
+                    LastFollowUpDate = ToUtc(dto.LastFollowUpDate),
+                    NextFollowUpDate = ToUtc(dto.NextFollowUpDate),
                     Active = dto.Active,
                     Notes = dto.Notes,
                     CreatedAt = DateTime.UtcNow
@@ -606,7 +615,7 @@ namespace HospitalSys.Controllers.Doctor
                     .FirstOrDefaultAsync(x => x.HypertensionManagementID == id && x.PatientID == patientId);
                 if (entity == null) return NotFound(new { message = "Hypertension record not found." });
 
-                entity.DiagnosisDate = dto.DiagnosisDate;
+                entity.DiagnosisDate = ToUtc(dto.DiagnosisDate);
                 entity.HypertensionType = dto.HypertensionType;
                 entity.DiagnosisMethod = dto.DiagnosisMethod;
                 entity.RiskFactors = dto.RiskFactors;
@@ -616,8 +625,8 @@ namespace HospitalSys.Controllers.Doctor
                 entity.ManagementPlan = dto.ManagementPlan;
                 entity.LifestyleAdvice = dto.LifestyleAdvice;
                 entity.TreatmentStatus = dto.TreatmentStatus;
-                entity.LastFollowUpDate = dto.LastFollowUpDate;
-                entity.NextFollowUpDate = dto.NextFollowUpDate;
+                entity.LastFollowUpDate = ToUtc(dto.LastFollowUpDate);
+                entity.NextFollowUpDate = ToUtc(dto.NextFollowUpDate);
                 entity.Active = dto.Active;
                 entity.Notes = dto.Notes;
                 entity.UpdatedAt = DateTime.UtcNow;
@@ -689,7 +698,7 @@ namespace HospitalSys.Controllers.Doctor
                 var entity = new MentalHealthCare
                 {
                     PatientID = patientId,
-                    AssessmentDate = dto.AssessmentDate ?? DateTime.UtcNow,
+                    AssessmentDate = ToUtc(dto.AssessmentDate) ?? DateTime.UtcNow,
                     PresentingConcern = dto.PresentingConcern,
                     MentalHealthDiagnosis = dto.MentalHealthDiagnosis,
                     Symptoms = dto.Symptoms,
@@ -701,7 +710,7 @@ namespace HospitalSys.Controllers.Doctor
                     CounselingProvided = dto.CounselingProvided,
                     ReferralRequired = dto.ReferralRequired,
                     FollowUpPlan = dto.FollowUpPlan,
-                    NextFollowUpDate = dto.NextFollowUpDate,
+                    NextFollowUpDate = ToUtc(dto.NextFollowUpDate),
                     Active = dto.Active,
                     Notes = dto.Notes
                 };
@@ -724,7 +733,7 @@ namespace HospitalSys.Controllers.Doctor
                     .FirstOrDefaultAsync(x => x.MentalHealthCareID == id && x.PatientID == patientId);
                 if (entity == null) return NotFound(new { message = "Mental health record not found." });
 
-                if (dto.AssessmentDate.HasValue) entity.AssessmentDate = dto.AssessmentDate.Value;
+                if (dto.AssessmentDate.HasValue) entity.AssessmentDate = ToUtc(dto.AssessmentDate.Value);
                 entity.PresentingConcern = dto.PresentingConcern;
                 entity.MentalHealthDiagnosis = dto.MentalHealthDiagnosis;
                 entity.Symptoms = dto.Symptoms;
@@ -736,7 +745,7 @@ namespace HospitalSys.Controllers.Doctor
                 entity.CounselingProvided = dto.CounselingProvided;
                 entity.ReferralRequired = dto.ReferralRequired;
                 entity.FollowUpPlan = dto.FollowUpPlan;
-                entity.NextFollowUpDate = dto.NextFollowUpDate;
+                entity.NextFollowUpDate = ToUtc(dto.NextFollowUpDate);
                 entity.Active = dto.Active;
                 entity.Notes = dto.Notes;
                 entity.UpdatedAt = DateTime.UtcNow;
@@ -808,23 +817,23 @@ namespace HospitalSys.Controllers.Doctor
                 var entity = new TuberculosisManagement
                 {
                     PatientID = patientId,
-                    DiagnosisDate = dto.DiagnosisDate,
+                    DiagnosisDate = ToUtc(dto.DiagnosisDate),
                     TBType = dto.TBType,
                     SiteOfTB = dto.SiteOfTB,
                     DiagnosticMethod = dto.DiagnosticMethod,
                     Symptoms = dto.Symptoms,
                     DrugResistanceStatus = dto.DrugResistanceStatus,
-                    TreatmentStartDate = dto.TreatmentStartDate,
-                    ExpectedTreatmentEndDate = dto.ExpectedTreatmentEndDate,
-                    ActualTreatmentEndDate = dto.ActualTreatmentEndDate,
+                    TreatmentStartDate = ToUtc(dto.TreatmentStartDate),
+                    ExpectedTreatmentEndDate = ToUtc(dto.ExpectedTreatmentEndDate),
+                    ActualTreatmentEndDate = ToUtc(dto.ActualTreatmentEndDate),
                     TreatmentRegimen = dto.TreatmentRegimen,
                     TreatmentStatus = dto.TreatmentStatus,
                     AdherenceStatus = dto.AdherenceStatus,
                     TreatmentResponse = dto.TreatmentResponse,
                     Complications = dto.Complications,
                     ContactTracingStatus = dto.ContactTracingStatus,
-                    LastFollowUpDate = dto.LastFollowUpDate,
-                    NextFollowUpDate = dto.NextFollowUpDate,
+                    LastFollowUpDate = ToUtc(dto.LastFollowUpDate),
+                    NextFollowUpDate = ToUtc(dto.NextFollowUpDate),
                     Outcome = dto.Outcome,
                     Active = dto.Active,
                     Notes = dto.Notes,
@@ -849,23 +858,23 @@ namespace HospitalSys.Controllers.Doctor
                     .FirstOrDefaultAsync(x => x.TuberculosisManagementID == id && x.PatientID == patientId);
                 if (entity == null) return NotFound(new { message = "Tuberculosis record not found." });
 
-                entity.DiagnosisDate = dto.DiagnosisDate;
+                entity.DiagnosisDate = ToUtc(dto.DiagnosisDate);
                 entity.TBType = dto.TBType;
                 entity.SiteOfTB = dto.SiteOfTB;
                 entity.DiagnosticMethod = dto.DiagnosticMethod;
                 entity.Symptoms = dto.Symptoms;
                 entity.DrugResistanceStatus = dto.DrugResistanceStatus;
-                entity.TreatmentStartDate = dto.TreatmentStartDate;
-                entity.ExpectedTreatmentEndDate = dto.ExpectedTreatmentEndDate;
-                entity.ActualTreatmentEndDate = dto.ActualTreatmentEndDate;
+                entity.TreatmentStartDate = ToUtc(dto.TreatmentStartDate);
+                entity.ExpectedTreatmentEndDate = ToUtc(dto.ExpectedTreatmentEndDate);
+                entity.ActualTreatmentEndDate = ToUtc(dto.ActualTreatmentEndDate);
                 entity.TreatmentRegimen = dto.TreatmentRegimen;
                 entity.TreatmentStatus = dto.TreatmentStatus;
                 entity.AdherenceStatus = dto.AdherenceStatus;
                 entity.TreatmentResponse = dto.TreatmentResponse;
                 entity.Complications = dto.Complications;
                 entity.ContactTracingStatus = dto.ContactTracingStatus;
-                entity.LastFollowUpDate = dto.LastFollowUpDate;
-                entity.NextFollowUpDate = dto.NextFollowUpDate;
+                entity.LastFollowUpDate = ToUtc(dto.LastFollowUpDate);
+                entity.NextFollowUpDate = ToUtc(dto.NextFollowUpDate);
                 entity.Outcome = dto.Outcome;
                 entity.Active = dto.Active;
                 entity.Notes = dto.Notes;

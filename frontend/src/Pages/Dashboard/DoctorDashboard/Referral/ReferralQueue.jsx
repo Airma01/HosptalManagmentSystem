@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getIncomingReferrals } from "../Services/referralApi";
+import { getIncomingReferrals, acceptReferral } from "../Services/referralApi";
 import ReferralQueueCard from "../Components/ReferralQueueCard";
 import ReferralTable from "../Components/ReferralTable";
 
@@ -41,6 +41,8 @@ export default function ReferralQueue() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [urgencyFilter, setUrgencyFilter] = useState("all");
+  const [acceptingId, setAcceptingId] = useState(null);
+  const [actionError, setActionError] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -117,6 +119,26 @@ export default function ReferralQueue() {
     });
   }, [rows, search, statusFilter, urgencyFilter]);
 
+  const handleAccept = async (referralId) => {
+    if (!referralId) return;
+    setAcceptingId(referralId);
+    setActionError("");
+    try {
+      await acceptReferral(referralId);
+      await load();
+    } catch (err) {
+      const status = err.response?.status;
+      const msg = err.response?.data?.message;
+      if (status === 401) setActionError("Unauthorized. Please log in again.");
+      else if (status === 403) setActionError("You are not authorized to accept this referral.");
+      else if (status === 404) setActionError(msg || "Referral or associated triage/visit not found.");
+      else if (status === 409) setActionError(msg || "This referral cannot be accepted in its current status.");
+      else setActionError(msg || "Failed to accept referral.");
+    } finally {
+      setAcceptingId(null);
+    }
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -137,7 +159,6 @@ export default function ReferralQueue() {
         </button>
       </div>
 
-      {/* Summary cards — computed from API data */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <ReferralQueueCard title="Pending" value={stats.pending} icon="bi-clock" tone="amber" />
         <ReferralQueueCard title="Today" value={stats.today} icon="bi-calendar" tone="indigo" />
@@ -145,7 +166,6 @@ export default function ReferralQueue() {
         <ReferralQueueCard title="Urgent" value={stats.urgent} icon="bi-exclamation-triangle" tone="rose" />
       </div>
 
-      {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1">
           <i className="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
@@ -190,6 +210,13 @@ export default function ReferralQueue() {
         </div>
       )}
 
+      {actionError && (
+        <div className="rounded-lg bg-rose-50 border border-rose-100 px-4 py-3 text-sm text-rose-700 flex items-start gap-2">
+          <i className="bi bi-exclamation-triangle mt-0.5" />
+          <span>{actionError}</span>
+        </div>
+      )}
+
       {loading ? (
         <div className="bg-white border border-slate-200 rounded-xl p-12 text-center shadow-sm">
           <div className="inline-block w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
@@ -199,6 +226,8 @@ export default function ReferralQueue() {
         <ReferralTable
           rows={filtered}
           onView={(id) => navigate(`/doctor/referrals/${id}`)}
+          onAccept={handleAccept}
+          acceptingId={acceptingId}
         />
       )}
     </div>
