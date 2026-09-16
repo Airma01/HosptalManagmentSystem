@@ -171,28 +171,36 @@ export default function ChildHealthDashboard() {
 
   if (selectedChildId == null) {
     return (
-      <div className="space-y-4 max-w-5xl mx-auto">
+      <div className="space-y-4 max-w-5xl mx-auto px-2 sm:px-0">
         <button
           type="button"
           onClick={() => navigate(base)}
           className="text-sm text-slate-500 hover:text-sky-600"
         >
-          <i className="bi bi-arrow-left" /> Dashboard
+          <i className="bi bi-arrow-left" /> MCH Dashboard
         </button>
 
-        <div className="bg-white border rounded-xl p-4">
-          <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-            <i className="bi bi-emoji-smile text-sky-600" /> Child Health
-          </h2>
-          <p className="text-xs text-slate-500 mt-1">
-            Mother Patient ID {motherPatientId}
-            {motherVisitId ? ` · Visit ${motherVisitId}` : ""}
-          </p>
-          <p className="text-xs text-slate-500 mt-1">
-            Create a visit for the child first (or Open will create one if
-            missing), then manage growth, immunization, and other records under
-            the child PatientID and VisitID.
-          </p>
+        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+          <div className="bg-gradient-to-r from-sky-50 to-cyan-50 border-b border-sky-100 px-4 py-2.5 flex items-center gap-2">
+            <i className="bi bi-emoji-smile text-sky-600" />
+            <span className="text-sm font-semibold text-slate-800">Child Health</span>
+          </div>
+          <div className="p-4 space-y-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+              <div>
+                <div className="text-xs text-slate-500 uppercase tracking-wide">Mother Patient ID</div>
+                <div className="font-medium text-slate-900">#{motherPatientId}</div>
+              </div>
+              <div>
+                <div className="text-xs text-slate-500 uppercase tracking-wide">Mother Visit</div>
+                <div className="font-medium text-slate-900">{motherVisitId ? `#${motherVisitId}` : "—"}</div>
+              </div>
+            </div>
+            <p className="text-xs text-slate-500 pt-2 border-t border-slate-100">
+              Relationship: Mother → Pregnancy → Delivery → Child Birth → Child Patient → Child Health.
+              Open a child to manage neonatal care, growth, immunization, and IMNCI under the child&apos;s Patient ID and Visit ID.
+            </p>
+          </div>
         </div>
 
         {actionMsg ? (

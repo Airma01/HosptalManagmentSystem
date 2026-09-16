@@ -1,9 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import API from "../../../../../Config/API";
+import MCHContextHeader from "../shared/MCHContextHeader";
+import MCHModuleNav from "../shared/MCHModuleNav";
+import { Field, fmtDate } from "../shared/Field";
 
 export default function ANCVisitDetails() {
   const { patientId, visitId, ancVisitId } = useParams();
+  const [sp] = useSearchParams();
+  const pregnancyId = sp.get("pregnancyId") || "";
   const navigate = useNavigate();
   const base = `/doctor/maternal/patient/${patientId}/${visitId}`;
   const [data, setData] = useState(null);
@@ -25,35 +30,85 @@ export default function ANCVisitDetails() {
 
   useEffect(() => { load(); }, [load]);
 
+  const pregId = pregnancyId || data?.pregnancyID;
+
   return (
-    <div className="space-y-4 max-w-3xl mx-auto">
-      <button type="button" onClick={() => navigate(`${base}/anc`)} className="text-sm text-slate-500 hover:text-rose-600"><i className="bi bi-arrow-left" /> ANC list</button>
-      {loading && <div className="bg-white border rounded-xl p-8 text-center text-slate-500">Loading...</div>}
-      {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">{error}</div>}
+    <div className="space-y-4 max-w-4xl mx-auto px-2 sm:px-0">
+      <MCHModuleNav patientId={patientId} visitId={visitId} pregnancyId={pregId} />
+      <MCHContextHeader
+        patientId={patientId}
+        visitId={visitId}
+        pregnancyId={pregId}
+        moduleTitle={`ANC Visit #${ancVisitId}`}
+        moduleIcon="bi-clipboard2-pulse"
+      />
+
+      <button
+        type="button"
+        onClick={() => navigate(`${base}/anc${pregId ? `?pregnancyId=${pregId}` : ""}`)}
+        className="text-sm text-slate-500 hover:text-rose-600"
+      >
+        <i className="bi bi-arrow-left" /> Back to ANC list
+      </button>
+
+      {loading && (
+        <div className="bg-white border border-slate-200 rounded-xl p-8 text-center text-slate-500 text-sm">
+          Loading ANC visit details...
+        </div>
+      )}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">{error}</div>
+      )}
       {!loading && data && (
-        <div className="bg-white border rounded-xl p-5 shadow-sm space-y-3 text-sm">
-          <h2 className="text-lg font-semibold">ANC Visit #{data.ancVisitID}</h2>
-          <div className="grid grid-cols-2 gap-3">
-            <div><span className="text-slate-400 text-xs">Pregnancy</span><p>#{data.pregnancyID}</p></div>
-            <div><span className="text-slate-400 text-xs">Patient visit</span><p>#{data.patientVisitID}</p></div>
-            <div><span className="text-slate-400 text-xs">Date</span><p>{data.visitDate ? new Date(data.visitDate).toLocaleString() : "—"}</p></div>
-            <div><span className="text-slate-400 text-xs">GA weeks</span><p>{data.gestationalAgeWeeks ?? "—"}</p></div>
-            <div className="col-span-2"><span className="text-slate-400 text-xs">Chief complaint</span><p>{data.chiefComplaint || "—"}</p></div>
-            <div><span className="text-slate-400 text-xs">Maternal</span><p>{data.maternalCondition || "—"}</p></div>
-            <div><span className="text-slate-400 text-xs">Fetal</span><p>{data.fetalCondition || "—"}</p></div>
-            <div><span className="text-slate-400 text-xs">FHR</span><p>{data.fetalHeartRate || "—"}</p></div>
-            <div><span className="text-slate-400 text-xs">Fundal height</span><p>{data.fundalHeight || "—"}</p></div>
-            <div className="col-span-2"><span className="text-slate-400 text-xs">Treatment plan</span><p>{data.treatmentPlan || "—"}</p></div>
-            <div className="col-span-2"><span className="text-slate-400 text-xs">Notes</span><p>{data.notes || "—"}</p></div>
+        <div className="space-y-4">
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+            <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">Visit Information</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <Field label="ANC Visit ID" value={`#${data.ancVisitID}`} />
+              <Field label="Pregnancy ID" value={`#${data.pregnancyID}`} />
+              <Field label="Patient Visit ID" value={`#${data.patientVisitID}`} />
+              <Field label="Visit Date" value={fmtDate(data.visitDate, true)} />
+              <Field label="Gestational Age" value={data.gestationalAgeWeeks} unit="weeks" />
+              <Field label="Recorded By User ID" value={data.recordedByUserID} />
+            </div>
           </div>
+
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+            <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">Clinical Findings</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <Field label="Chief Complaint" value={data.chiefComplaint} className="col-span-2 sm:col-span-3" />
+              <Field label="Maternal Condition" value={data.maternalCondition} />
+              <Field label="Fetal Condition" value={data.fetalCondition} />
+              <Field label="Fetal Heart Rate" value={data.fetalHeartRate} />
+              <Field label="Fundal Height" value={data.fundalHeight} />
+              <Field label="Edema" value={data.edema} />
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+            <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">Assessment & Plan</h2>
+            <div className="grid grid-cols-1 gap-4">
+              <Field label="Counseling Provided" value={data.counselingProvided} />
+              <Field label="Treatment Plan" value={data.treatmentPlan} />
+              <Field label="Notes" value={data.notes} />
+            </div>
+          </div>
+
           {Array.isArray(data.riskAssessments) && data.riskAssessments.length > 0 && (
-            <div className="pt-3 border-t">
-              <p className="font-medium mb-2">Linked risk assessments</p>
-              <ul className="space-y-1 text-xs text-slate-600">
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+              <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">Linked Risk Assessments</h2>
+              <div className="space-y-3">
                 {data.riskAssessments.map((r) => (
-                  <li key={r.pregnancyRiskAssessmentID}>#{r.pregnancyRiskAssessmentID} · {r.riskCategory || "—"} · High risk: {r.isHighRisk ? "Yes" : "No"}</li>
+                  <div key={r.pregnancyRiskAssessmentID} className="border border-slate-100 rounded-lg p-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                    <Field label="Assessment ID" value={`#${r.pregnancyRiskAssessmentID}`} />
+                    <Field label="Date" value={fmtDate(r.assessmentDate)} />
+                    <Field label="High Risk" value={r.isHighRisk ? "Yes" : "No"} />
+                    <Field label="Category" value={r.riskCategory} />
+                    <Field label="Risk Factor" value={r.riskFactor} className="col-span-2" />
+                    <Field label="Description" value={r.riskDescription} className="col-span-2" />
+                  </div>
                 ))}
-              </ul>
+              </div>
             </div>
           )}
         </div>
