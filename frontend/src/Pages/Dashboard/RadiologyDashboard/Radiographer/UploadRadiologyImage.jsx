@@ -27,7 +27,8 @@ export default function UploadRadiologyImage() {
       await API.post(`/radiology/Radiographer/results/${id}/upload`, form, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      setMessage('Upload successful.');
+      // Backend persists Status = "Completed" on the parent RadiologyRequest.
+      setMessage('Upload successful. Request status is now Completed.');
       setTimeout(() => navigate(`/radiology/radiographer/requests/${id}`), 800);
     } catch (err) {
       setError(err.response?.data?.message || 'Upload failed.');

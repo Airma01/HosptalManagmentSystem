@@ -118,12 +118,9 @@ namespace HospitalSys.Controllers.Radiology
 
                 _context.RadiologyResults.Add(entity);
 
-                // Move request toward completed workflow when a result is recorded
-                if (string.IsNullOrWhiteSpace(request.Status) ||
-                    request.Status.Equals("Pending", StringComparison.OrdinalIgnoreCase))
-                {
-                    request.Status = "InProgress";
-                }
+                // Successful result submission completes the parent request.
+                // Status is string; existing project value is "Completed" (not "Complete").
+                request.Status = "Completed";
 
                 await _context.SaveChangesAsync();
 

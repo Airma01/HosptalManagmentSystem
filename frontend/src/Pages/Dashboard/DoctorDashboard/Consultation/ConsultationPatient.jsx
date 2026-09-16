@@ -363,11 +363,13 @@ export default function ConsultationPatient() {
       alert("Start a consultation first.");
       return;
     }
+    // Workflow status must always start as Requested.
+    // "Urgent" must not replace Requested (there is no separate Priority field on RadiologyRequest).
     const requests = radItems
       .filter((r) => r.radiologyTestTypeID)
       .map((r) => ({
         radiologyTestTypeID: Number(r.radiologyTestTypeID),
-        status: r.status || "Requested",
+        status: "Requested",
       }));
     if (requests.length === 0) {
       alert("Add at least one radiology test.");
@@ -1247,8 +1249,9 @@ export default function ConsultationPatient() {
                             setRadItems(next);
                           }}
                         >
+                          {/* Workflow status only. New requests always start as Requested.
+                              Urgent must not be used as Status (no separate Priority field). */}
                           <option value="Requested">Requested</option>
-                          <option value="Urgent">Urgent</option>
                         </select>
                       </Field>
                       <div className="flex items-end">

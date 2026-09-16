@@ -314,8 +314,9 @@ namespace HospitalSys.Controllers.Radiology
 
                 _context.RadiologyResults.Add(entity);
 
-                if (IsPendingLike(request.Status))
-                    request.Status = "InProgress";
+                // Successful result submission completes the request workflow.
+                // Status is a string field (no enum); project convention is "Completed".
+                request.Status = "Completed";
 
                 await _context.SaveChangesAsync();
 
@@ -407,8 +408,9 @@ namespace HospitalSys.Controllers.Radiology
 
                 _context.RadiologyResults.Add(entity);
 
-                if (IsPendingLike(request.Status))
-                    request.Status = "InProgress";
+                // Successful result submission (image + optional notes) completes the request.
+                // Persisted in the same SaveChanges as the new RadiologyResult.
+                request.Status = "Completed";
 
                 await _context.SaveChangesAsync();
 

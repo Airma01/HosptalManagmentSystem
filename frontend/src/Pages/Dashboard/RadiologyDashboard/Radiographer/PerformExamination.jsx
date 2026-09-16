@@ -52,7 +52,8 @@ export default function PerformExamination() {
     // Do NOT set Content-Type — axios + browser handle boundary
     await API.post(`/radiology/Radiographer/results/${id}/upload`, form);
 
-    setMessage("Image uploaded and result saved.");
+    // Backend sets RadiologyRequest.Status = "Completed" on successful upload.
+    setMessage("Result submitted successfully. Request status is now Completed.");
     await load();
     setFile(null);
   } catch (err) {
