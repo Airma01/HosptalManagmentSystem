@@ -12,7 +12,7 @@ export default function Immunization() {
   const [show, setShow] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
-  const [form, setForm] = useState({ patientVisitID: visitId || "" });
+  const [form, setForm] = useState({ patientVisitID: "" });
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   const [canWrite, setCanWrite] = useState(false);
   useEffect(() => {

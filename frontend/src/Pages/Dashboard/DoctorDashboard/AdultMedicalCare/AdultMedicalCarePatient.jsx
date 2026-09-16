@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import ClinicalRecordAccordion from "../Components/ClinicalRecordAccordion";
 import { useNavigate, useParams } from "react-router-dom";
 import API from "../../../../Config/API";
 
@@ -368,56 +369,27 @@ export default function AdultMedicalCarePatient() {
           </div>
         </div>
 
-        <div className="lg:col-span-9">
-          <div className="bg-white border rounded-xl shadow-sm">
-            <div className="flex items-center justify-between px-5 py-4 border-b">
-              <h3 className="font-semibold text-slate-800">{careMeta.label}</h3>
-              <button
-                type="button"
-                onClick={openCreate}
-                className="px-3 py-1.5 text-xs rounded-lg bg-emerald-600 text-white"
-              >
-                + Add record
-              </button>
+        <div className="lg:col-span-9 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="text-xs text-slate-500">
+              Showing complete clinical data for {careMeta.label}
             </div>
-            {rows.length === 0 ? (
-              <p className="p-5 text-sm text-slate-500">No records.</p>
-            ) : (
-              <div className="divide-y">
-                {rows.map((r) => (
-                  <div key={r[careMeta.idKey]} className="p-4 text-sm">
-                    <div className="flex justify-between gap-2">
-                      <p className="font-medium text-slate-800">
-                        #{r[careMeta.idKey]}
-                        {r.active === false && (
-                          <span className="ml-2 text-xs text-slate-400">Inactive</span>
-                        )}
-                      </p>
-                      <div className="space-x-2">
-                        <button
-                          type="button"
-                          className="text-emerald-700 text-xs"
-                          onClick={() => openEdit(r)}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          className="text-red-600 text-xs"
-                          onClick={() => setConfirmDelete(r[careMeta.idKey])}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                    <pre className="mt-2 text-xs text-slate-500 whitespace-pre-wrap font-sans">
-                      {summarizeRecord(active, r)}
-                    </pre>
-                  </div>
-                ))}
-              </div>
-            )}
+            <button
+              type="button"
+              onClick={openCreate}
+              className="px-3 py-1.5 text-xs rounded-lg bg-emerald-600 text-white"
+            >
+              + Add record
+            </button>
           </div>
+          <ClinicalRecordAccordion
+            title={careMeta.label}
+            records={rows}
+            idKey={careMeta.idKey}
+            onEdit={openEdit}
+            onDelete={(id) => setConfirmDelete(id)}
+            excludeKeys={["patientID", "recordedByUserID"]}
+          />
         </div>
       </div>
 
@@ -597,20 +569,4 @@ function Text({ f, set, name, label, area }) {
       />
     </label>
   );
-}
-
-function summarizeRecord(key, r) {
-  const parts = [];
-  if (r.diagnosisDate) parts.push(`Diagnosed: ${new Date(r.diagnosisDate).toLocaleDateString()}`);
-  if (r.diabetesType) parts.push(`Type: ${r.diabetesType}`);
-  if (r.asthmaSeverity) parts.push(`Severity: ${r.asthmaSeverity}`);
-  if (r.hepatitisType) parts.push(`Type: ${r.hepatitisType}`);
-  if (r.hypertensionType) parts.push(`Type: ${r.hypertensionType}`);
-  if (r.tbType) parts.push(`TB: ${r.tbType}`);
-  if (r.clinicalStage) parts.push(`Stage: ${r.clinicalStage}`);
-  if (r.mentalHealthDiagnosis) parts.push(r.mentalHealthDiagnosis);
-  if (r.treatmentStatus) parts.push(`Tx: ${r.treatmentStatus}`);
-  if (r.symptoms) parts.push(`Symptoms: ${r.symptoms}`);
-  if (r.notes) parts.push(`Notes: ${r.notes}`);
-  return parts.join("\n") || "—";
 }

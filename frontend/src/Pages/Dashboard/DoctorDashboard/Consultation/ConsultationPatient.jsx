@@ -1,4 +1,5 @@
 import { Fragment, useCallback, useEffect, useState } from "react";
+import ClinicalRecordAccordion from "../Components/ClinicalRecordAccordion";
 import { useNavigate, useParams } from "react-router-dom";
 import API from "../../../../Config/API";
 import PrescriptionDetails from "../Prescription/PrescriptionDetails";
@@ -564,9 +565,8 @@ export default function ConsultationPatient() {
 
         {/* ========== ALLERGIES ========== */}
         {section === "allergies" && (
-          <div className="bg-white border rounded-xl shadow-sm">
-            <div className="px-5 py-4 border-b flex justify-between items-center">
-              <h3 className="font-semibold text-slate-800">Allergies</h3>
+          <div className="space-y-3">
+            <div className="flex justify-end">
               <button
                 type="button"
                 onClick={() => openCreate("allergy")}
@@ -575,59 +575,21 @@ export default function ConsultationPatient() {
                 + Add
               </button>
             </div>
-            {(data.allergies || []).length === 0 ? (
-              <p className="p-5 text-sm text-slate-500">No allergies recorded.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
-                  <thead className="bg-slate-50 text-slate-600">
-                    <tr>
-                      <th className="text-left px-4 py-2">Allergen</th>
-                      <th className="text-left px-4 py-2">Reaction</th>
-                      <th className="text-left px-4 py-2">Severity</th>
-                      <th className="text-left px-4 py-2">Active</th>
-                      <th className="text-left px-4 py-2">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {(data.allergies || []).map((a) => (
-                      <tr key={a.allergyID}>
-                        <td className="px-4 py-2">{a.allergen}</td>
-                        <td className="px-4 py-2">{a.reaction || "—"}</td>
-                        <td className="px-4 py-2">{a.severity || "—"}</td>
-                        <td className="px-4 py-2">{a.isActive ? "Yes" : "No"}</td>
-                        <td className="px-4 py-2 space-x-2">
-                          <button
-                            type="button"
-                            className="text-indigo-600 text-xs"
-                            onClick={() => openEdit("allergy", a)}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            className="text-red-600 text-xs"
-                            onClick={() =>
-                              setConfirmDelete({ type: "allergy", id: a.allergyID })
-                            }
-                          >
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+            <ClinicalRecordAccordion
+              title="Allergies"
+              records={data.allergies || []}
+              idKey="allergyID"
+              onEdit={(a) => openEdit("allergy", a)}
+              onDelete={(id) => setConfirmDelete({ type: "allergy", id })}
+              excludeKeys={["patientID"]}
+            />
           </div>
         )}
 
         {/* ========== MEDICAL HISTORY ========== */}
         {section === "medicalHistory" && (
-          <div className="bg-white border rounded-xl shadow-sm">
-            <div className="px-5 py-4 border-b flex justify-between items-center">
-              <h3 className="font-semibold text-slate-800">Medical History</h3>
+          <div className="space-y-3">
+            <div className="flex justify-end">
               <button
                 type="button"
                 onClick={() => openCreate("medicalHistory")}
@@ -636,64 +598,21 @@ export default function ConsultationPatient() {
                 + Add
               </button>
             </div>
-            {(data.medicalHistory || []).length === 0 ? (
-              <p className="p-5 text-sm text-slate-500">No medical history.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
-                  <thead className="bg-slate-50 text-slate-600">
-                    <tr>
-                      <th className="text-left px-4 py-2">Condition</th>
-                      <th className="text-left px-4 py-2">Diagnosed</th>
-                      <th className="text-left px-4 py-2">Status</th>
-                      <th className="text-left px-4 py-2">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {(data.medicalHistory || []).map((m) => (
-                      <tr key={m.medicalHistoryID}>
-                        <td className="px-4 py-2">{m.conditionName}</td>
-                        <td className="px-4 py-2">
-                          {m.diagnosedDate
-                            ? new Date(m.diagnosedDate).toLocaleDateString()
-                            : "—"}
-                        </td>
-                        <td className="px-4 py-2">{m.status || "—"}</td>
-                        <td className="px-4 py-2 space-x-2">
-                          <button
-                            type="button"
-                            className="text-indigo-600 text-xs"
-                            onClick={() => openEdit("medicalHistory", m)}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            className="text-red-600 text-xs"
-                            onClick={() =>
-                              setConfirmDelete({
-                                type: "medicalHistory",
-                                id: m.medicalHistoryID,
-                              })
-                            }
-                          >
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+            <ClinicalRecordAccordion
+              title="Medical History"
+              records={data.medicalHistory || []}
+              idKey="medicalHistoryID"
+              onEdit={(m) => openEdit("medicalHistory", m)}
+              onDelete={(id) => setConfirmDelete({ type: "medicalHistory", id })}
+              excludeKeys={["patientID"]}
+            />
           </div>
         )}
 
         {/* ========== FAMILY HISTORY ========== */}
         {section === "familyHistory" && (
-          <div className="bg-white border rounded-xl shadow-sm">
-            <div className="px-5 py-4 border-b flex justify-between items-center">
-              <h3 className="font-semibold text-slate-800">Family History</h3>
+          <div className="space-y-3">
+            <div className="flex justify-end">
               <button
                 type="button"
                 onClick={() => openCreate("familyHistory")}
@@ -702,60 +621,21 @@ export default function ConsultationPatient() {
                 + Add
               </button>
             </div>
-            {(data.familyMedicalHistory || []).length === 0 ? (
-              <p className="p-5 text-sm text-slate-500">No family history.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
-                  <thead className="bg-slate-50 text-slate-600">
-                    <tr>
-                      <th className="text-left px-4 py-2">Relative</th>
-                      <th className="text-left px-4 py-2">Condition</th>
-                      <th className="text-left px-4 py-2">Notes</th>
-                      <th className="text-left px-4 py-2">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {(data.familyMedicalHistory || []).map((f) => (
-                      <tr key={f.familyMedicalHistoryID}>
-                        <td className="px-4 py-2">{f.relative}</td>
-                        <td className="px-4 py-2">{f.conditionName}</td>
-                        <td className="px-4 py-2">{f.notes || "—"}</td>
-                        <td className="px-4 py-2 space-x-2">
-                          <button
-                            type="button"
-                            className="text-indigo-600 text-xs"
-                            onClick={() => openEdit("familyHistory", f)}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            className="text-red-600 text-xs"
-                            onClick={() =>
-                              setConfirmDelete({
-                                type: "familyHistory",
-                                id: f.familyMedicalHistoryID,
-                              })
-                            }
-                          >
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+            <ClinicalRecordAccordion
+              title="Family Medical History"
+              records={data.familyMedicalHistory || []}
+              idKey="familyMedicalHistoryID"
+              onEdit={(f) => openEdit("familyHistory", f)}
+              onDelete={(id) => setConfirmDelete({ type: "familyHistory", id })}
+              excludeKeys={["patientID"]}
+            />
           </div>
         )}
 
         {/* ========== SOCIAL HISTORY ========== */}
         {section === "socialHistory" && (
-          <div className="bg-white border rounded-xl shadow-sm">
-            <div className="px-5 py-4 border-b flex justify-between items-center">
-              <h3 className="font-semibold text-slate-800">Social History</h3>
+          <div className="space-y-3">
+            <div className="flex justify-end">
               <button
                 type="button"
                 onClick={() => openCreate("socialHistory")}
@@ -764,51 +644,21 @@ export default function ConsultationPatient() {
                 + Add / Update
               </button>
             </div>
-            {(data.socialHistory || []).length === 0 ? (
-              <p className="p-5 text-sm text-slate-500">No social history.</p>
-            ) : (
-              <div className="p-5 space-y-2 text-sm">
-                {(data.socialHistory || []).map((s) => (
-                  <div key={s.socialHistoryID} className="border rounded-lg p-3">
-                    <p>Smoking: {s.smokingStatus || "—"}</p>
-                    <p>Alcohol: {s.alcoholUse || "—"}</p>
-                    <p>Occupation: {s.occupation || "—"}</p>
-                    <p>Living: {s.livingSituation || "—"}</p>
-                    <p>Activity: {s.physicalActivity || "—"}</p>
-                    <p>Notes: {s.notes || "—"}</p>
-                    <div className="mt-2 space-x-2">
-                      <button
-                        type="button"
-                        className="text-indigo-600 text-xs"
-                        onClick={() => openEdit("socialHistory", s)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        className="text-red-600 text-xs"
-                        onClick={() =>
-                          setConfirmDelete({
-                            type: "socialHistory",
-                            id: s.socialHistoryID,
-                          })
-                        }
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <ClinicalRecordAccordion
+              title="Social History"
+              records={data.socialHistory || []}
+              idKey="socialHistoryID"
+              onEdit={(s) => openEdit("socialHistory", s)}
+              onDelete={(id) => setConfirmDelete({ type: "socialHistory", id })}
+              excludeKeys={["patientID"]}
+            />
           </div>
         )}
 
         {/* ========== CONSULTATION ========== */}
         {section === "consultation" && (
-          <div className="bg-white border rounded-xl shadow-sm">
-            <div className="px-5 py-4 border-b flex justify-between items-center">
-              <h3 className="font-semibold text-slate-800">Consultations</h3>
+          <div className="space-y-3">
+            <div className="flex justify-end">
               <button
                 type="button"
                 onClick={() => openCreate("consultation")}
@@ -817,50 +667,20 @@ export default function ConsultationPatient() {
                 + New consultation
               </button>
             </div>
-            {consultations.length === 0 ? (
-              <p className="p-5 text-sm text-slate-500">No consultations yet.</p>
-            ) : (
-              <div className="divide-y">
-                {consultations.map((c) => (
-                  <div key={c.consultationID} className="p-5 text-sm space-y-1">
-                    <p className="font-medium">
-                      #{c.consultationID} ·{" "}
-                      {c.consultationDate
-                        ? new Date(c.consultationDate).toLocaleString()
-                        : "—"}
-                    </p>
-                    <p>
-                      <span className="text-slate-500">Chief complaint:</span>{" "}
-                      {c.chiefComplaint || "—"}
-                    </p>
-                    <p>
-                      <span className="text-slate-500">HPI:</span>{" "}
-                      {c.historyOfPresentIllness || "—"}
-                    </p>
-                    <p>
-                      <span className="text-slate-500">Assessment:</span>{" "}
-                      {c.assessment || "—"}
-                    </p>
-                    <p>
-                      <span className="text-slate-500">Plan:</span>{" "}
-                      {c.treatmentPlan || "—"}
-                    </p>
-                    <p>
-                      <span className="text-slate-500">Notes:</span>{" "}
-                      {c.clinicalNotes || "—"}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
+            <ClinicalRecordAccordion
+              title="Consultation"
+              records={consultations}
+              idKey="consultationID"
+              onEdit={(c) => openEdit("consultation", c)}
+              excludeKeys={["doctorID", "visitID", "physicalExaminations", "diagnoses"]}
+            />
           </div>
         )}
 
         {/* ========== PHYSICAL EXAM ========== */}
         {section === "physicalExam" && (
-          <div className="bg-white border rounded-xl shadow-sm">
-            <div className="px-5 py-4 border-b flex justify-between items-center">
-              <h3 className="font-semibold text-slate-800">Physical Examination</h3>
+          <div className="space-y-3">
+            <div className="flex justify-end">
               <button
                 type="button"
                 disabled={!primaryConsultationId}
@@ -873,28 +693,23 @@ export default function ConsultationPatient() {
               </button>
             </div>
             {visitConsultations.length === 0 ? (
-              <p className="p-5 text-sm text-slate-500">Start a consultation first.</p>
+              <p className="p-5 text-sm text-slate-500 bg-white border rounded-lg">Start a consultation first.</p>
             ) : (
-              <div className="divide-y">
-                {visitConsultations.map((c) =>
-                  (c.physicalExaminations || []).map((pe) => (
-                    <div key={pe.physicalExaminationID} className="p-4 text-sm">
-                      <p className="font-medium">{pe.examinationArea}</p>
-                      <p>{pe.findings}</p>
-                      {pe.notes && <p className="text-slate-500">{pe.notes}</p>}
-                    </div>
-                  ))
-                )}
-              </div>
+              <ClinicalRecordAccordion
+                title="Physical Examination"
+                records={visitConsultations.flatMap((c) => c.physicalExaminations || [])}
+                idKey="physicalExaminationID"
+                onEdit={(pe) => openEdit("physicalExam", pe)}
+                excludeKeys={["consultationID"]}
+              />
             )}
           </div>
         )}
 
         {/* ========== DIAGNOSIS ========== */}
         {section === "diagnosis" && (
-          <div className="bg-white border rounded-xl shadow-sm">
-            <div className="px-5 py-4 border-b flex justify-between items-center">
-              <h3 className="font-semibold text-slate-800">Diagnosis</h3>
+          <div className="space-y-3">
+            <div className="flex justify-end">
               <button
                 type="button"
                 disabled={!primaryConsultationId}
@@ -907,41 +722,23 @@ export default function ConsultationPatient() {
               </button>
             </div>
             {visitConsultations.length === 0 ? (
-              <p className="p-5 text-sm text-slate-500">Start a consultation first.</p>
+              <p className="p-5 text-sm text-slate-500 bg-white border rounded-lg">Start a consultation first.</p>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
-                  <thead className="bg-slate-50 text-slate-600">
-                    <tr>
-                      <th className="text-left px-4 py-2">Code</th>
-                      <th className="text-left px-4 py-2">Description</th>
-                      <th className="text-left px-4 py-2">Type</th>
-                      <th className="text-left px-4 py-2">Primary</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {visitConsultations.flatMap((c) =>
-                      (c.diagnoses || []).map((d) => (
-                        <tr key={d.diagnosisID}>
-                          <td className="px-4 py-2">{d.code}</td>
-                          <td className="px-4 py-2">{d.description}</td>
-                          <td className="px-4 py-2">{d.diagnosisType || "—"}</td>
-                          <td className="px-4 py-2">{d.isPrimary ? "Yes" : "No"}</td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              <ClinicalRecordAccordion
+                title="Diagnosis"
+                records={visitConsultations.flatMap((c) => c.diagnoses || [])}
+                idKey="diagnosisID"
+                onEdit={(d) => openEdit("diagnosis", d)}
+                excludeKeys={["consultationID"]}
+              />
             )}
           </div>
         )}
 
         {/* ========== PROBLEM LIST ========== */}
         {section === "problemList" && (
-          <div className="bg-white border rounded-xl shadow-sm">
-            <div className="px-5 py-4 border-b flex justify-between items-center">
-              <h3 className="font-semibold text-slate-800">Problem List</h3>
+          <div className="space-y-3">
+            <div className="flex justify-end">
               <button
                 type="button"
                 onClick={() => openCreate("problemList")}
@@ -950,52 +747,14 @@ export default function ConsultationPatient() {
                 + Add
               </button>
             </div>
-            {(data.problemList || []).length === 0 ? (
-              <p className="p-5 text-sm text-slate-500">No problems recorded.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
-                  <thead className="bg-slate-50 text-slate-600">
-                    <tr>
-                      <th className="text-left px-4 py-2">Problem</th>
-                      <th className="text-left px-4 py-2">Code</th>
-                      <th className="text-left px-4 py-2">Status</th>
-                      <th className="text-left px-4 py-2">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {(data.problemList || []).map((p) => (
-                      <tr key={p.problemListID}>
-                        <td className="px-4 py-2">{p.problemName}</td>
-                        <td className="px-4 py-2">{p.code || "—"}</td>
-                        <td className="px-4 py-2">{p.status || "—"}</td>
-                        <td className="px-4 py-2 space-x-2">
-                          <button
-                            type="button"
-                            className="text-indigo-600 text-xs"
-                            onClick={() => openEdit("problemList", p)}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            className="text-red-600 text-xs"
-                            onClick={() =>
-                              setConfirmDelete({
-                                type: "problemList",
-                                id: p.problemListID,
-                              })
-                            }
-                          >
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+            <ClinicalRecordAccordion
+              title="Problem List"
+              records={data.problemList || []}
+              idKey="problemListID"
+              onEdit={(p) => openEdit("problemList", p)}
+              onDelete={(id) => setConfirmDelete({ type: "problemList", id })}
+              excludeKeys={["patientID"]}
+            />
           </div>
         )}
 
@@ -1989,52 +1748,50 @@ export default function ConsultationPatient() {
                       </div>
 
                       {imageUrl ? (
-  <div>
-    <p className="text-xs font-medium text-slate-500 mb-2">
-      Image
-      {res.imageName ? ` — ${res.imageName}` : ""}
-    </p>
+                        <div>
+                          <p className="text-xs font-medium text-slate-500 mb-2">
+                            Image
+                            {res.imageName ? ` — ${res.imageName}` : ""}
+                          </p>
 
-    <div className="space-y-2">
-      <img
-        src={imageUrl}
-        alt={res.imageName || "Radiology image"}
-        className="max-w-full max-h-80 rounded-lg border border-slate-200 object-contain bg-slate-50"
-        onError={(e) => {
-          e.currentTarget.style.display = "none";
-          const fallback = e.currentTarget.nextElementSibling;
-          if (fallback) fallback.classList.remove("hidden");
-        }}
-      />
+                          <div className="space-y-2">
+                            <img
+                              src={imageUrl}
+                              alt={res.imageName || "Radiology image"}
+                              className="max-w-full max-h-80 rounded-lg border border-slate-200 object-contain bg-slate-50"
+                              onError={(e) => {
+                                e.currentTarget.style.display = "none";
+                                const fallback = e.currentTarget.nextElementSibling;
+                                if (fallback) fallback.classList.remove("hidden");
+                              }}
+                            />
 
-      {/* Fallback message — NOT nested inside an <a> */}
-      <p className="hidden text-xs text-red-500">
-        Image could not be loaded.{" "}
-        <a
-          href={imageUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline"
-        >
-          Open image in new tab
-        </a>
-      </p>
+                            <p className="hidden text-xs text-red-500">
+                              Image could not be loaded.{" "}
+                              <a
+                                href={imageUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="underline"
+                              >
+                                Open image in new tab
+                              </a>
+                            </p>
 
-      {/* Always available open link (not wrapping the img) */}
-      <a
-        href={imageUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:underline"
-      >
-        <i className="bi bi-box-arrow-up-right" />
-        Open full image
-      </a>
-    </div>
-  </div>
-) : (
-  <p className="text-xs text-slate-400">No image attached.</p>
-)}
+                            <a
+                              href={imageUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:underline"
+                            >
+                              <i className="bi bi-box-arrow-up-right" />
+                              Open full image
+                            </a>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-slate-400">No image attached.</p>
+                      )}
                     </div>
                   );
                 })}

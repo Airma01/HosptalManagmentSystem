@@ -12,7 +12,7 @@ export default function IMNCIEncounter() {
   const [show, setShow] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
-  const [form, setForm] = useState({ patientVisitID: visitId || "" });
+  const [form, setForm] = useState({ patientVisitID: "" });
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   const [canWrite, setCanWrite] = useState(false);
   useEffect(() => {
@@ -34,7 +34,7 @@ export default function IMNCIEncounter() {
   const submit = async (e) => {
     e.preventDefault(); setSaving(true); setFormError("");
     try {
-      await API.post(`${api}/imnci`, { patientVisitID: Number(form.patientVisitID || visitId), ageInMonths: form.ageInMonths ? Number(form.ageInMonths) : null, mainSymptoms: form.mainSymptoms || null, generalDangerSigns: form.generalDangerSigns || null, coughClassification: form.coughClassification || null, diarrheaClassification: form.diarrheaClassification || null, feverClassification: form.feverClassification || null, treatmentPlan: form.treatmentPlan || null });
+      await API.post(`${api}/imnci`, { patientVisitID: form.patientVisitID ? Number(form.patientVisitID) : (visitId ? Number(visitId) : 0), ageInMonths: form.ageInMonths ? Number(form.ageInMonths) : null, mainSymptoms: form.mainSymptoms || null, generalDangerSigns: form.generalDangerSigns || null, coughClassification: form.coughClassification || null, diarrheaClassification: form.diarrheaClassification || null, feverClassification: form.feverClassification || null, treatmentPlan: form.treatmentPlan || null });
       setShow(false); load();
     } catch (err) { setFormError(err.response?.data?.message || "Failed to save."); }
     finally { setSaving(false); }

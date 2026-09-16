@@ -17,27 +17,30 @@ const TABS = [
   { key: "imnci", label: "IMNCI", icon: "bi-clipboard2-pulse" },
 ];
 
+function readSessionNumber(key, fallback) {
+  try {
+    const saved = sessionStorage.getItem(key);
+    if (saved != null && saved !== "") {
+      const n = Number(saved);
+      if (!Number.isNaN(n)) return n;
+    }
+  } catch (_e) {
+    /* ignore */
+  }
+  const n = Number(fallback);
+  return Number.isNaN(n) ? 0 : n;
+}
+
 export default function ChildHealthDashboard() {
   const { patientId: routePatientId, visitId: routeVisitId } = useParams();
   const navigate = useNavigate();
 
-  // Mother id while listing; when a child is open, URL has child id + child visit id
-  const [motherPatientId, setMotherPatientId] = useState(() => {
-    try {
-      const saved = sessionStorage.getItem("mch_mother_patient_id");
-      return saved ? Number(saved) : Number(routePatientId);
-    } catch {
-      return Number(routePatientId);
-    }
-  });
-  const [motherVisitId, setMotherVisitId] = useState(() => {
-    try {
-      const saved = sessionStorage.getItem("mch_mother_visit_id");
-      return saved ? Number(saved) : Number(routeVisitId) || 0;
-    } catch {
-      return Number(routeVisitId) || 0;
-    }
-  });
+  const [motherPatientId, setMotherPatientId] = useState(() =>
+    readSessionNumber("mch_mother_patient_id", routePatientId)
+  );
+  const [motherVisitId, setMotherVisitId] = useState(() =>
+    readSessionNumber("mch_mother_visit_id", routeVisitId || 0)
+  );
 
   const base = `/doctor/maternal/patient/${motherPatientId}/${motherVisitId}`;
   const maternalApi = `/api/doctor/patient/${motherPatientId}/maternal-child`;
@@ -49,22 +52,21 @@ export default function ChildHealthDashboard() {
   const [actionMsg, setActionMsg] = useState("");
   const [busyChildId, setBusyChildId] = useState(null);
 
-  // Selected child context for module view
   const [selectedChildId, setSelectedChildId] = useState(null);
   const [selectedChild, setSelectedChild] = useState(null);
   const [selectedVisitId, setSelectedVisitId] = useState(null);
 
-  // Persist mother ids only while showing the list (route still mother)
   useEffect(() => {
-    if (!selectedChildId) {
-      setMotherPatientId(Number(routePatientId));
-      setMotherVisitId(Number(routeVisitId) || 0);
-      try {
-        sessionStorage.setItem("mch_mother_patient_id", String(routePatientId));
-        sessionStorage.setItem("mch_mother_visit_id", String(routeVisitId || 0));
-      } catch {
-        /* ignore */
-      }
+    if (selectedChildId != null) return;
+    const pid = Number(routePatientId);
+    const vid = Number(routeVisitId) || 0;
+    setMotherPatientId(pid);
+    setMotherVisitId(vid);
+    try {
+      sessionStorage.setItem("mch_mother_patient_id", String(pid));
+      sessionStorage.setItem("mch_mother_visit_id", String(vid));
+    } catch (_e) {
+      /* ignore */
     }
   }, [routePatientId, routeVisitId, selectedChildId]);
 
@@ -78,9 +80,11 @@ export default function ChildHealthDashboard() {
       setChildren(list);
     } catch (err) {
       const msg =
-        err.response?.status === 404
-          ? err.response?.data?.message || "Mother not found or no access."
-          : err.response?.data?.message || "Unable to load children for this mother.";
+        err.response && err.response.status === 404
+          ? (err.response.data && err.response.data.message) ||
+            "Mother not found or no access."
+          : (err.response && err.response.data && err.response.data.message) ||
+            "Unable to load children for this mother.";
       setError(msg);
       setChildren([]);
     } finally {
@@ -89,10 +93,11 @@ export default function ChildHealthDashboard() {
   }, [maternalApi, motherPatientId]);
 
   useEffect(() => {
-    if (!selectedChildId) loadChildren();
+    if (selectedChildId == null) {
+      loadChildren();
+    }
   }, [loadChildren, selectedChildId]);
 
-  /** Create PatientVisit for this child */
   const createVisit = async (child) => {
     setBusyChildId(child.childPatientID);
     setActionMsg("");
@@ -100,23 +105,22 @@ export default function ChildHealthDashboard() {
       const res = await API.post(
         `/api/doctor/patient/${child.childPatientID}/child-health/visits`
       );
-      const visitID = res.data?.visitID ?? res.data?.VisitID;
+      const visitID =
+        (res.data && (res.data.visitID ?? res.data.VisitID)) || null;
       setActionMsg(
         `Visit #${visitID} created for ${child.firstName} ${child.lastName}.`
       );
       await loadChildren();
     } catch (err) {
-      setActionMsg(err.response?.data?.message || "Failed to create visit for child.");
+      setActionMsg(
+        (err.response && err.response.data && err.response.data.message) ||
+          "Failed to create visit for child."
+      );
     } finally {
       setBusyChildId(null);
     }
   };
 
-  /**
-   * Open Child Health:
-   * - use latest visit if present
-   * - otherwise create one, then open with that visit id
-   */
   const openChildHealth = async (child) => {
     setBusyChildId(child.childPatientID);
     setActionMsg("");
@@ -127,7 +131,8 @@ export default function ChildHealthDashboard() {
         const res = await API.post(
           `/api/doctor/patient/${child.childPatientID}/child-health/visits`
         );
-        visitId = res.data?.visitID ?? res.data?.VisitID;
+        visitId =
+          (res.data && (res.data.visitID ?? res.data.VisitID)) || null;
       }
 
       if (!visitId) {
@@ -145,7 +150,10 @@ export default function ChildHealthDashboard() {
         { replace: true }
       );
     } catch (err) {
-      setActionMsg(err.response?.data?.message || "Failed to open child health.");
+      setActionMsg(
+        (err.response && err.response.data && err.response.data.message) ||
+          "Failed to open child health."
+      );
     } finally {
       setBusyChildId(null);
     }
@@ -155,13 +163,13 @@ export default function ChildHealthDashboard() {
     setSelectedChildId(null);
     setSelectedChild(null);
     setSelectedVisitId(null);
-    navigate(`/doctor/maternal/patient/${motherPatientId}/${motherVisitId || 0}/child-health`, {
-      replace: true,
-    });
+    navigate(
+      `/doctor/maternal/patient/${motherPatientId}/${motherVisitId || 0}/child-health`,
+      { replace: true }
+    );
   };
 
-  // --- List view ---
-  if (!selectedChildId) {
+  if (selectedChildId == null) {
     return (
       <div className="space-y-4 max-w-5xl mx-auto">
         <button
@@ -181,38 +189,39 @@ export default function ChildHealthDashboard() {
             {motherVisitId ? ` · Visit ${motherVisitId}` : ""}
           </p>
           <p className="text-xs text-slate-500 mt-1">
-            Create a visit for the child first (or Open will create one if missing), then manage
-            growth, immunization, and other records under the child&apos;s PatientID + VisitID.
+            Create a visit for the child first (or Open will create one if
+            missing), then manage growth, immunization, and other records under
+            the child PatientID and VisitID.
           </p>
         </div>
 
-        {actionMsg && (
+        {actionMsg ? (
           <div className="bg-sky-50 border border-sky-200 text-sky-800 rounded-xl px-4 py-3 text-sm">
             {actionMsg}
           </div>
-        )}
+        ) : null}
 
-        {loading && (
+        {loading ? (
           <div className="bg-white border rounded-xl p-8 text-center text-sm text-slate-500">
             Loading children...
           </div>
-        )}
+        ) : null}
 
-        {error && (
+        {error ? (
           <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
             {error}
           </div>
-        )}
+        ) : null}
 
-        {!loading && !error && children.length === 0 && (
+        {!loading && !error && children.length === 0 ? (
           <div className="bg-white border rounded-xl p-8 text-center">
             <i className="bi bi-person-hearts text-3xl text-slate-300" />
             <p className="text-sm text-slate-600 mt-2 font-medium">
               No children have been registered for this mother yet.
             </p>
             <p className="text-xs text-slate-400 mt-1">
-              Register a newborn under Delivery → Child births to create a Patient and link it
-              here.
+              Register a newborn under Delivery then Child births to create a
+              Patient and link it here.
             </p>
             <button
               type="button"
@@ -222,9 +231,9 @@ export default function ChildHealthDashboard() {
               Go to Deliveries
             </button>
           </div>
-        )}
+        ) : null}
 
-        {!loading && children.length > 0 && (
+        {!loading && children.length > 0 ? (
           <div className="space-y-3">
             <h3 className="text-sm font-medium text-slate-700">
               Children ({children.length})
@@ -242,7 +251,10 @@ export default function ChildHealthDashboard() {
                       {c.firstName} {c.lastName}
                     </p>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      MRN: <span className="font-medium text-slate-700">{c.childMRN}</span>
+                      MRN:{" "}
+                      <span className="font-medium text-slate-700">
+                        {c.childMRN}
+                      </span>
                       {c.sex ? ` · ${c.sex}` : ""}
                     </p>
                     <p className="text-xs text-slate-400 mt-0.5">
@@ -262,13 +274,15 @@ export default function ChildHealthDashboard() {
                           <i className="bi bi-check-circle me-1" />
                           Latest visit #{latestVisit}
                           {c.latestVisitDate
-                            ? ` · ${new Date(c.latestVisitDate).toLocaleDateString()}`
+                            ? ` · ${new Date(
+                                c.latestVisitDate
+                              ).toLocaleDateString()}`
                             : ""}
                         </span>
                       ) : (
                         <span className="text-amber-700">
                           <i className="bi bi-exclamation-circle me-1" />
-                          No visit yet — create one before or use Open Child Health
+                          No visit yet — create one or use Open Child Health
                         </span>
                       )}
                     </p>
@@ -297,12 +311,11 @@ export default function ChildHealthDashboard() {
               );
             })}
           </div>
-        )}
+        ) : null}
       </div>
     );
   }
 
-  // --- Selected child modules (URL = child PatientID + child VisitID) ---
   return (
     <div className="space-y-4 max-w-5xl mx-auto">
       <button
@@ -317,26 +330,27 @@ export default function ChildHealthDashboard() {
         <h2 className="font-semibold text-slate-800 flex items-center gap-2">
           <i className="bi bi-emoji-smile text-sky-600" /> Child Health
         </h2>
-        {selectedChild && (
+        {selectedChild ? (
           <p className="text-sm text-slate-700 mt-1">
             {selectedChild.firstName} {selectedChild.lastName}
             <span className="text-xs text-slate-500 ms-2">
-              MRN {selectedChild.childMRN} · Patient #{selectedChild.childPatientID}
+              MRN {selectedChild.childMRN} · Patient #
+              {selectedChild.childPatientID}
               {selectedVisitId ? ` · Visit #${selectedVisitId}` : ""}
             </span>
           </p>
-        )}
+        ) : null}
         <div className="flex flex-wrap gap-1 mt-3">
           {TABS.map((t) => (
             <button
               key={t.key}
               type="button"
               onClick={() => setTab(t.key)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
+              className={
                 tab === t.key
-                  ? "bg-sky-600 text-white"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-              }`}
+                  ? "px-3 py-1.5 rounded-lg text-xs font-medium bg-sky-600 text-white"
+                  : "px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }
             >
               <i className={`bi ${t.icon} me-1`} />
               {t.label}
@@ -383,12 +397,12 @@ function ChildHealthModules({ childPatientId, childVisitId, tab }) {
 
   return (
     <>
-      {tab === "neonatal" && <NeonatalCare />}
-      {tab === "growth" && <GrowthMonitoring />}
-      {tab === "development" && <DevelopmentAssessment />}
-      {tab === "immunization" && <Immunization />}
-      {tab === "nutrition" && <NutritionAssessment />}
-      {tab === "imnci" && <IMNCIEncounter />}
+      {tab === "neonatal" ? <NeonatalCare /> : null}
+      {tab === "growth" ? <GrowthMonitoring /> : null}
+      {tab === "development" ? <DevelopmentAssessment /> : null}
+      {tab === "immunization" ? <Immunization /> : null}
+      {tab === "nutrition" ? <NutritionAssessment /> : null}
+      {tab === "imnci" ? <IMNCIEncounter /> : null}
     </>
   );
 }
