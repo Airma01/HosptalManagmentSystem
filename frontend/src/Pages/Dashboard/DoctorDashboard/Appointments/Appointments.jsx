@@ -145,6 +145,50 @@ function parseApiDate(value) {
   return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
 }
 
+/** Calendar-day difference: appointment date − today (local). */
+function getDaysUntil(appointmentDateValue) {
+  const d = parseApiDate(appointmentDateValue);
+  if (!d) return null;
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const appt = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  return Math.round((appt.getTime() - today.getTime()) / 86400000);
+}
+
+function formatDaysLeftLabel(days) {
+  if (days == null) return "—";
+  if (days < 0) return "Past";
+  if (days === 0) return "Today";
+  if (days === 1) return "1 day left";
+  if (days <= 4) return `${days} days left`;
+  return "More than 4 days";
+}
+
+const DATE_CATEGORY_OPTIONS = [
+  { value: "all", label: "All Appointments" },
+  { value: "past", label: "Past" },
+  { value: "today", label: "Today" },
+  { value: "1", label: "1 Day Left" },
+  { value: "2", label: "2 Days Left" },
+  { value: "3", label: "3 Days Left" },
+  { value: "4", label: "4 Days Left" },
+  { value: "more", label: "More Than 4 Days" },
+];
+
+function matchesDateCategory(appointmentDateValue, category) {
+  if (category === "all") return true;
+  const days = getDaysUntil(appointmentDateValue);
+  if (days == null) return false;
+  if (category === "past") return days < 0;
+  if (category === "today") return days === 0;
+  if (category === "1") return days === 1;
+  if (category === "2") return days === 2;
+  if (category === "3") return days === 3;
+  if (category === "4") return days === 4;
+  if (category === "more") return days > 4;
+  return true;
+}
+
 /**
  * API GREGORIAN DATE – local YYYY-MM-DDTHH:mm:00
  * DO NOT use toISOString() (UTC can shift the day).
@@ -185,6 +229,7 @@ export default function Appointments() {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [dateCategory, setDateCategory] = useState("all");
 
   // Details modal
   const [details, setDetails] = useState(null);
@@ -307,6 +352,7 @@ export default function Appointments() {
       const status = (r.status || "").toLowerCase();
       if (statusFilter !== "all" && status !== statusFilter.toLowerCase())
         return false;
+      if (!matchesDateCategory(r.appointmentDate, dateCategory)) return false;
       if (!q) return true;
       return (
         String(r.patientID ?? "").includes(q) ||
@@ -317,7 +363,7 @@ export default function Appointments() {
         (r.reason || "").toLowerCase().includes(q)
       );
     });
-  }, [rows, search, statusFilter]);
+  }, [rows, search, statusFilter, dateCategory]);
 
   const statuses = useMemo(() => {
     const s = new Set(rows.map((r) => r.status).filter(Boolean));
@@ -505,6 +551,19 @@ export default function Appointments() {
             ))}
           </select>
 
+          <select
+            value={dateCategory}
+            onChange={(e) => setDateCategory(e.target.value)}
+            className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            title="Filter by days until appointment"
+          >
+            {DATE_CATEGORY_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+
           <button
             type="button"
             onClick={() => {
@@ -539,10 +598,23 @@ export default function Appointments() {
         </div>
       )}
 
+      {!loading && !error && (
+        <div className="flex items-center justify-between gap-2 text-sm text-slate-500 px-0.5">
+          <span>
+            {DATE_CATEGORY_OPTIONS.find((o) => o.value === dateCategory)?.label ||
+              "All Appointments"}
+          </span>
+          <span className="font-medium text-slate-700">
+            {filtered.length}{" "}
+            {filtered.length === 1 ? "appointment" : "appointments"}
+          </span>
+        </div>
+      )}
+
       {!loading && !error && filtered.length === 0 && (
         <div className="bg-white border border-slate-200 rounded-xl p-10 text-center text-slate-500">
           <i className="bi bi-calendar-x text-3xl" />
-          <p className="mt-2 text-sm">No appointments found.</p>
+          <p className="mt-2 text-sm">No appointments found for this category.</p>
         </div>
       )}
 
@@ -554,6 +626,7 @@ export default function Appointments() {
               <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                 <tr>
                   <th className="px-4 py-3 font-medium">Date (EC)</th>
+                  <th className="px-4 py-3 font-medium">When</th>
                   <th className="px-4 py-3 font-medium">Time</th>
                   <th className="px-4 py-3 font-medium">Patient</th>
                   <th className="px-4 py-3 font-medium">MRN</th>
@@ -566,6 +639,7 @@ export default function Appointments() {
               <tbody className="divide-y divide-slate-100">
                 {filtered.map((item) => {
                   const d = parseApiDate(item.appointmentDate);
+                  const daysLeft = getDaysUntil(item.appointmentDate);
                   return (
                     <tr
                       key={item.appointmentID}
@@ -573,6 +647,23 @@ export default function Appointments() {
                     >
                       <td className="px-4 py-3 whitespace-nowrap text-slate-700">
                         {formatEthiopianShort(d)}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                            daysLeft == null
+                              ? "bg-slate-100 text-slate-600"
+                              : daysLeft < 0
+                                ? "bg-slate-100 text-slate-500"
+                                : daysLeft === 0
+                                  ? "bg-emerald-50 text-emerald-700"
+                                  : daysLeft <= 2
+                                    ? "bg-amber-50 text-amber-700"
+                                    : "bg-blue-50 text-blue-700"
+                          }`}
+                        >
+                          {formatDaysLeftLabel(daysLeft)}
+                        </span>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-slate-700">
                         {d

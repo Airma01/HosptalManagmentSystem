@@ -55,18 +55,22 @@ namespace HospitalSys.Controllers.Doctor
                     .Include(t => t.PatientVisit!)
                         .ThenInclude(v => v.Patient)
                     .Include(t => t.ClinicalDepartment)
+                    .Include(t => t.TriageDepartment)
                     .OrderByDescending(t => t.PatientVisit!.VisitDate)
                     .Select(t => new DoctorTriageQueueItemDto
                     {
                         TriageId = t.TriageId,
                         PatientID = t.PatientVisit!.PatientID,
                         PatientName = t.PatientVisit.Patient!.FirstName + " " + t.PatientVisit.Patient.LastName,
+                        MRN = t.PatientVisit.Patient != null ? t.PatientVisit.Patient.MRN : "",
                         VisitID = t.VisitID,
                         VisitDate = t.PatientVisit.VisitDate,
                         VisitType = t.PatientVisit.VisitType,
                         VisitStatus = t.PatientVisit.Status,
                         ClinicalDepartmentID = t.ClinicalDepartmentID,
                         DepartmentName = t.ClinicalDepartment != null ? t.ClinicalDepartment.DepartmentName : "",
+                        TriageDepartmentID = t.TriageDepartmentID,
+                        TriageDepartmentName = t.TriageDepartment != null ? t.TriageDepartment.DepartmentName : "",
                         Temprature = t.Temprature,
                         BloodPressure = t.BloodPressure,
                         HeartRate = t.HeartRate,

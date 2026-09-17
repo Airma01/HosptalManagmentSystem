@@ -1,17 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../../../../Config/API";
+import TriageDepartmentQueueSections from "../Components/TriageDepartmentQueueSections";
 
-function formatDate(v) {
-  if (!v) return "—";
-  try {
-    return new Date(v).toLocaleString();
-  } catch {
-    return String(v);
-  }
-}
-
-/** Same department triage queue; navigates to adult care patient workspace. */
 export default function AdultMedicalCareQueue() {
   const navigate = useNavigate();
   const [rows, setRows] = useState([]);
@@ -29,7 +20,7 @@ export default function AdultMedicalCareQueue() {
         if (!cancelled) setRows(Array.isArray(res.data) ? res.data : []);
       } catch (err) {
         if (cancelled) return;
-        setError(err.response?.data?.message || "Failed to load triage queue.");
+        setError(err.response?.data?.message || "Failed to load queue.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -46,7 +37,9 @@ export default function AdultMedicalCareQueue() {
       (r) =>
         String(r.patientID ?? "").includes(q) ||
         String(r.visitID ?? "").includes(q) ||
-        (r.patientName || "").toLowerCase().includes(q)
+        String(r.mrn ?? "").toLowerCase().includes(q) ||
+        (r.patientName || "").toLowerCase().includes(q) ||
+        (r.triageDepartmentName || "").toLowerCase().includes(q)
     );
   }, [rows, search]);
 
@@ -56,7 +49,7 @@ export default function AdultMedicalCareQueue() {
         <div>
           <h2 className="text-xl font-semibold text-slate-800">Adult Medical Care Queue</h2>
           <p className="text-sm text-slate-500">
-            Select a patient from your department triage to manage chronic care
+            Select a patient from your department triage · Emergency prioritized
           </p>
         </div>
         <div className="relative">
@@ -64,74 +57,43 @@ export default function AdultMedicalCareQueue() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search..."
+            placeholder="Search name, MRN, ID..."
             className="pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-sm w-full sm:w-56 focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
         </div>
       </div>
 
       {loading && (
-        <div className="bg-white border rounded-xl p-10 text-center text-slate-500">
-          Loading queue...
-        </div>
-      )}
-      {!loading && error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm">
-          {error}
-        </div>
-      )}
-      {!loading && !error && filtered.length === 0 && (
-        <div className="bg-white border rounded-xl p-10 text-center text-slate-500">
-          No patients in the queue.
+        <div className="bg-white border border-slate-200 rounded-xl p-10 text-center text-slate-500">
+          <i className="bi bi-arrow-repeat animate-spin text-2xl" />
+          <p className="mt-2 text-sm">Loading queue...</p>
         </div>
       )}
 
-      {!loading && !error && filtered.length > 0 && (
-        <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-slate-50 text-slate-600">
-              <tr>
-                <th className="text-left px-4 py-3 font-medium">Patient</th>
-                <th className="text-left px-4 py-3 font-medium">Visit</th>
-                <th className="text-left px-4 py-3 font-medium">Status</th>
-                <th className="text-left px-4 py-3 font-medium">Department</th>
-                <th className="text-right px-4 py-3 font-medium">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filtered.map((r) => (
-                <tr key={r.triageId} className="hover:bg-slate-50">
-                  <td className="px-4 py-3">
-                    <p className="font-medium text-slate-800">{r.patientName}</p>
-                    <p className="text-xs text-slate-400">ID: {r.patientID}</p>
-                  </td>
-                  <td className="px-4 py-3">
-                    <p>#{r.visitID}</p>
-                    <p className="text-xs text-slate-400">{formatDate(r.visitDate)}</p>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="px-2 py-0.5 rounded-full text-xs bg-emerald-50 text-emerald-700">
-                      {r.visitStatus || "—"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">{r.departmentName || "—"}</td>
-                  <td className="px-4 py-3 text-right">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        navigate(`/doctor/adult/patient/${r.patientID}/${r.visitID}`)
-                      }
-                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-700"
-                    >
-                      <i className="bi bi-eye" />
-                      View
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {error && !loading && (
+        <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+          <i className="bi bi-exclamation-triangle me-2" />
+          {error}
         </div>
+      )}
+
+      {!loading && !error && (
+        <TriageDepartmentQueueSections
+          rows={filtered}
+          variant="simple"
+          renderActions={(r) => (
+            <button
+              type="button"
+              onClick={() =>
+                navigate(`/doctor/adult/patient/${r.patientID}/${r.visitID}`)
+              }
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-700"
+            >
+              <i className="bi bi-eye" />
+              View
+            </button>
+          )}
+        />
       )}
     </div>
   );

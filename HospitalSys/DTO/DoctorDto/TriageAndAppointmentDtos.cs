@@ -7,12 +7,15 @@ namespace HospitalSys.Dto.DoctorDtos
         public int TriageId { get; set; }
         public int PatientID { get; set; }
         public string PatientName { get; set; } = "";
+        public string MRN { get; set; } = "";
         public int VisitID { get; set; }
         public DateTime VisitDate { get; set; }
         public string VisitType { get; set; } = "";
         public string VisitStatus { get; set; } = "";
         public int ClinicalDepartmentID { get; set; }
         public string DepartmentName { get; set; } = "";
+        public int TriageDepartmentID { get; set; }
+        public string TriageDepartmentName { get; set; } = "";
         public double Temprature { get; set; }
         public double BloodPressure { get; set; }
         public double HeartRate { get; set; }
