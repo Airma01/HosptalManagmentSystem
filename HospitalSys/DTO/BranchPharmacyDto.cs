@@ -1,3 +1,4 @@
+
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -181,7 +182,7 @@ namespace HospitalSys.Branch.Dto
 
     public class AcceptTransferDto
     {
-        [Required]
+        // Transfer id is in the route: AcceptTransfer/{transferId}
         public int CentralTransferId { get; set; }
 
         [StringLength(500)]
@@ -190,10 +191,10 @@ namespace HospitalSys.Branch.Dto
 
     public class RejectTransferDto
     {
-        [Required]
+        // Transfer id is in the route: RejectTransfer/{transferId}
         public int CentralTransferId { get; set; }
 
-        [Required]
+        // Optional in API; frontend can still require a reason in the UI
         [StringLength(500)]
         public string RejectReason { get; set; } = "";
     }

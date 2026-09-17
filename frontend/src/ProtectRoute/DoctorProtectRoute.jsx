@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import API from "../Config/API";
 
-const ReceptionistProtectRouter = () => {
+const DoctorProtectRoute = () => {
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
 
@@ -11,11 +11,18 @@ const ReceptionistProtectRouter = () => {
 
     const checkAuth = async () => {
       try {
-        const res = await API.get(
-          "/receptionist/ReceptionistAuth/auth_me"
-        );
+        const res = await API.get("/Hospital/doctor/DoctorAuth/auth_me");
+        const data = res.data;
+        // Backend returns role "Doctor" plus doctorID / departmentID claims
         if (!cancelled) {
-          setAuthenticated(res.data?.role === "Receptionist");
+          const ok =
+            data?.role === "Doctor" &&
+            (data?.doctorID != null || data?.DoctorID != null);
+          setAuthenticated(!!ok);
+          if (ok) {
+            localStorage.setItem("user", JSON.stringify(data));
+            localStorage.setItem("role", "Doctor");
+          }
         }
       } catch {
         if (!cancelled) setAuthenticated(false);
@@ -45,4 +52,4 @@ const ReceptionistProtectRouter = () => {
   );
 };
 
-export default ReceptionistProtectRouter;
+export default DoctorProtectRoute;

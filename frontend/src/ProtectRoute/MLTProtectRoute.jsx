@@ -2,7 +2,10 @@ import { useEffect, useState } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import API from "../Config/API";
 
-const ReceptionistProtectRouter = () => {
+/** Backend role string is LaboratoryTechnician (not "MLT"). */
+const MLT_ROLE = "LaboratoryTechnician";
+
+const MLTProtectRoute = () => {
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
 
@@ -11,11 +14,9 @@ const ReceptionistProtectRouter = () => {
 
     const checkAuth = async () => {
       try {
-        const res = await API.get(
-          "/receptionist/ReceptionistAuth/auth_me"
-        );
+        const res = await API.get("/mlt/MLTAuth/auth_me");
         if (!cancelled) {
-          setAuthenticated(res.data?.role === "Receptionist");
+          setAuthenticated(res.data?.role === MLT_ROLE);
         }
       } catch {
         if (!cancelled) setAuthenticated(false);
@@ -45,4 +46,4 @@ const ReceptionistProtectRouter = () => {
   );
 };
 
-export default ReceptionistProtectRouter;
+export default MLTProtectRoute;

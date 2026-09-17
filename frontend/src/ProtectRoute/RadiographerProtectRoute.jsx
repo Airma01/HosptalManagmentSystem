@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import API from "../Config/API";
 
-const ReceptionistProtectRouter = () => {
+const RadiographerProtectRoute = () => {
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
 
@@ -12,10 +12,10 @@ const ReceptionistProtectRouter = () => {
     const checkAuth = async () => {
       try {
         const res = await API.get(
-          "/receptionist/ReceptionistAuth/auth_me"
+          "/radiographer/RadiographerAuth/auth_me"
         );
         if (!cancelled) {
-          setAuthenticated(res.data?.role === "Receptionist");
+          setAuthenticated(res.data?.role === "Radiographer");
         }
       } catch {
         if (!cancelled) setAuthenticated(false);
@@ -45,4 +45,4 @@ const ReceptionistProtectRouter = () => {
   );
 };
 
-export default ReceptionistProtectRouter;
+export default RadiographerProtectRoute;

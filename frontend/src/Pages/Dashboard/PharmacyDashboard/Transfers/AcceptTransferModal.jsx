@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import pharmacyApi from "../Services/pharmacyApi";
 
@@ -9,18 +10,41 @@ const AcceptTransferModal = ({ transfer, onClose, onComplete }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return; // prevent double submit
+
+    if (action === "reject" && !remarks.trim()) {
+      setError("Please provide a rejection reason.");
+      return;
+    }
+
     try {
       setLoading(true);
       setError("");
+      const id = transfer.centralTransferId;
       if (action === "accept") {
-        await pharmacyApi.acceptTransfer(transfer.centralTransferId, { remarks });
+        await pharmacyApi.acceptTransfer(id, {
+          centralTransferId: id,
+          remarks: remarks || "",
+        });
       } else {
-        await pharmacyApi.rejectTransfer(transfer.centralTransferId, { rejectReason: remarks });
+        await pharmacyApi.rejectTransfer(id, {
+          centralTransferId: id,
+          rejectReason: remarks.trim(),
+        });
       }
       onComplete();
     } catch (err) {
       console.error("Transfer action error:", err);
-      setError(err.response?.data?.message || `Failed to ${action} transfer.`);
+      const data = err.response?.data;
+      const msg =
+        data?.message ||
+        (data?.errors && Object.values(data.errors).flat().join(" ")) ||
+        `Failed to ${action} transfer.`;
+      setError(msg);
+      if (err.response?.status === 409) {
+        onComplete();
+        return;
+      }
       setLoading(false);
     }
   };

@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import AdminLogin from './Pages/auth/AdminLogin';
 import AdminDashboard from './Pages/Admin/AdminDashboard';
@@ -11,6 +12,9 @@ import CreatePatient from './Pages/Dashboard/ReceptionistDashboard/CreatePatient
 
 import NurseProtectRoute from "./ProtectRoute/NurseProtectRoute";
 import ReceptionistProtectRouter from "./ProtectRoute/ReceptionistProtectRouter";
+import DoctorProtectRoute from "./ProtectRoute/DoctorProtectRoute";
+import RadiographerProtectRoute from "./ProtectRoute/RadiographerProtectRoute";
+import MLTProtectRoute from "./ProtectRoute/MLTProtectRoute";
 import {
   DoctorLayout,
   DoctorDashboard,
@@ -226,33 +230,33 @@ function App() {
       <Routes>
         {/* Public routes */}
         <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="Bishoftu/login" element={<Login />} />
+        <Route path="/Bishoftu/login" element={<Login />} />
 
         {/* Admin routes */}
         <Route path="/admin/dashboard/*" element={<AdminDashboard />} />
         <Route path="/admin/dashboard/users/add" element={<AddUser />} />
 
         {/* ===== NURSE ROUTES – PROTECTED ===== */}
-      <Route >
-  <Route path="/nurse" element={<NurseLayout />}>
-    <Route index element={<Navigate to="/nurse/dashboard" replace />} />
-    <Route path="dashboard" element={<NurseDashboard />} />
-    <Route path="patients" element={<PatientListNurse />} />
-    <Route path="patients/register" element={<RegisterPatientNurse />} />
-    <Route path="patients/:id" element={<PatientDetailNurse />} />
-    <Route path="visits/today" element={<TodayVisitsNurse />} />
-    <Route path="visits/create" element={<CreateVisitNurse />} />
-    <Route path="visits/create-triage" element={<CreateVisitAndTriageNurse />} />
-    <Route path="visits/:id" element={<VisitDetailNurse />} />
-    <Route path="triage/pending" element={<PendingTriageNurse />} />
-    <Route path="triage/create" element={<CreateTriageNurse />} />
-    <Route path="triage/:id" element={<TriageDetailNurse />} />
-    <Route path="prescriptions/create" element={<CreatePrescriptionNurse />} />
-    <Route path="prescriptions/:id" element={<PrescriptionDetailNurse />} />
-    <Route path="laboratory/request" element={<RequestLabTestNurse />} />
-    <Route path="laboratory/:id" element={<LabTestDetailNurse />} />
-  </Route>
-</Route>
+        <Route element={<NurseProtectRoute />}>
+          <Route path="/nurse" element={<NurseLayout />}>
+            <Route index element={<Navigate to="/nurse/dashboard" replace />} />
+            <Route path="dashboard" element={<NurseDashboard />} />
+            <Route path="patients" element={<PatientListNurse />} />
+            <Route path="patients/register" element={<RegisterPatientNurse />} />
+            <Route path="patients/:id" element={<PatientDetailNurse />} />
+            <Route path="visits/today" element={<TodayVisitsNurse />} />
+            <Route path="visits/create" element={<CreateVisitNurse />} />
+            <Route path="visits/create-triage" element={<CreateVisitAndTriageNurse />} />
+            <Route path="visits/:id" element={<VisitDetailNurse />} />
+            <Route path="triage/pending" element={<PendingTriageNurse />} />
+            <Route path="triage/create" element={<CreateTriageNurse />} />
+            <Route path="triage/:id" element={<TriageDetailNurse />} />
+            <Route path="prescriptions/create" element={<CreatePrescriptionNurse />} />
+            <Route path="prescriptions/:id" element={<PrescriptionDetailNurse />} />
+            <Route path="laboratory/request" element={<RequestLabTestNurse />} />
+            <Route path="laboratory/:id" element={<LabTestDetailNurse />} />
+          </Route>
+        </Route>
         {/* Receptionist routes – protected */}
         <Route element={<ReceptionistProtectRouter />}>
           <Route path="/receptionist" element={<ReceptionistDashboard />}>
@@ -265,48 +269,48 @@ function App() {
         </Route>
 
         {/* Doctor routes – protected */}
-       {/* Doctor routes */}
-{/* Doctor routes */}
-<Route path="/doctor" element={<DoctorLayout />}>
-  <Route index element={<DoctorDashboard />} />
-  <Route path="consultation/triage" element={<ConsultationQueue />} />
-  <Route
-    path="consultation/patient/:patientId/:visitId"
-    element={<ConsultationPatient />}
-  />
-  <Route path="adult/triage" element={<AdultMedicalCareQueue />} />
-  <Route
-    path="adult/patient/:patientId/:visitId"
-    element={<AdultMedicalCarePatient />}
-  />
-  <Route path="maternal/triage" element={<MaternalChildQueue />} />
-  <Route path="maternal/patient/:patientId/:visitId" element={<MaternalChildDashboard />} />
-  <Route path="maternal/patient/:patientId/:visitId/pregnancies" element={<PregnancyList />} />
-  <Route path="maternal/patient/:patientId/:visitId/pregnancies/register" element={<PregnancyRegistration />} />
-  <Route path="maternal/patient/:patientId/:visitId/pregnancy/:pregnancyId" element={<PregnancyDetails />} />
-  <Route path="maternal/patient/:patientId/:visitId/anc" element={<ANCQueue />} />
-  <Route path="maternal/patient/:patientId/:visitId/anc/:ancVisitId" element={<ANCVisitDetails />} />
-  <Route path="maternal/patient/:patientId/:visitId/risk" element={<RiskAssessment />} />
-  <Route path="maternal/patient/:patientId/:visitId/high-risk" element={<HighRiskPregnancy />} />
-  <Route path="maternal/patient/:patientId/:visitId/birth-preparedness" element={<BirthPreparedness />} />
-  <Route path="maternal/patient/:patientId/:visitId/laboratory" element={<PregnancyLaboratoryOrder />} />
-  <Route path="maternal/patient/:patientId/:visitId/ultrasound" element={<PregnancyUltrasound />} />
-  <Route path="maternal/patient/:patientId/:visitId/medication" element={<PregnancyMedication />} />
-  <Route path="maternal/patient/:patientId/:visitId/labor" element={<LaborRecord />} />
-  <Route path="maternal/patient/:patientId/:visitId/delivery" element={<DeliveryRecord />} />
-  <Route path="maternal/patient/:patientId/:visitId/delivery/:deliveryId/complications" element={<DeliveryComplication />} />
-  <Route path="maternal/patient/:patientId/:visitId/delivery/:deliveryId/childbirths" element={<ChildBirth />} />
-  <Route path="maternal/patient/:patientId/:visitId/pnc" element={<PNCVisit />} />
-  <Route path="maternal/patient/:patientId/:visitId/family-planning" element={<FamilyPlanning />} />
-  <Route path="maternal/patient/:patientId/:visitId/child-health" element={<ChildHealthDashboard />} />
+        <Route element={<DoctorProtectRoute />}>
+          <Route path="/doctor" element={<DoctorLayout />}>
+            <Route index element={<DoctorDashboard />} />
+            <Route path="consultation/triage" element={<ConsultationQueue />} />
+            <Route
+              path="consultation/patient/:patientId/:visitId"
+              element={<ConsultationPatient />}
+            />
+            <Route path="adult/triage" element={<AdultMedicalCareQueue />} />
+            <Route
+              path="adult/patient/:patientId/:visitId"
+              element={<AdultMedicalCarePatient />}
+            />
+            <Route path="maternal/triage" element={<MaternalChildQueue />} />
+            <Route path="maternal/patient/:patientId/:visitId" element={<MaternalChildDashboard />} />
+            <Route path="maternal/patient/:patientId/:visitId/pregnancies" element={<PregnancyList />} />
+            <Route path="maternal/patient/:patientId/:visitId/pregnancies/register" element={<PregnancyRegistration />} />
+            <Route path="maternal/patient/:patientId/:visitId/pregnancy/:pregnancyId" element={<PregnancyDetails />} />
+            <Route path="maternal/patient/:patientId/:visitId/anc" element={<ANCQueue />} />
+            <Route path="maternal/patient/:patientId/:visitId/anc/:ancVisitId" element={<ANCVisitDetails />} />
+            <Route path="maternal/patient/:patientId/:visitId/risk" element={<RiskAssessment />} />
+            <Route path="maternal/patient/:patientId/:visitId/high-risk" element={<HighRiskPregnancy />} />
+            <Route path="maternal/patient/:patientId/:visitId/birth-preparedness" element={<BirthPreparedness />} />
+            <Route path="maternal/patient/:patientId/:visitId/laboratory" element={<PregnancyLaboratoryOrder />} />
+            <Route path="maternal/patient/:patientId/:visitId/ultrasound" element={<PregnancyUltrasound />} />
+            <Route path="maternal/patient/:patientId/:visitId/medication" element={<PregnancyMedication />} />
+            <Route path="maternal/patient/:patientId/:visitId/labor" element={<LaborRecord />} />
+            <Route path="maternal/patient/:patientId/:visitId/delivery" element={<DeliveryRecord />} />
+            <Route path="maternal/patient/:patientId/:visitId/delivery/:deliveryId/complications" element={<DeliveryComplication />} />
+            <Route path="maternal/patient/:patientId/:visitId/delivery/:deliveryId/childbirths" element={<ChildBirth />} />
+            <Route path="maternal/patient/:patientId/:visitId/pnc" element={<PNCVisit />} />
+            <Route path="maternal/patient/:patientId/:visitId/family-planning" element={<FamilyPlanning />} />
+            <Route path="maternal/patient/:patientId/:visitId/child-health" element={<ChildHealthDashboard />} />
 
-  {/* Referrals — create MUST be above :referralId */}
-  <Route path="referrals" element={<ReferralQueue />} />
-  <Route path="referrals/create" element={<CreateReferral />} />
-  <Route path="referrals/new" element={<CreateReferral />} />
-  <Route path="referrals/:referralId" element={<ReferralDetails />} />
-  <Route path="appointments" element={<Appointments />} />
-</Route>
+            {/* Referrals — create MUST be above :referralId */}
+            <Route path="referrals" element={<ReferralQueue />} />
+            <Route path="referrals/create" element={<CreateReferral />} />
+            <Route path="referrals/new" element={<CreateReferral />} />
+            <Route path="referrals/:referralId" element={<ReferralDetails />} />
+            <Route path="appointments" element={<Appointments />} />
+          </Route>
+        </Route>
 
         {/* ===== CSM routes – protected with sidebar ===== */}
         <Route element={<CSMProtectRoute />}>
@@ -438,27 +442,33 @@ function App() {
           </Route>
         </Route>
 
-        <Route path="/mlt/dashboard" element={<MLTDashboard />} />
-        <Route path="/mlt/patients" element={<MLTPatient />} />
-        <Route path="/mlt/queue" element={<MLTQueue />} />
-        <Route path="/mlt/tests" element={<MLTTest />} />
-        <Route path="/mlt/results" element={<MLTResult />} />
-        <Route path="/mlt/reports" element={<MLTReport />} />
-        <Route path="/mlt/laboratory-sections" element={<LaboratorySection />} />
-        <Route path="/mlt/laboratory-sections/add" element={<AddSection />} />
-        <Route path="/mlt/laboratory-sections/:sectionId" element={<SectionDetails />} />
-        <Route path="/mlt/laboratory-sections/:sectionId/add-test-type" element={<AddTestType />} />
+        {/* ===== MLT routes – protected (role: LaboratoryTechnician) ===== */}
+        <Route element={<MLTProtectRoute />}>
+          <Route path="/mlt/dashboard" element={<MLTDashboard />} />
+          <Route path="/mlt/patients" element={<MLTPatient />} />
+          <Route path="/mlt/queue" element={<MLTQueue />} />
+          <Route path="/mlt/tests" element={<MLTTest />} />
+          <Route path="/mlt/results" element={<MLTResult />} />
+          <Route path="/mlt/reports" element={<MLTReport />} />
+          <Route path="/mlt/laboratory-sections" element={<LaboratorySection />} />
+          <Route path="/mlt/laboratory-sections/add" element={<AddSection />} />
+          <Route path="/mlt/laboratory-sections/:sectionId" element={<SectionDetails />} />
+          <Route path="/mlt/laboratory-sections/:sectionId/add-test-type" element={<AddTestType />} />
+        </Route>
 
         {/* ===== Radiology ===== */}
         <Route path="/radiology" element={<RadiologyDashboard />} />
 
-        <Route path="/radiology/radiographer" element={<RadiologyLayout mode="radiographer" />}>
-          <Route index element={<RadiographerDashboard />} />
-          <Route path="queue" element={<RadiographerQueue />} />
-          <Route path="completed" element={<CompletedExaminations />} />
-          <Route path="requests/:id" element={<RadiographerRequestDetails />} />
-          <Route path="requests/:id/perform" element={<PerformExamination />} />
-          <Route path="requests/:id/upload" element={<UploadRadiologyImage />} />
+        {/* Radiographer routes only – not Radiologist */}
+        <Route element={<RadiographerProtectRoute />}>
+          <Route path="/radiology/radiographer" element={<RadiologyLayout mode="radiographer" />}>
+            <Route index element={<RadiographerDashboard />} />
+            <Route path="queue" element={<RadiographerQueue />} />
+            <Route path="completed" element={<CompletedExaminations />} />
+            <Route path="requests/:id" element={<RadiographerRequestDetails />} />
+            <Route path="requests/:id/perform" element={<PerformExamination />} />
+            <Route path="requests/:id/upload" element={<UploadRadiologyImage />} />
+          </Route>
         </Route>
 
         <Route path="/radiology/radiologist" element={<RadiologyLayout mode="radiologist" />}>

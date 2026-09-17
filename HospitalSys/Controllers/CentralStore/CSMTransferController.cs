@@ -1,3 +1,4 @@
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -103,51 +104,17 @@ namespace HospitalSys.Controllers
                 _context.CentralStoreTransfers.Add(transfer);
                 await _context.SaveChangesAsync();
 
-                // Create transfer details and deduct from central inventory
+                // Record planned quantities only.
+                // Central store stock is NOT deducted here — it is dispensed (deducted)
+                // when the branch pharmacist clicks "Add to Inventory" (AcceptTransfer).
                 foreach (var item in dto.Items)
                 {
-                    var detail = new CentralStoreTransferDetail
+                    _context.CentralStoreTransferDetails.Add(new CentralStoreTransferDetail
                     {
                         CentralTransferID = transfer.CentralTransferID,
                         MedicineID = item.MedicineID,
                         QuantityTransferred = item.QuantityTransferred
-                    };
-                    _context.CentralStoreTransferDetails.Add(detail);
-
-                    // Deduct from central inventory (FIFO by expiry)
-                    var batches = await _context.CentralStoreInventories
-                        .Where(i => i.MedicineID == item.MedicineID && i.CentralPharmacyID == centralPharmacyId && i.QuantityAvailable > 0)
-                        .OrderBy(i => i.ExpiryDate)
-                        .ToListAsync();
-
-                    int remaining = item.QuantityTransferred;
-                    foreach (var batch in batches)
-                    {
-                        if (remaining <= 0) break;
-                        float deduct = Math.Min(batch.QuantityAvailable, remaining);
-                        batch.QuantityAvailable -= deduct;
-                        remaining -= (int)deduct;
-                    }
-
-                    if (remaining > 0)
-                    {
-                        await transaction.RollbackAsync();
-                        return BadRequest("Stock inconsistency during transfer");
-                    }
-                }
-
-                // Add to branch inventory
-                foreach (var item in dto.Items)
-                {
-                    var branchInventory = new BranchInventory
-                    {
-                        BranchPharmacyID = dto.BranchPharmacyID,
-                        MedicineID = item.MedicineID,
-                        QuantityAvailable = item.QuantityTransferred,
-                        ExpiryDate = DateTime.UtcNow.AddMonths(12),
-                        BatchNumber = $"TRF-{transfer.CentralTransferID}-{item.MedicineID}"
-                    };
-                    _context.BranchInventories.Add(branchInventory);
+                    });
                 }
 
                 // Update request status if provided

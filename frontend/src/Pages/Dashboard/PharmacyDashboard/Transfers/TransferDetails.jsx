@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import pharmacyApi from "../Services/pharmacyApi";
@@ -68,11 +69,18 @@ const TransferDetails = () => {
     );
   }
 
+  const canAddToInventory = (status) =>
+    ["Pending", "Dispatched", "InTransit", "Received"].includes(status);
+
   const getStatusBadge = (status) => {
     const styles = {
       Pending: "bg-yellow-100 text-yellow-800",
+      Dispatched: "bg-blue-100 text-blue-800",
+      InTransit: "bg-indigo-100 text-indigo-800",
+      Received: "bg-purple-100 text-purple-800",
       Completed: "bg-green-100 text-green-800",
       Rejected: "bg-red-100 text-red-800",
+      Cancelled: "bg-gray-100 text-gray-800",
     };
     return styles[status] || "bg-gray-100 text-gray-800";
   };
@@ -151,7 +159,7 @@ const TransferDetails = () => {
       </div>
 
       <div className="mt-4 flex flex-wrap gap-3">
-        {transfer.status === "Pending" && (
+        {canAddToInventory(transfer.status) && (
           <button
             onClick={() => setShowModal(true)}
             className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition"

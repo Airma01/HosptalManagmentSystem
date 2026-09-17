@@ -1,3 +1,4 @@
+
 using HospitalSys.Data;
 using HospitalSys.Branch.Dto;
 using HospitalSys.Models;
@@ -551,8 +552,9 @@ public async Task<IActionResult> GetAllMedicines()
                         MedicineId = d.MedicineID,
                         MedicineName = d.Medicine?.MedicineName ?? "",
                         QuantityTransferred = d.QuantityTransferred,
+                        // Expiry/batch are applied from central inventory at AcceptTransfer time
                         BatchNumber = "",
-                        ExpiryDate = DateTime.UtcNow
+                        ExpiryDate = default
                     }).ToList()
                 };
 
@@ -571,6 +573,7 @@ public async Task<IActionResult> GetAllMedicines()
             {
                 var branchId = GetBranchPharmacyId();
 
+                // Idempotency: already processed transfers must not add inventory again
                 var transfer = await _context.CentralStoreTransfers
                     .Where(t => t.BranchPharmacyID == branchId && t.CentralTransferID == transferId)
                     .Include(t => t.CentralStoreTransferDetail)
@@ -579,26 +582,139 @@ public async Task<IActionResult> GetAllMedicines()
                 if (transfer == null)
                     return NotFound(new { message = "Transfer not found." });
 
-                if (transfer.Status != "Pending")
-                    return BadRequest(new { message = "Only pending transfers can be accepted." });
-
-                foreach (var detail in transfer.CentralStoreTransferDetail)
+                if (transfer.Status == "Completed" || transfer.Status == "Closed")
                 {
-                    var branchInventory = new BranchInventory
+                    return Conflict(new
                     {
-                        BranchPharmacyID = branchId,
-                        MedicineID = detail.MedicineID,
-                        QuantityAvailable = detail.QuantityTransferred,
-                        ExpiryDate = DateTime.UtcNow.AddMonths(6),
-                        BatchNumber = "TRANSFER_" + DateTime.UtcNow.Ticks
-                    };
-                    _context.BranchInventories.Add(branchInventory);
+                        message = "Transfer already added to inventory.",
+                        success = false
+                    });
                 }
 
-                transfer.Status = "Completed";
-                await _context.SaveChangesAsync();
+                if (transfer.Status == "Rejected" || transfer.Status == "Cancelled")
+                    return BadRequest(new { message = "Cannot accept a rejected or cancelled transfer." });
 
-                return Ok(new { message = "Transfer accepted and inventory updated." });
+                // Processable statuses from CSM workflow + create default
+                var processable = new[] { "Pending", "Dispatched", "InTransit", "Received" };
+                if (!processable.Contains(transfer.Status))
+                    return BadRequest(new { message = $"Transfer status '{transfer.Status}' cannot be accepted." });
+
+                // Extra guard: batch numbers tied to this transfer
+                var expectedBatchPrefix = $"TRF-{transfer.CentralTransferID}-";
+                var alreadyAdded = await _context.BranchInventories
+                    .AnyAsync(i =>
+                        i.BranchPharmacyID == branchId &&
+                        i.BatchNumber.StartsWith(expectedBatchPrefix));
+
+                if (alreadyAdded)
+                {
+                    transfer.Status = "Completed";
+                    await _context.SaveChangesAsync();
+                    return Conflict(new
+                    {
+                        message = "Transfer already added to inventory.",
+                        success = false
+                    });
+                }
+
+                var centralPharmacyId = transfer.CentralPharmacyID;
+
+                await using var transaction = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    // Dispense FROM central store → TO branch inventory (exactly once)
+                    foreach (var detail in transfer.CentralStoreTransferDetail)
+                    {
+                        var remaining = detail.QuantityTransferred;
+
+                        // FIFO by CSM-filled ExpiryDate on central batches
+                        var batches = await _context.CentralStoreInventories
+                            .Where(i =>
+                                i.CentralPharmacyID == centralPharmacyId &&
+                                i.MedicineID == detail.MedicineID &&
+                                i.QuantityAvailable > 0)
+                            .OrderBy(i => i.ExpiryDate)
+                            .ToListAsync();
+
+                        var totalCentral = batches.Sum(b => (int)b.QuantityAvailable);
+                        if (totalCentral < remaining)
+                        {
+                            await transaction.RollbackAsync();
+                            return BadRequest(new
+                            {
+                                message =
+                                    $"Insufficient central store stock for medicine ID {detail.MedicineID}. " +
+                                    $"Needed: {remaining}, available: {totalCentral}."
+                            });
+                        }
+
+                        foreach (var batch in batches)
+                        {
+                            if (remaining <= 0) break;
+
+                            var deduct = (int)Math.Min(batch.QuantityAvailable, remaining);
+                            if (deduct <= 0) continue;
+
+                            // 1) Dispense / deduct from CSM central inventory
+                            batch.QuantityAvailable -= deduct;
+                            remaining -= deduct;
+
+                            var expiry = batch.ExpiryDate;
+                            var batchNo = !string.IsNullOrWhiteSpace(batch.BatchNumber)
+                                ? batch.BatchNumber
+                                : $"{expectedBatchPrefix}{detail.MedicineID}";
+
+                            // 2) Add the same qty + real CSM expiry/batch to branch inventory
+                            var existing = await _context.BranchInventories
+                                .FirstOrDefaultAsync(i =>
+                                    i.BranchPharmacyID == branchId &&
+                                    i.MedicineID == detail.MedicineID &&
+                                    i.BatchNumber == batchNo &&
+                                    i.ExpiryDate == expiry);
+
+                            if (existing != null)
+                            {
+                                existing.QuantityAvailable += deduct;
+                            }
+                            else
+                            {
+                                _context.BranchInventories.Add(new BranchInventory
+                                {
+                                    BranchPharmacyID = branchId,
+                                    MedicineID = detail.MedicineID,
+                                    QuantityAvailable = deduct,
+                                    // Real expiry/batch from CSM central inventory row
+                                    ExpiryDate = expiry,
+                                    BatchNumber = batchNo
+                                });
+                            }
+                        }
+
+                        if (remaining > 0)
+                        {
+                            await transaction.RollbackAsync();
+                            return BadRequest(new
+                            {
+                                message = $"Stock inconsistency while dispensing medicine ID {detail.MedicineID}."
+                            });
+                        }
+                    }
+
+                    transfer.Status = "Completed";
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    return Ok(new
+                    {
+                        success = true,
+                        message = "Transfer dispensed from central store and added to branch inventory."
+                    });
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
             }
             catch (Exception ex)
             {
@@ -607,7 +723,7 @@ public async Task<IActionResult> GetAllMedicines()
         }
 
         [HttpPut("RejectTransfer/{transferId}")]
-        public async Task<IActionResult> RejectTransfer(int transferId, [FromBody] RejectTransferDto model)
+        public async Task<IActionResult> RejectTransfer(int transferId, [FromBody] RejectTransferDto? model)
         {
             try
             {
@@ -619,13 +735,25 @@ public async Task<IActionResult> GetAllMedicines()
                 if (transfer == null)
                     return NotFound(new { message = "Transfer not found." });
 
-                if (transfer.Status != "Pending")
-                    return BadRequest(new { message = "Only pending transfers can be rejected." });
+                if (transfer.Status == "Completed" || transfer.Status == "Closed")
+                    return BadRequest(new { message = "Cannot reject a transfer already added to inventory." });
+
+                if (transfer.Status == "Rejected" || transfer.Status == "Cancelled")
+                    return BadRequest(new { message = "Transfer is already rejected or cancelled." });
+
+                var processable = new[] { "Pending", "Dispatched", "InTransit", "Received" };
+                if (!processable.Contains(transfer.Status))
+                    return BadRequest(new { message = $"Transfer status '{transfer.Status}' cannot be rejected." });
 
                 transfer.Status = "Rejected";
                 await _context.SaveChangesAsync();
 
-                return Ok(new { message = "Transfer rejected." });
+                return Ok(new
+                {
+                    success = true,
+                    message = "Transfer rejected.",
+                    rejectReason = model?.RejectReason ?? ""
+                });
             }
             catch (Exception ex)
             {

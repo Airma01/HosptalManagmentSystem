@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import pharmacyApi from "../Services/pharmacyApi";
@@ -60,11 +61,18 @@ const ReceivedTransfers = () => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentItems = filtered.slice(startIndex, startIndex + itemsPerPage);
 
+  const canAddToInventory = (status) =>
+    ["Pending", "Dispatched", "InTransit", "Received"].includes(status);
+
   const getStatusBadge = (status) => {
     const styles = {
       Pending: "bg-yellow-100 text-yellow-800",
+      Dispatched: "bg-blue-100 text-blue-800",
+      InTransit: "bg-indigo-100 text-indigo-800",
+      Received: "bg-purple-100 text-purple-800",
       Completed: "bg-green-100 text-green-800",
       Rejected: "bg-red-100 text-red-800",
+      Cancelled: "bg-gray-100 text-gray-800",
     };
     return styles[status] || "bg-gray-100 text-gray-800";
   };
@@ -156,7 +164,7 @@ const ReceivedTransfers = () => {
                         >
                           <i className="bi bi-eye"></i> View
                         </button>
-                        {t.status === "Pending" && (
+                        {canAddToInventory(t.status) && (
                           <button
                             onClick={() => handleOpenModal(t)}
                             className="text-green-600 hover:text-green-800 text-sm font-medium flex items-center gap-1"
