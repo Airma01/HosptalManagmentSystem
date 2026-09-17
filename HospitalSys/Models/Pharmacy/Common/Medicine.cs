@@ -21,7 +21,6 @@ namespace HospitalSys.Models.Pharmacy.Common
         public List<DispenseMedicineDetail> DispenseMedicineDetail {get;set;} =new();
         public List<CentralStoreInventory> CentralStoreInventory {get;set;} = new();
         public List<CentralStoreRequestDetail> CentralStoreRequestDetail {get;set;} = new();
-        public List<CentralStoreTransfer> CentralStoreTransfer {get;set;} = new();
         public List<AidStoreInventory> AidStoreInventory {get;set;} = new();
         public List<AidStoreRequestDetail> AidStoreRequestDetail {get;set;} = new();
         public List<BranchInventory> BranchInventory {get;set;} = new();
