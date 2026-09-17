@@ -60,7 +60,7 @@ namespace HospitalSys.Controllers
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
             var centralPharmacyId = GetCentralPharmacyId();
-            var centralStoreManagerId = await GetCentralStoreManagerIdAsync(); // FIX
+            var centralStoreManagerId = await GetCentralStoreManagerIdAsync();
 
             CentralStoreRequest? request = null;
             if (dto.CentralRequestID.HasValue && dto.CentralRequestID.Value > 0)
@@ -74,29 +74,35 @@ namespace HospitalSys.Controllers
                     return BadRequest("Request must be approved or partially approved");
             }
 
-            // Check stock availability
+            if (dto.Items == null || dto.Items.Count == 0)
+                return BadRequest("At least one transfer item is required.");
+
+            // Validate each selected central inventory batch
             foreach (var item in dto.Items)
             {
-                var totalStock = await _context.CentralStoreInventories
-                    .Where(i => i.MedicineID == item.MedicineID && i.CentralPharmacyID == centralPharmacyId)
-                    .SumAsync(i => i.QuantityAvailable);
+                var inv = await _context.CentralStoreInventories
+                    .FirstOrDefaultAsync(i =>
+                        i.CentralInventoryID == item.CentralInventoryID &&
+                        i.CentralPharmacyID == centralPharmacyId);
 
-                if (totalStock < item.QuantityTransferred)
-                    return BadRequest($"Insufficient stock for medicine {item.MedicineID}. Available: {totalStock}, Requested: {item.QuantityTransferred}");
+                if (inv == null)
+                    return BadRequest($"Central inventory ID {item.CentralInventoryID} not found for this store.");
+
+                if (inv.QuantityAvailable < item.QuantityTransferred)
+                    return BadRequest(
+                        $"Insufficient stock on batch '{inv.BatchNumber}' (inventory #{inv.CentralInventoryID}). " +
+                        $"Available: {inv.QuantityAvailable}, requested: {item.QuantityTransferred}");
             }
 
-            // Begin transaction
             using var transaction = await _context.Database.BeginTransactionAsync();
-
             try
             {
-                // Create transfer
                 var transfer = new CentralStoreTransfer
                 {
                     CentralRequestID = dto.CentralRequestID,
                     CentralPharmacyID = centralPharmacyId,
                     BranchPharmacyID = dto.BranchPharmacyID,
-                    CentralStoreManagerID = centralStoreManagerId, // FIXED: now valid FK
+                    CentralStoreManagerID = centralStoreManagerId,
                     TransferDate = dto.TransferDate,
                     Status = "Pending"
                 };
@@ -104,37 +110,34 @@ namespace HospitalSys.Controllers
                 _context.CentralStoreTransfers.Add(transfer);
                 await _context.SaveChangesAsync();
 
-                // Record planned quantities only.
-                // Central store stock is NOT deducted here — it is dispensed (deducted)
-                // when the branch pharmacist clicks "Add to Inventory" (AcceptTransfer).
+                // Link to inventory batches only — do NOT move stock yet.
+                // Stock moves when branch accepts (Add to Inventory).
                 foreach (var item in dto.Items)
                 {
                     _context.CentralStoreTransferDetails.Add(new CentralStoreTransferDetail
                     {
                         CentralTransferID = transfer.CentralTransferID,
-                        MedicineID = item.MedicineID,
+                        CentralInventoryID = item.CentralInventoryID,
                         QuantityTransferred = item.QuantityTransferred
                     });
                 }
 
-                // Update request status if provided
                 if (request != null)
-                {
                     request.Status = "Closed";
-                }
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
                 return Ok(new { message = "Transfer created successfully", transferId = transfer.CentralTransferID });
             }
-            catch (Exception)
+            catch
             {
                 await transaction.RollbackAsync();
                 throw;
             }
         }
 
+        
         [HttpGet("all")]
         public async Task<ActionResult<List<TransferListDto>>> GetAllTransfers()
         {
@@ -169,7 +172,8 @@ namespace HospitalSys.Controllers
                     .ThenInclude(m => m.MainPharmacyManager)
                         .ThenInclude(mm => mm.Users)
                 .Include(t => t.CentralStoreTransferDetail)
-                    .ThenInclude(d => d.Medicine)
+                    .ThenInclude(d => d.CentralStoreInventory!)
+                        .ThenInclude(i => i.Medicine)
                 .FirstOrDefaultAsync(t => t.CentralTransferID == id && t.CentralPharmacyID == centralPharmacyId);
 
             if (transfer == null) return NotFound();
@@ -187,8 +191,12 @@ namespace HospitalSys.Controllers
                 Status = transfer.Status,
                 Items = transfer.CentralStoreTransferDetail.Select(d => new TransferItemDto
                 {
-                    MedicineID = d.MedicineID,
-                    QuantityTransferred = d.QuantityTransferred
+                    CentralInventoryID = d.CentralInventoryID,
+                    QuantityTransferred = d.QuantityTransferred,
+                    MedicineID = d.CentralStoreInventory?.MedicineID,
+                    MedicineName = d.CentralStoreInventory?.Medicine?.MedicineName,
+                    ExpiryDate = d.CentralStoreInventory?.ExpiryDate,
+                    BatchNumber = d.CentralStoreInventory?.BatchNumber
                 }).ToList()
             };
 

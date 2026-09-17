@@ -137,22 +137,29 @@ namespace HospitalSys.Controllers
             var movements = new List<InventoryMovementDto>();
 
             // Transfers out (from central)
-            var transfersOut = await _context.CentralStoreTransferDetails
-                .Include(d => d.CentralStoreTransfer)
-                .Where(d => d.MedicineID == medicineId && d.CentralStoreTransfer.CentralPharmacyID == GetCentralPharmacyId())
-                .Select(d => new InventoryMovementDto
-                {
-                    InventoryID = d.CentralTransferDetailID,
-                    MedicineID = d.MedicineID,
-                    MedicineName = d.Medicine.MedicineName,
-                    MovementType = "Transfer Out",
-                    QuantityChange = -d.QuantityTransferred,
-                    RemainingQuantity = 0, // we'd need to compute
-                    MovementDate = d.CentralStoreTransfer.TransferDate,
-                    Reference = $"Transfer {d.CentralStoreTransfer.CentralTransferID}"
-                })
-                .ToListAsync();
-
+          var transfersOut = await _context.CentralStoreTransferDetails
+    .Include(d => d.CentralStoreInventory!)
+        .ThenInclude(i => i.Medicine)
+    .Include(d => d.CentralStoreTransfer)
+    .Where(d =>
+        d.CentralStoreInventory != null &&
+        d.CentralStoreInventory.MedicineID == medicineId &&
+        d.CentralStoreTransfer != null &&
+        d.CentralStoreTransfer.CentralPharmacyID == GetCentralPharmacyId())
+    .Select(d => new InventoryMovementDto
+    {
+        InventoryID = d.CentralTransferDetailID,
+        MedicineID = d.CentralStoreInventory!.MedicineID,
+        MedicineName = d.CentralStoreInventory.Medicine != null
+            ? d.CentralStoreInventory.Medicine.MedicineName
+            : "",
+        MovementType = "Transfer Out",
+        QuantityChange = -d.QuantityTransferred,
+        RemainingQuantity = 0,
+        MovementDate = d.CentralStoreTransfer!.TransferDate,
+        Reference = $"Transfer #{d.CentralTransferID}"
+    })
+    .ToListAsync();
             movements.AddRange(transfersOut);
 
             // Received from AidStore or Purchase (we don't have direct events, but we can infer from inventory source)

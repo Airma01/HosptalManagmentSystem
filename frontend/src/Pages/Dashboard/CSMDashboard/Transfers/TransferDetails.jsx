@@ -146,14 +146,22 @@ const TransferDetails = () => {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Medicine</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Batch</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expiry</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Inventory ID</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {transfer.items.map((item, idx) => (
                 <tr key={idx}>
-                  <td className="px-4 py-3 text-sm text-gray-900">{item.medicineName || `Medicine ID: ${item.medicineID}`}</td>
+                  <td className="px-4 py-3 text-sm text-gray-900">{item.medicineName || `Medicine #${item.medicineID || ""}`}</td>
+                  <td className="px-4 py-3 text-sm text-gray-700">{item.batchNumber || "—"}</td>
+                  <td className="px-4 py-3 text-sm text-gray-700">
+                    {item.expiryDate ? new Date(item.expiryDate).toLocaleDateString() : "—"}
+                  </td>
                   <td className="px-4 py-3 text-sm text-gray-700">{item.quantityTransferred}</td>
+                  <td className="px-4 py-3 text-sm text-gray-500">{item.centralInventoryID ?? "—"}</td>
                 </tr>
               ))}
             </tbody>

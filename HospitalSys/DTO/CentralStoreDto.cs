@@ -412,11 +412,19 @@ namespace HospitalSys.Dto
 
     public class TransferItemDto
     {
+        /// <summary>Central inventory batch to take stock from.</summary>
         [Required]
-        public int MedicineID { get; set; }
+        public int CentralInventoryID { get; set; }
+
         [Required]
         [Range(1, int.MaxValue)]
         public int QuantityTransferred { get; set; }
+
+        // Response-only (filled when reading a transfer)
+        public int? MedicineID { get; set; }
+        public string? MedicineName { get; set; }
+        public DateTime? ExpiryDate { get; set; }
+        public string? BatchNumber { get; set; }
     }
 
     public class TransferListDto

@@ -182,7 +182,6 @@ namespace HospitalSys.Branch.Dto
 
     public class AcceptTransferDto
     {
-        // Transfer id is in the route: AcceptTransfer/{transferId}
         public int CentralTransferId { get; set; }
 
         [StringLength(500)]
@@ -191,10 +190,8 @@ namespace HospitalSys.Branch.Dto
 
     public class RejectTransferDto
     {
-        // Transfer id is in the route: RejectTransfer/{transferId}
         public int CentralTransferId { get; set; }
 
-        // Optional in API; frontend can still require a reason in the UI
         [StringLength(500)]
         public string RejectReason { get; set; } = "";
     }

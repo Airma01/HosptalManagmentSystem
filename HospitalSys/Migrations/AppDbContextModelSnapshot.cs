@@ -3755,9 +3755,6 @@ namespace HospitalSys.Migrations
                     b.Property<int>("CentralStoreManagerID")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("MedicineID")
-                        .HasColumnType("integer");
-
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");
@@ -3775,8 +3772,6 @@ namespace HospitalSys.Migrations
 
                     b.HasIndex("CentralStoreManagerID");
 
-                    b.HasIndex("MedicineID");
-
                     b.ToTable("CentralStoreTransfers");
                 });
 
@@ -3788,10 +3783,10 @@ namespace HospitalSys.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("CentralTransferDetailID"));
 
-                    b.Property<int>("CentralTransferID")
+                    b.Property<int>("CentralInventoryID")
                         .HasColumnType("integer");
 
-                    b.Property<int>("MedicineID")
+                    b.Property<int>("CentralTransferID")
                         .HasColumnType("integer");
 
                     b.Property<int>("QuantityTransferred")
@@ -3799,9 +3794,9 @@ namespace HospitalSys.Migrations
 
                     b.HasKey("CentralTransferDetailID");
 
-                    b.HasIndex("CentralTransferID");
+                    b.HasIndex("CentralInventoryID");
 
-                    b.HasIndex("MedicineID");
+                    b.HasIndex("CentralTransferID");
 
                     b.ToTable("CentralStoreTransferDetails");
                 });
@@ -5821,10 +5816,6 @@ namespace HospitalSys.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("HospitalSys.Models.Pharmacy.Common.Medicine", null)
-                        .WithMany("CentralStoreTransfer")
-                        .HasForeignKey("MedicineID");
-
                     b.Navigation("BranchPharmacy");
 
                     b.Navigation("CentralStoreManager");
@@ -5836,21 +5827,21 @@ namespace HospitalSys.Migrations
 
             modelBuilder.Entity("HospitalSys.Models.Pharmacy.CentralStore.CentralStoreTransferDetail", b =>
                 {
+                    b.HasOne("HospitalSys.Models.Pharmacy.CentralStore.CentralStoreInventory", "CentralStoreInventory")
+                        .WithMany("CentralStoreTransferDetails")
+                        .HasForeignKey("CentralInventoryID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("HospitalSys.Models.Pharmacy.CentralStore.CentralStoreTransfer", "CentralStoreTransfer")
                         .WithMany("CentralStoreTransferDetail")
                         .HasForeignKey("CentralTransferID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("HospitalSys.Models.Pharmacy.Common.Medicine", "Medicine")
-                        .WithMany()
-                        .HasForeignKey("MedicineID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.Navigation("CentralStoreInventory");
 
                     b.Navigation("CentralStoreTransfer");
-
-                    b.Navigation("Medicine");
                 });
 
             modelBuilder.Entity("HospitalSys.Models.Pharmacy.Common.DispenseMedicine", b =>
@@ -6454,6 +6445,11 @@ namespace HospitalSys.Migrations
                     b.Navigation("Prescription");
                 });
 
+            modelBuilder.Entity("HospitalSys.Models.Pharmacy.CentralStore.CentralStoreInventory", b =>
+                {
+                    b.Navigation("CentralStoreTransferDetails");
+                });
+
             modelBuilder.Entity("HospitalSys.Models.Pharmacy.CentralStore.CentralStoreManager", b =>
                 {
                     b.Navigation("CentralStoreTransfer");
@@ -6496,8 +6492,6 @@ namespace HospitalSys.Migrations
                     b.Navigation("CentralStoreInventory");
 
                     b.Navigation("CentralStoreRequestDetail");
-
-                    b.Navigation("CentralStoreTransfer");
 
                     b.Navigation("DispenseMedicineDetail");
 

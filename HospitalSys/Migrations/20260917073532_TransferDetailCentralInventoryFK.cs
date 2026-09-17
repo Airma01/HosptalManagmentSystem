@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HospitalSys.Migrations
 {
     /// <inheritdoc />
-    public partial class Initial : Migration
+    public partial class TransferDetailCentralInventoryFK : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -2664,8 +2664,7 @@ namespace HospitalSys.Migrations
                     BranchPharmacyID = table.Column<int>(type: "integer", nullable: false),
                     CentralStoreManagerID = table.Column<int>(type: "integer", nullable: false),
                     TransferDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    Status = table.Column<string>(type: "text", nullable: false),
-                    MedicineID = table.Column<int>(type: "integer", nullable: true)
+                    Status = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -2693,11 +2692,6 @@ namespace HospitalSys.Migrations
                         column: x => x.CentralRequestID,
                         principalTable: "CentralStoreRequests",
                         principalColumn: "CentralRequestID");
-                    table.ForeignKey(
-                        name: "FK_CentralStoreTransfers_Medicines_MedicineID",
-                        column: x => x.MedicineID,
-                        principalTable: "Medicines",
-                        principalColumn: "MedicineID");
                 });
 
             migrationBuilder.CreateTable(
@@ -3024,6 +3018,8 @@ namespace HospitalSys.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     RadiologyRequestID = table.Column<int>(type: "integer", nullable: false),
                     RadiologyTechnicianName = table.Column<string>(type: "text", nullable: false),
+                    ImageName = table.Column<string>(type: "text", nullable: true),
+                    ImagePath = table.Column<string>(type: "text", nullable: true),
                     ResultDescription = table.Column<string>(type: "text", nullable: false),
                     ResultDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
@@ -3072,23 +3068,23 @@ namespace HospitalSys.Migrations
                     CentralTransferDetailID = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     CentralTransferID = table.Column<int>(type: "integer", nullable: false),
-                    MedicineID = table.Column<int>(type: "integer", nullable: false),
+                    CentralInventoryID = table.Column<int>(type: "integer", nullable: false),
                     QuantityTransferred = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_CentralStoreTransferDetails", x => x.CentralTransferDetailID);
                     table.ForeignKey(
+                        name: "FK_CentralStoreTransferDetails_CentralStoreInventories_Central~",
+                        column: x => x.CentralInventoryID,
+                        principalTable: "CentralStoreInventories",
+                        principalColumn: "CentralInventoryID",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
                         name: "FK_CentralStoreTransferDetails_CentralStoreTransfers_CentralTr~",
                         column: x => x.CentralTransferID,
                         principalTable: "CentralStoreTransfers",
                         principalColumn: "CentralTransferID",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_CentralStoreTransferDetails_Medicines_MedicineID",
-                        column: x => x.MedicineID,
-                        principalTable: "Medicines",
-                        principalColumn: "MedicineID",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -3382,14 +3378,14 @@ namespace HospitalSys.Migrations
                 column: "RequestedByPharmacistID");
 
             migrationBuilder.CreateIndex(
+                name: "IX_CentralStoreTransferDetails_CentralInventoryID",
+                table: "CentralStoreTransferDetails",
+                column: "CentralInventoryID");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_CentralStoreTransferDetails_CentralTransferID",
                 table: "CentralStoreTransferDetails",
                 column: "CentralTransferID");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_CentralStoreTransferDetails_MedicineID",
-                table: "CentralStoreTransferDetails",
-                column: "MedicineID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_CentralStoreTransfers_BranchPharmacyID",
@@ -3410,11 +3406,6 @@ namespace HospitalSys.Migrations
                 name: "IX_CentralStoreTransfers_CentralStoreManagerID",
                 table: "CentralStoreTransfers",
                 column: "CentralStoreManagerID");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_CentralStoreTransfers_MedicineID",
-                table: "CentralStoreTransfers",
-                column: "MedicineID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ChildBirths_ChildPatientID",
@@ -4073,9 +4064,6 @@ namespace HospitalSys.Migrations
                 name: "BranchInventories");
 
             migrationBuilder.DropTable(
-                name: "CentralStoreInventories");
-
-            migrationBuilder.DropTable(
                 name: "CentralStoreRequestDetails");
 
             migrationBuilder.DropTable(
@@ -4238,6 +4226,9 @@ namespace HospitalSys.Migrations
                 name: "AidStoreTransfers");
 
             migrationBuilder.DropTable(
+                name: "CentralStoreInventories");
+
+            migrationBuilder.DropTable(
                 name: "CentralStoreTransfers");
 
             migrationBuilder.DropTable(
@@ -4295,13 +4286,13 @@ namespace HospitalSys.Migrations
                 name: "AidStoreRequests");
 
             migrationBuilder.DropTable(
+                name: "Medicines");
+
+            migrationBuilder.DropTable(
                 name: "CentralStoreManagers");
 
             migrationBuilder.DropTable(
                 name: "CentralStoreRequests");
-
-            migrationBuilder.DropTable(
-                name: "Medicines");
 
             migrationBuilder.DropTable(
                 name: "Prescriptions");

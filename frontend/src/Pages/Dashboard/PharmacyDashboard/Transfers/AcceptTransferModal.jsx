@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import pharmacyApi from "../Services/pharmacyApi";
 

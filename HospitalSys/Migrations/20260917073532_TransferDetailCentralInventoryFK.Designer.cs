@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HospitalSys.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260827085559_Initial")]
-    partial class Initial
+    [Migration("20260917073532_TransferDetailCentralInventoryFK")]
+    partial class TransferDetailCentralInventoryFK
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -3758,9 +3758,6 @@ namespace HospitalSys.Migrations
                     b.Property<int>("CentralStoreManagerID")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("MedicineID")
-                        .HasColumnType("integer");
-
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");
@@ -3778,8 +3775,6 @@ namespace HospitalSys.Migrations
 
                     b.HasIndex("CentralStoreManagerID");
 
-                    b.HasIndex("MedicineID");
-
                     b.ToTable("CentralStoreTransfers");
                 });
 
@@ -3791,10 +3786,10 @@ namespace HospitalSys.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("CentralTransferDetailID"));
 
-                    b.Property<int>("CentralTransferID")
+                    b.Property<int>("CentralInventoryID")
                         .HasColumnType("integer");
 
-                    b.Property<int>("MedicineID")
+                    b.Property<int>("CentralTransferID")
                         .HasColumnType("integer");
 
                     b.Property<int>("QuantityTransferred")
@@ -3802,9 +3797,9 @@ namespace HospitalSys.Migrations
 
                     b.HasKey("CentralTransferDetailID");
 
-                    b.HasIndex("CentralTransferID");
+                    b.HasIndex("CentralInventoryID");
 
-                    b.HasIndex("MedicineID");
+                    b.HasIndex("CentralTransferID");
 
                     b.ToTable("CentralStoreTransferDetails");
                 });
@@ -4061,6 +4056,12 @@ namespace HospitalSys.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("RadiologyResultID"));
+
+                    b.Property<string>("ImageName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ImagePath")
+                        .HasColumnType("text");
 
                     b.Property<int>("RadiologyRequestID")
                         .HasColumnType("integer");
@@ -5818,10 +5819,6 @@ namespace HospitalSys.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("HospitalSys.Models.Pharmacy.Common.Medicine", null)
-                        .WithMany("CentralStoreTransfer")
-                        .HasForeignKey("MedicineID");
-
                     b.Navigation("BranchPharmacy");
 
                     b.Navigation("CentralStoreManager");
@@ -5833,21 +5830,21 @@ namespace HospitalSys.Migrations
 
             modelBuilder.Entity("HospitalSys.Models.Pharmacy.CentralStore.CentralStoreTransferDetail", b =>
                 {
+                    b.HasOne("HospitalSys.Models.Pharmacy.CentralStore.CentralStoreInventory", "CentralStoreInventory")
+                        .WithMany("CentralStoreTransferDetails")
+                        .HasForeignKey("CentralInventoryID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("HospitalSys.Models.Pharmacy.CentralStore.CentralStoreTransfer", "CentralStoreTransfer")
                         .WithMany("CentralStoreTransferDetail")
                         .HasForeignKey("CentralTransferID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("HospitalSys.Models.Pharmacy.Common.Medicine", "Medicine")
-                        .WithMany()
-                        .HasForeignKey("MedicineID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.Navigation("CentralStoreInventory");
 
                     b.Navigation("CentralStoreTransfer");
-
-                    b.Navigation("Medicine");
                 });
 
             modelBuilder.Entity("HospitalSys.Models.Pharmacy.Common.DispenseMedicine", b =>
@@ -6451,6 +6448,11 @@ namespace HospitalSys.Migrations
                     b.Navigation("Prescription");
                 });
 
+            modelBuilder.Entity("HospitalSys.Models.Pharmacy.CentralStore.CentralStoreInventory", b =>
+                {
+                    b.Navigation("CentralStoreTransferDetails");
+                });
+
             modelBuilder.Entity("HospitalSys.Models.Pharmacy.CentralStore.CentralStoreManager", b =>
                 {
                     b.Navigation("CentralStoreTransfer");
@@ -6493,8 +6495,6 @@ namespace HospitalSys.Migrations
                     b.Navigation("CentralStoreInventory");
 
                     b.Navigation("CentralStoreRequestDetail");
-
-                    b.Navigation("CentralStoreTransfer");
 
                     b.Navigation("DispenseMedicineDetail");
 

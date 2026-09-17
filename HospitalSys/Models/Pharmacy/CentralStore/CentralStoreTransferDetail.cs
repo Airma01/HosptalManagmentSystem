@@ -7,6 +7,7 @@ namespace HospitalSys.Models.Pharmacy.CentralStore
 {
   public class CentralStoreTransferDetail
         {
+            [Key]
             public int CentralTransferDetailID { get; set; }
 
             public int CentralTransferID { get; set; }
