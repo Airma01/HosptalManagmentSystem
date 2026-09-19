@@ -14,12 +14,12 @@ const CreateVisitAndTriage = () => {
     status: 'Scheduled',
     triageDepartmentId: '',
     clinicalDepartmentId: '',
-    temprature: '',
-    bloodPressure: '',
-    heartRate: '',
-    respiratyRate: '',
-    weight: '',
-    notes: '',
+    temprature: '0',
+    bloodPressure: '0',
+    heartRate: '0',
+    respiratyRate: '0',
+    weight: '0',
+    notes: ' ',
   });
 
   const [triageDepts, setTriageDepts] = useState([]);

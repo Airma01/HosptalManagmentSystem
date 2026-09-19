@@ -2,6 +2,17 @@ import { useCallback, useEffect, useState } from "react";
 import ClinicalRecordAccordion from "../Components/ClinicalRecordAccordion";
 import { useNavigate, useParams } from "react-router-dom";
 import API from "../../../../Config/API";
+import Allergies from "../Consultation/Allergies";
+import MedicalHistory from "../Consultation/MedicalHistory";
+import FamilyHistory from "../Consultation/FamilyHistory";
+import SocialHistory from "../Consultation/SocialHistory";
+import Consultation from "../Consultation/Consultation";
+import PhysicalExam from "../Consultation/PhysicalExam";
+import Diagnosis from "../Consultation/Diagnosis";
+import ProblemList from "../Consultation/ProblemList";
+import Prescription from "../Consultation/Prescription";
+import Laboratory from "../Consultation/Laboratory";
+import Radiology from "../Consultation/Radiology";
 
 const CARE_TYPES = [
   { key: "asthma", label: "Asthma", listKey: "asthmaManagement", idKey: "asthmaManagementID" },
@@ -11,6 +22,20 @@ const CARE_TYPES = [
   { key: "hypertension", label: "Hypertension", listKey: "hypertensionManagement", idKey: "hypertensionManagementID" },
   { key: "mental-health", label: "Mental Health", listKey: "mentalHealthCare", idKey: "mentalHealthCareID" },
   { key: "tuberculosis", label: "Tuberculosis", listKey: "tuberculosisManagement", idKey: "tuberculosisManagementID" },
+];
+
+const CLINICAL_SECTIONS = [
+  { id: "allergies", label: "Allergies", icon: "bi-exclamation-triangle" },
+  { id: "medicalHistory", label: "Medical History", icon: "bi-journal-medical" },
+  { id: "familyHistory", label: "Family History", icon: "bi-people" },
+  { id: "socialHistory", label: "Social History", icon: "bi-house-heart" },
+  { id: "consultation", label: "Consultation", icon: "bi-clipboard2-pulse" },
+  { id: "physicalExam", label: "Physical Exam", icon: "bi-body-text" },
+  { id: "diagnosis", label: "Diagnosis", icon: "bi-file-medical" },
+  { id: "problemList", label: "Problem List", icon: "bi-list-check" },
+  { id: "prescription", label: "Prescription", icon: "bi-prescription2" },
+  { id: "laboratory", label: "Laboratory", icon: "bi-droplet" },
+  { id: "radiology", label: "Radiology", icon: "bi-radioactive" },
 ];
 
 const inputCls =
@@ -297,9 +322,11 @@ export default function AdultMedicalCarePatient() {
   const { patientId, visitId } = useParams();
   const navigate = useNavigate();
   const [data, setData] = useState(null);
+  const [clinicalData, setClinicalData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [active, setActive] = useState("asthma");
+  const [clinicalTab, setClinicalTab] = useState(null);
   const [message, setMessage] = useState("");
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
@@ -310,23 +337,44 @@ export default function AdultMedicalCarePatient() {
     setLoading(true);
     setError("");
     try {
-      const res = await API.get(`/api/doctor/patient/${patientId}`);
-      setData(res.data);
+      const adultRes = await API.get(`/api/doctor/patient/${patientId}`);
+      setData(adultRes.data);
+
+      if (visitId) {
+        try {
+          const visitRes = await API.get(
+            `/api/doctor/patient/${patientId}/visit/${visitId}`
+          );
+          setClinicalData(visitRes.data);
+        } catch {
+          // Clinical visit data optional if endpoint unavailable
+          setClinicalData(null);
+        }
+      } else {
+        setClinicalData(null);
+      }
     } catch (err) {
       setError(err.response?.data?.message || "Failed to load adult medical care.");
       setData(null);
+      setClinicalData(null);
     } finally {
       setLoading(false);
     }
-  }, [patientId]);
+  }, [patientId, visitId]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  const careMeta = CARE_TYPES.find((c) => c.key === active);
+  const careMeta = CARE_TYPES.find((c) => c.key === active) || CARE_TYPES[0];
   const rows = data?.[careMeta?.listKey] || [];
   const patient = data?.patient || {};
+
+  const consultations = clinicalData?.previousConsultations || [];
+  const visitConsultations = consultations.filter(
+    (c) => String(c.visitID) === String(visitId)
+  );
+  const primaryConsultationId = visitConsultations[0]?.consultationID || null;
 
   const openCreate = () => {
     setForm(defaultCreateForm(active));
@@ -441,42 +489,41 @@ export default function AdultMedicalCarePatient() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        <div className="lg:col-span-3">
-          <div className="bg-white border rounded-xl p-2 shadow-sm sticky top-20">
-            {CARE_TYPES.map((c) => (
-              <button
-                key={c.key}
-                type="button"
-                onClick={() => setActive(c.key)}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm ${
-                  active === c.key
-                    ? "bg-emerald-50 text-emerald-800 font-medium"
-                    : "text-slate-600 hover:bg-slate-50"
-                }`}
-              >
-                {c.label}
-                <span className="ml-2 text-xs text-slate-400">
-                  ({(data[c.listKey] || []).length})
-                </span>
-              </button>
-            ))}
+      {/* Adult Medical Care — disease select */}
+      <div className="bg-white border rounded-xl shadow-sm p-5 space-y-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="min-w-[220px] flex-1 max-w-md">
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Adult Medical Care — Care Type
+            </label>
+            <select
+              className={inputCls + " bg-white"}
+              value={active}
+              onChange={(e) => {
+                setActive(e.target.value);
+                setClinicalTab(null);
+              }}
+            >
+              {CARE_TYPES.map((c) => (
+                <option key={c.key} value={c.key}>
+                  {c.label} ({(data[c.listKey] || []).length})
+                </option>
+              ))}
+            </select>
           </div>
+          <button
+            type="button"
+            onClick={openCreate}
+            className="px-3 py-2 text-sm rounded-lg bg-emerald-600 text-white hover:bg-emerald-700"
+          >
+            + Add {careMeta.label} record
+          </button>
         </div>
 
-        <div className="lg:col-span-9 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="text-xs text-slate-500">
-              Showing complete clinical data for {careMeta.label}
-            </div>
-            <button
-              type="button"
-              onClick={openCreate}
-              className="px-3 py-1.5 text-xs rounded-lg bg-emerald-600 text-white"
-            >
-              + Add record
-            </button>
-          </div>
+        <div>
+          <h3 className="text-sm font-semibold text-slate-800 mb-2">
+            {careMeta.label} Records
+          </h3>
           <ClinicalRecordAccordion
             title={careMeta.label}
             records={rows}
@@ -486,6 +533,123 @@ export default function AdultMedicalCarePatient() {
             excludeKeys={["patientID", "recordedByUserID", "managedByUserID", "assessedByUserID"]}
           />
         </div>
+      </div>
+
+      {/* Clinical Records — reused from Consultation */}
+      <div className="bg-white border rounded-xl shadow-sm p-5 space-y-3">
+        <div>
+          <h3 className="text-sm font-semibold text-slate-800">Clinical Records</h3>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Shared with Consultation workflow · linked to current visit when available
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {CLINICAL_SECTIONS.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => setClinicalTab(clinicalTab === s.id ? null : s.id)}
+              className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-1.5 transition ${
+                clinicalTab === s.id
+                  ? "bg-emerald-600 text-white"
+                  : "text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200"
+              }`}
+            >
+              <i className={`bi ${s.icon}`} />
+              {s.label}
+            </button>
+          ))}
+        </div>
+
+        {clinicalTab && (
+          <div className="pt-2 border-t border-slate-100 min-h-[200px]">
+            {!visitId && (
+              <p className="text-sm text-amber-700 bg-amber-50 rounded-lg px-3 py-2 mb-3">
+                No visit ID in route. Some clinical actions that require a visit or
+                consultation may be limited.
+              </p>
+            )}
+
+            {clinicalTab === "allergies" && (
+              <Allergies
+                patientId={patientId}
+                allergies={clinicalData?.allergies || []}
+                onReload={load}
+              />
+            )}
+            {clinicalTab === "medicalHistory" && (
+              <MedicalHistory
+                patientId={patientId}
+                medicalHistory={clinicalData?.medicalHistory || []}
+                onReload={load}
+              />
+            )}
+            {clinicalTab === "familyHistory" && (
+              <FamilyHistory
+                patientId={patientId}
+                familyMedicalHistory={clinicalData?.familyMedicalHistory || []}
+                onReload={load}
+              />
+            )}
+            {clinicalTab === "socialHistory" && (
+              <SocialHistory
+                patientId={patientId}
+                socialHistory={clinicalData?.socialHistory || []}
+                onReload={load}
+              />
+            )}
+            {clinicalTab === "consultation" && (
+              <Consultation
+                patientId={patientId}
+                visitId={visitId}
+                consultations={visitConsultations}
+                onReload={load}
+              />
+            )}
+            {clinicalTab === "physicalExam" && (
+              <PhysicalExam
+                primaryConsultationId={primaryConsultationId}
+                visitConsultations={visitConsultations}
+                onReload={load}
+              />
+            )}
+            {clinicalTab === "diagnosis" && (
+              <Diagnosis
+                primaryConsultationId={primaryConsultationId}
+                visitConsultations={visitConsultations}
+                onReload={load}
+              />
+            )}
+            {clinicalTab === "problemList" && (
+              <ProblemList
+                patientId={patientId}
+                problemList={clinicalData?.problemList || []}
+                onReload={load}
+              />
+            )}
+            {clinicalTab === "prescription" && (
+              <Prescription
+                primaryConsultationId={primaryConsultationId}
+                latestPrescription={clinicalData?.latestPrescription}
+                onReload={load}
+              />
+            )}
+            {clinicalTab === "laboratory" && (
+              <Laboratory
+                primaryConsultationId={primaryConsultationId}
+                laboratoryTests={clinicalData?.laboratoryTests || []}
+                onReload={load}
+              />
+            )}
+            {clinicalTab === "radiology" && (
+              <Radiology
+                primaryConsultationId={primaryConsultationId}
+                radiologyRequests={clinicalData?.radiologyRequests || []}
+                onReload={load}
+              />
+            )}
+          </div>
+        )}
       </div>
 
       {modal && (

@@ -369,6 +369,10 @@ namespace HospitalSys.Dto.DoctorDtos
         public int LaboratoryTestTypeID { get; set; }
         public string? ClinicalReason { get; set; }
         public string? Notes { get; set; }
+        /// <summary>When set, also creates a hospital LaboratoryTest for MLT workflow (requires visit consultation).</summary>
+        public int? VisitID { get; set; }
+        /// <summary>Workflow status for hospital LaboratoryTest (Requested, Urgent, STAT). Defaults to Requested.</summary>
+        public string? Status { get; set; }
     }
 
     // ============================================================
@@ -394,22 +398,26 @@ namespace HospitalSys.Dto.DoctorDtos
         public int? RequestedByUserID { get; set; }
     }
 
-    public class CreatePregnancyUltrasoundDto
-    {
-        public int PregnancyID { get; set; }
-        public int? ANCVisitID { get; set; }
-        public int? GestationalAgeWeeks { get; set; }
-        public string? FetalNumber { get; set; }
-        public string? FetalPresentation { get; set; }
-        public string? PlacentaLocation { get; set; }
-        public string? AmnioticFluid { get; set; }
-        public string? FetalHeartRate { get; set; }
-        public string? EstimatedFetalWeight { get; set; }
-        public string? Findings { get; set; }
-        public string? Impression { get; set; }
-        public string? Notes { get; set; }
-    }
+   public class CreatePregnancyUltrasoundDto
+{
+    public int PregnancyID { get; set; }
+    public int? ANCVisitID { get; set; }
+    public int? GestationalAgeWeeks { get; set; }
+    public string? FetalNumber { get; set; }
+    public string? FetalPresentation { get; set; }
+    public string? PlacentaLocation { get; set; }
+    public string? AmnioticFluid { get; set; }
+    public string? FetalHeartRate { get; set; }
+    public string? EstimatedFetalWeight { get; set; }
+    public string? Findings { get; set; }
+    public string? Impression { get; set; }
+    public string? Notes { get; set; }
 
+    /// <summary>When set with RadiologyTestTypeID, also creates hospital RadiologyRequest.</summary>
+    public int? VisitID { get; set; }
+    public int? RadiologyTestTypeID { get; set; }
+    public string? ClinicalIndication { get; set; }
+}
     // ============================================================
     // Pregnancy Medication
     // ============================================================
@@ -443,6 +451,11 @@ namespace HospitalSys.Dto.DoctorDtos
         public string Route { get; set; } = "";
         public string? Indication { get; set; }
         public string? Notes { get; set; }
+        /// <summary>When set with BranchPharmacyID, also creates hospital Prescription for pharmacy workflow.</summary>
+        public int? VisitID { get; set; }
+        public int? BranchPharmacyID { get; set; }
+        public decimal? Quantity { get; set; }
+        public decimal? Duration { get; set; }
     }
 
     public class UpdatePregnancyMedicationDto

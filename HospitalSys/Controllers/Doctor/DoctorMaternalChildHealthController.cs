@@ -1,6 +1,10 @@
 using HospitalSys.Data;
 using HospitalSys.Dto.DoctorDtos;
 using HospitalSys.Models.MaternalChildHealth;
+using HospitalSys.Models.Consultation_M;
+using HospitalSys.Models.Laboratory;
+using HospitalSys.Models.Radiology;
+using HospitalSys.Models.Pharmacy.Common;
 using HospitalSys.Models.PatientManagment;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -108,6 +112,47 @@ namespace HospitalSys.Controllers.Doctor
         private static DateTime? ToUtc(DateTime? value)
             => value.HasValue ? ToUtc(value.Value) : null;
 
+
+
+        private int? TryGetDoctorId()
+        {
+            var claim = User.FindFirst("DoctorID")?.Value;
+            if (string.IsNullOrEmpty(claim) || !int.TryParse(claim, out int id))
+                return null;
+            return id;
+        }
+
+        /// <summary>
+        /// Finds an existing consultation for the visit, or creates a minimal MCH consultation
+        /// so hospital Lab/Radiology/Pharmacy records can attach to ConsultationID.
+        /// </summary>
+        private async Task<Consultation?> GetOrCreateConsultationForVisitAsync(int patientId, int visitId, int doctorId)
+        {
+            var existing = await _context.Consultations
+                .FirstOrDefaultAsync(c => c.VisitID == visitId);
+            if (existing != null)
+                return existing;
+
+            var visit = await _context.PatientVisits
+                .FirstOrDefaultAsync(v => v.VisitID == visitId && v.PatientID == patientId);
+            if (visit == null)
+                return null;
+
+            var consultation = new Consultation
+            {
+                VisitID = visitId,
+                DoctorID = doctorId,
+                ConsultationDate = DateTime.UtcNow,
+                ChiefComplaint = "Maternal & Child Health",
+                HistoryOfPresentIllness = "Created for MCH laboratory / imaging / prescription workflow.",
+                Assessment = null,
+                TreatmentPlan = null,
+                ClinicalNotes = "Auto-created from MCH module"
+            };
+            _context.Consultations.Add(consultation);
+            await _context.SaveChangesAsync();
+            return consultation;
+        }
 
         // ============================================================
         // PREGNANCY
@@ -895,6 +940,32 @@ namespace HospitalSys.Controllers.Doctor
                 _context.PregnancyLaboratoryOrders.Add(entity);
                 await _context.SaveChangesAsync();
 
+                // Integrate with hospital Laboratory workflow (MLT queue) when VisitID is provided.
+                if (dto.VisitID.HasValue)
+                {
+                    var doctorId = TryGetDoctorId();
+                    if (doctorId.HasValue)
+                    {
+                        var consultation = await GetOrCreateConsultationForVisitAsync(
+                            patientId, dto.VisitID.Value, doctorId.Value);
+                        if (consultation != null)
+                        {
+                            var status = string.IsNullOrWhiteSpace(dto.Status) ? "Requested" : dto.Status.Trim();
+                            var labTest = new LaboratoryTest
+                            {
+                                ConsultationID = consultation.ConsultationID,
+                                PatientID = patientId,
+                                DoctorID = doctorId.Value,
+                                LaboratoryTestTypeID = dto.LaboratoryTestTypeID,
+                                RequestDate = DateTime.UtcNow,
+                                Status = status
+                            };
+                            _context.LaboratoryTests.Add(labTest);
+                            await _context.SaveChangesAsync();
+                        }
+                    }
+                }
+
                 await _context.Entry(entity).Reference(e => e.LaboratoryTestType).LoadAsync();
                 return StatusCode(201, ToLabOrderDto(entity));
             }
@@ -979,9 +1050,40 @@ namespace HospitalSys.Controllers.Doctor
                     Impression = dto.Impression,
                     Notes = dto.Notes
                 };
-                _context.PregnancyUltrasounds.Add(entity);
+                                _context.PregnancyUltrasounds.Add(entity);
                 await _context.SaveChangesAsync();
-                return StatusCode(201, ToUltrasoundDto(entity));
+
+                // Integrate with hospital Radiology when VisitID + RadiologyTestTypeID provided.
+                if (dto.VisitID.HasValue && dto.RadiologyTestTypeID.HasValue)
+                {
+                    var doctorId = TryGetDoctorId();
+                    if (doctorId.HasValue)
+                    {
+                        var typeOk = await _context.RadiologyTestTypes.AsNoTracking()
+                            .AnyAsync(t => t.RadiologyTestTypeID == dto.RadiologyTestTypeID.Value);
+                        if (typeOk)
+                        {
+                            var consultation = await GetOrCreateConsultationForVisitAsync(
+                                patientId, dto.VisitID.Value, doctorId.Value);
+                            if (consultation != null)
+                            {
+                                var request = new RadiologyRequest
+                                {
+                                    ConsultationID = consultation.ConsultationID,
+                                    PatientID = patientId,
+                                    DoctorID = doctorId.Value,
+                                    RadiologyTestTypeID = dto.RadiologyTestTypeID.Value,
+                                    RequestDate = DateTime.UtcNow,
+                                    Status = "Requested"
+                                };
+                                _context.RadiologyRequests.Add(request);
+                                await _context.SaveChangesAsync();
+                            }
+                        }
+                    }
+                }
+
+return StatusCode(201, ToUltrasoundDto(entity));
             }
             catch (UnauthorizedAccessException) { return Unauthorized(new { message = "Unauthorized" }); }
             catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
@@ -1062,6 +1164,49 @@ namespace HospitalSys.Controllers.Doctor
                 };
                 _context.PregnancyMedications.Add(entity);
                 await _context.SaveChangesAsync();
+
+                // Integrate with hospital Pharmacy: create Prescription when visit + branch pharmacy provided.
+                if (dto.VisitID.HasValue && dto.BranchPharmacyID.HasValue)
+                {
+                    var doctorId = TryGetDoctorId();
+                    if (doctorId.HasValue)
+                    {
+                        var branchOk = await _context.BranchPharmacies.AsNoTracking()
+                            .AnyAsync(b => b.BranchPharmacyID == dto.BranchPharmacyID.Value);
+                        if (branchOk)
+                        {
+                            var consultation = await GetOrCreateConsultationForVisitAsync(
+                                patientId, dto.VisitID.Value, doctorId.Value);
+                            var prescription = new Prescription
+                            {
+                                ConsultationID = consultation?.ConsultationID,
+                                DoctorID = doctorId.Value,
+                                PatientID = patientId,
+                                BranchPharmacyID = dto.BranchPharmacyID.Value,
+                                PrescriptionDate = DateTime.UtcNow
+                            };
+                            _context.Prescriptions.Add(prescription);
+                            await _context.SaveChangesAsync();
+
+                            decimal qty = dto.Quantity ?? 1;
+                            decimal freq = 0;
+                            decimal.TryParse(dto.Frequency, out freq);
+                            decimal dur = dto.Duration ?? 0;
+
+                            _context.PrescriptionDetails.Add(new PrescriptionDetail
+                            {
+                                PrescriptionID = prescription.PrescriptionID,
+                                MedicineID = dto.MedicineID,
+                                Dosage = dto.Dosage ?? "",
+                                Frequency = freq,
+                                Duration = dur,
+                                Quantity = qty
+                            });
+                            await _context.SaveChangesAsync();
+                        }
+                    }
+                }
+
                 await _context.Entry(entity).Reference(e => e.Medicine).LoadAsync();
                 return StatusCode(201, ToMedicationDto(entity));
             }

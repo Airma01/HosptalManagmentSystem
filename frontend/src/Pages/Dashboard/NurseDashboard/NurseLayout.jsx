@@ -51,10 +51,7 @@ const NurseLayout = () => {
     { to: '/nurse/patients', icon: 'bi-people', label: 'Patients' },
     { to: '/nurse/patients/register', icon: 'bi-person-plus', label: 'Register Patient' },
     { to: '/nurse/visits/today', icon: 'bi-calendar-check', label: "Today's Visits" },
-    { to: '/nurse/visits/create-triage', icon: 'bi-clipboard2-pulse', label: 'Visit + Triage' },
-    { to: '/nurse/triage/pending', icon: 'bi-hourglass-split', label: 'Pending Triage' },
-    { to: '/nurse/prescriptions/create', icon: 'bi-capsule', label: 'New Prescription' },
-    { to: '/nurse/laboratory/request', icon: 'bi-eyedropper', label: 'Request Lab Test' },
+    
   ];
 
   const SidebarContent = () => (
