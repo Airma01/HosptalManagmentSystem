@@ -4,8 +4,28 @@ import API from "../../../../../Config/API";
 import { canWriteMaternalChildHealth } from "../../../../../utils/canWriteMaternalChildHealth";
 
 export default function PregnancyList() {
-  const { patientId, visitId } = useParams();
   const navigate = useNavigate();
+  const [mchAccessAllowed, setMchAccessAllowed] = useState(null); // null = checking
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const ok = await canWriteMaternalChildHealth();
+      if (cancelled) return;
+      if (!ok) {
+        navigate("/doctor", { replace: true });
+        setMchAccessAllowed(false);
+      } else {
+        setMchAccessAllowed(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
+
+  const { patientId, visitId } = useParams();
+  
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -36,6 +56,15 @@ export default function PregnancyList() {
   }, [apiBase]);
 
   useEffect(() => { load(); }, [load]);
+
+  if (mchAccessAllowed !== true) {
+    return (
+      <div className="p-6 text-slate-500 text-sm flex items-center gap-2">
+        <i className="bi bi-arrow-repeat animate-spin" />
+        Checking access…
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 max-w-5xl mx-auto">

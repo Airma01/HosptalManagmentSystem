@@ -345,19 +345,30 @@ const CreateVisitAndTriage = () => {
                 className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                Visit Type <span className="text-red-500">*</span>
-              </label>
-              <input
-                name="visitType"
-                value={formData.visitType}
-                onChange={handleChange}
-                required
-                placeholder="e.g. Outpatient"
-                className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500"
-              />
-            </div>
+           
+<div>
+  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+    Visit Type <span className="text-red-500">*</span>
+  </label>
+
+  <select
+    name="visitType"
+    value={formData.visitType}
+    onChange={handleChange}
+    required
+    className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 bg-white"
+  >
+    <option value="">Select visit type</option>
+    <option value="Outpatient">Outpatient</option>
+    <option value="FollowUp">Follow Up</option>
+    <option value="Emergency">Emergency</option>
+    <option value="Maternal">Maternal</option>
+    <option value="ChildHealth">Child Health</option>
+    <option value="Referral">Referral</option>
+  </select>
+</div>
+
+
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Status</label>
               <select

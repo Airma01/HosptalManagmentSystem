@@ -7,6 +7,7 @@ import DevelopmentAssessment from "./DevelopmentAssessment";
 import Immunization from "./Immunization";
 import NutritionAssessment from "./NutritionAssessment";
 import IMNCIEncounter from "./IMNCIEncounter";
+import { canWriteMaternalChildHealth } from "../../../../../utils/canWriteMaternalChildHealth";
 
 const TABS = [
   { key: "neonatal", label: "Neonatal", icon: "bi-moon-stars" },
@@ -32,8 +33,28 @@ function readSessionNumber(key, fallback) {
 }
 
 export default function ChildHealthDashboard() {
-  const { patientId: routePatientId, visitId: routeVisitId } = useParams();
   const navigate = useNavigate();
+  const [mchAccessAllowed, setMchAccessAllowed] = useState(null); // null = checking
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const ok = await canWriteMaternalChildHealth();
+      if (cancelled) return;
+      if (!ok) {
+        navigate("/doctor", { replace: true });
+        setMchAccessAllowed(false);
+      } else {
+        setMchAccessAllowed(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
+
+  const { patientId: routePatientId, visitId: routeVisitId } = useParams();
+  
 
   const [motherPatientId, setMotherPatientId] = useState(() =>
     readSessionNumber("mch_mother_patient_id", routePatientId)
@@ -324,6 +345,15 @@ export default function ChildHealthDashboard() {
     );
   }
 
+  if (mchAccessAllowed !== true) {
+    return (
+      <div className="p-6 text-slate-500 text-sm flex items-center gap-2">
+        <i className="bi bi-arrow-repeat animate-spin" />
+        Checking access…
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 max-w-5xl mx-auto">
       <button
@@ -377,7 +407,7 @@ export default function ChildHealthDashboard() {
 }
 
 function ChildHealthModules({ childPatientId, childVisitId, tab }) {
-  const navigate = useNavigate();
+  
   const { patientId: currentParamId, visitId: currentVisitId } = useParams();
 
   useEffect(() => {

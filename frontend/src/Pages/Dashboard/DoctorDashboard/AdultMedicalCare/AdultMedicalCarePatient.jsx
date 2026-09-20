@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import ClinicalRecordAccordion from "../Components/ClinicalRecordAccordion";
 import { useNavigate, useParams } from "react-router-dom";
 import API from "../../../../Config/API";
+import { canWriteAdultMedicalCare } from "../../../../utils/canWriteAdultMedicalCare";
 import Allergies from "../Consultation/Allergies";
 import MedicalHistory from "../Consultation/MedicalHistory";
 import FamilyHistory from "../Consultation/FamilyHistory";
@@ -332,6 +333,26 @@ export default function AdultMedicalCarePatient() {
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [accessChecked, setAccessChecked] = useState(false);
+  const [allowed, setAllowed] = useState(false);
+
+  // Department gate: only General Medicine / General / Emergency
+  // Unauthorized doctors are redirected to /doctor and never see this UI
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const ok = await canWriteAdultMedicalCare();
+      if (cancelled) return;
+      setAllowed(ok);
+      setAccessChecked(true);
+      if (!ok) {
+        navigate("/doctor", { replace: true });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -347,7 +368,6 @@ export default function AdultMedicalCarePatient() {
           );
           setClinicalData(visitRes.data);
         } catch {
-          // Clinical visit data optional if endpoint unavailable
           setClinicalData(null);
         }
       } else {
@@ -362,9 +382,12 @@ export default function AdultMedicalCarePatient() {
     }
   }, [patientId, visitId]);
 
+  // Load data only after department access is confirmed
   useEffect(() => {
-    load();
-  }, [load]);
+    if (accessChecked && allowed) {
+      load();
+    }
+  }, [accessChecked, allowed, load]);
 
   const careMeta = CARE_TYPES.find((c) => c.key === active) || CARE_TYPES[0];
   const rows = data?.[careMeta?.listKey] || [];
@@ -437,6 +460,16 @@ export default function AdultMedicalCarePatient() {
       alert(err.response?.data?.message || "Delete failed.");
     }
   };
+
+  // Block all UI until access is known (and while redirecting)
+  if (!accessChecked || !allowed) {
+    return (
+      <div className="p-6 text-slate-500 text-sm flex items-center gap-2">
+        <i className="bi bi-arrow-repeat animate-spin" />
+        Checking access…
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -658,7 +691,6 @@ export default function AdultMedicalCarePatient() {
           onClose={() => setModal(null)}
         >
           <form onSubmit={submit} className="space-y-4">
-            {/* —— ASTHMA —— */}
             {active === "asthma" && (
               <>
                 <Section title="Diagnosis">
@@ -685,7 +717,6 @@ export default function AdultMedicalCarePatient() {
               </>
             )}
 
-            {/* —— DIABETES —— */}
             {active === "diabetes" && (
               <>
                 <Section title="Diagnosis">
@@ -727,7 +758,6 @@ export default function AdultMedicalCarePatient() {
               </>
             )}
 
-            {/* —— HIV —— */}
             {active === "hiv" && (
               <>
                 <Section title="Enrollment & diagnosis">
@@ -756,7 +786,6 @@ export default function AdultMedicalCarePatient() {
               </>
             )}
 
-            {/* —— HEPATITIS —— */}
             {active === "hepatitis" && (
               <>
                 <Section title="Diagnosis">
@@ -783,7 +812,6 @@ export default function AdultMedicalCarePatient() {
               </>
             )}
 
-            {/* —— HYPERTENSION —— */}
             {active === "hypertension" && (
               <>
                 <Section title="Diagnosis">
@@ -809,7 +837,6 @@ export default function AdultMedicalCarePatient() {
               </>
             )}
 
-            {/* —— MENTAL HEALTH —— */}
             {active === "mental-health" && (
               <>
                 <Section title="Assessment">
@@ -834,7 +861,6 @@ export default function AdultMedicalCarePatient() {
               </>
             )}
 
-            {/* —— TUBERCULOSIS —— */}
             {active === "tuberculosis" && (
               <>
                 <Section title="Diagnosis">

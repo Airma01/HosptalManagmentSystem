@@ -43,8 +43,28 @@ const colorMap = {
 };
 
 export default function MaternalChildDashboard() {
-  const { patientId, visitId } = useParams();
   const navigate = useNavigate();
+  const [mchAccessAllowed, setMchAccessAllowed] = useState(null); // null = checking
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const ok = await canWriteMaternalChildHealth();
+      if (cancelled) return;
+      if (!ok) {
+        navigate("/doctor", { replace: true });
+        setMchAccessAllowed(false);
+      } else {
+        setMchAccessAllowed(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
+
+  const { patientId, visitId } = useParams();
+  
   const [patient, setPatient] = useState(null);
   const [triage, setTriage] = useState(null);
   const [pregnancies, setPregnancies] = useState([]);
@@ -100,6 +120,15 @@ export default function MaternalChildDashboard() {
   }, [load]);
 
   const base = `/doctor/maternal/patient/${patientId}/${visitId}`;
+
+  if (mchAccessAllowed !== true) {
+    return (
+      <div className="p-6 text-slate-500 text-sm flex items-center gap-2">
+        <i className="bi bi-arrow-repeat animate-spin" />
+        Checking access…
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5 max-w-6xl mx-auto">

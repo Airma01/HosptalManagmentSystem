@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../../../../Config/API";
 import TriageDepartmentQueueSections from "../Components/TriageDepartmentQueueSections";
+import { canWriteAdultMedicalCare } from "../../../../utils/canWriteAdultMedicalCare";
 
 export default function AdultMedicalCareQueue() {
   const navigate = useNavigate();
@@ -9,8 +10,28 @@ export default function AdultMedicalCareQueue() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
+  const [accessChecked, setAccessChecked] = useState(false);
+  const [allowed, setAllowed] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const ok = await canWriteAdultMedicalCare();
+      if (cancelled) return;
+      setAllowed(ok);
+      setAccessChecked(true);
+      if (!ok) {
+        navigate("/doctor", { replace: true });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
+
+  useEffect(() => {
+    if (!accessChecked || !allowed) return;
+
     let cancelled = false;
     (async () => {
       setLoading(true);
@@ -28,7 +49,7 @@ export default function AdultMedicalCareQueue() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [accessChecked, allowed]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -43,8 +64,18 @@ export default function AdultMedicalCareQueue() {
     );
   }, [rows, search]);
 
+  if (!accessChecked || !allowed) {
+    return (
+      <div className="p-6 text-slate-500 text-sm flex items-center gap-2">
+        <i className="bi bi-arrow-repeat animate-spin" />
+        Checking access…
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
+      {/* ... your existing queue JSX unchanged ... */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold text-slate-800">Adult Medical Care Queue</h2>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../../../../Config/API";
+import { canAccessConsultation } from "../../../../utils/canAccessConsultation";
 
 function formatDate(v) {
   if (!v) return "—";
@@ -18,8 +19,28 @@ export default function ConsultationQueue() {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [accessAllowed, setAccessAllowed] = useState(null); // null = checking
+
+  // Department gate — unauthorized → /doctor
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const ok = await canAccessConsultation();
+      if (cancelled) return;
+      if (!ok) {
+        navigate("/doctor", { replace: true });
+        setAccessAllowed(false);
+      } else {
+        setAccessAllowed(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
 
   useEffect(() => {
+    if (accessAllowed !== true) return;
     let cancelled = false;
     (async () => {
       setLoading(true);
@@ -40,7 +61,7 @@ export default function ConsultationQueue() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [accessAllowed]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -61,6 +82,16 @@ export default function ConsultationQueue() {
     const s = new Set(rows.map((r) => r.visitStatus).filter(Boolean));
     return Array.from(s);
   }, [rows]);
+
+
+  if (accessAllowed !== true) {
+    return (
+      <div className="p-6 text-slate-500 text-sm flex items-center gap-2">
+        <i className="bi bi-arrow-repeat animate-spin" />
+        Checking access…
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

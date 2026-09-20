@@ -6,6 +6,26 @@ import { canWriteMaternalChildHealth } from "../../../../../utils/canWriteMatern
 const inputCls = "w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500";
 
 export default function PregnancyRegistration() {
+  const navigate = useNavigate();
+  const [mchAccessAllowed, setMchAccessAllowed] = useState(null); // null = checking
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const ok = await canWriteMaternalChildHealth();
+      if (cancelled) return;
+      if (!ok) {
+        navigate("/doctor", { replace: true });
+        setMchAccessAllowed(false);
+      } else {
+        setMchAccessAllowed(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
+
   const [canWrite, setCanWrite] = useState(false);
   useEffect(() => {
     let cancelled = false;
@@ -17,7 +37,7 @@ export default function PregnancyRegistration() {
   }, []);
 
   const { patientId, visitId } = useParams();
-  const navigate = useNavigate();
+  
   const base = `/doctor/maternal/patient/${patientId}/${visitId}`;
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -67,6 +87,15 @@ export default function PregnancyRegistration() {
       setSaving(false);
     }
   };
+
+  if (mchAccessAllowed !== true) {
+    return (
+      <div className="p-6 text-slate-500 text-sm flex items-center gap-2">
+        <i className="bi bi-arrow-repeat animate-spin" />
+        Checking access…
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">

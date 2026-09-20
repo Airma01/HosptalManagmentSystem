@@ -4,8 +4,28 @@ import API from "../../../../../Config/API";
 import { canWriteMaternalChildHealth } from "../../../../../utils/canWriteMaternalChildHealth";
 const inputCls = "w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500";
 export default function FamilyPlanning() {
-  const { patientId, visitId } = useParams();
   const navigate = useNavigate();
+  const [mchAccessAllowed, setMchAccessAllowed] = useState(null); // null = checking
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const ok = await canWriteMaternalChildHealth();
+      if (cancelled) return;
+      if (!ok) {
+        navigate("/doctor", { replace: true });
+        setMchAccessAllowed(false);
+      } else {
+        setMchAccessAllowed(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
+
+  const { patientId, visitId } = useParams();
+  
   const base = `/doctor/maternal/patient/${patientId}/${visitId}`;
   const api = `/api/doctor/patient/${patientId}/maternal-child`;
   const [rows, setRows] = useState([]);
@@ -42,6 +62,15 @@ export default function FamilyPlanning() {
     } catch (err) { setFormError(err.response?.data?.message || "Failed to save."); }
     finally { setSaving(false); }
   };
+  if (mchAccessAllowed !== true) {
+    return (
+      <div className="p-6 text-slate-500 text-sm flex items-center gap-2">
+        <i className="bi bi-arrow-repeat animate-spin" />
+        Checking access…
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 max-w-4xl mx-auto">
       <div className="flex flex-wrap items-center justify-between gap-3">

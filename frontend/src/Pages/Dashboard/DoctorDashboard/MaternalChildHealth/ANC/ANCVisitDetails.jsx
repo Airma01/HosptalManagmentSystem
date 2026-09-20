@@ -4,12 +4,33 @@ import API from "../../../../../Config/API";
 import MCHContextHeader from "../shared/MCHContextHeader";
 import MCHModuleNav from "../shared/MCHModuleNav";
 import { Field, fmtDate } from "../shared/Field";
+import { canWriteMaternalChildHealth } from "../../../../../utils/canWriteMaternalChildHealth";
 
 export default function ANCVisitDetails() {
+  const navigate = useNavigate();
+  const [mchAccessAllowed, setMchAccessAllowed] = useState(null); // null = checking
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const ok = await canWriteMaternalChildHealth();
+      if (cancelled) return;
+      if (!ok) {
+        navigate("/doctor", { replace: true });
+        setMchAccessAllowed(false);
+      } else {
+        setMchAccessAllowed(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
+
   const { patientId, visitId, ancVisitId } = useParams();
   const [sp] = useSearchParams();
   const pregnancyId = sp.get("pregnancyId") || "";
-  const navigate = useNavigate();
+  
   const base = `/doctor/maternal/patient/${patientId}/${visitId}`;
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -31,6 +52,15 @@ export default function ANCVisitDetails() {
   useEffect(() => { load(); }, [load]);
 
   const pregId = pregnancyId || data?.pregnancyID;
+
+  if (mchAccessAllowed !== true) {
+    return (
+      <div className="p-6 text-slate-500 text-sm flex items-center gap-2">
+        <i className="bi bi-arrow-repeat animate-spin" />
+        Checking access…
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 max-w-4xl mx-auto px-2 sm:px-0">

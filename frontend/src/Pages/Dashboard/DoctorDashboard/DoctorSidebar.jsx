@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
+import { getAuthenticatedUser } from "../../../utils/getAuthenticatedUser";
+import { canWriteAdultMedicalCareFromUser } from "../../../utils/canWriteAdultMedicalCare";
+import { canWriteMaternalChildHealthFromUser } from "../../../utils/canWriteMaternalChildHealth";
+import { canAccessConsultationFromUser } from "../../../utils/canAccessConsultation";
 
 /**
  * Horizontal top navigation for the Doctor portal.
@@ -116,15 +120,26 @@ export default function DoctorSidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileSection, setMobileSection] = useState(null);
   const navRef = useRef(null);
+  const [canAdult, setCanAdult] = useState(false);
+  const [canMch, setCanMch] = useState(false);
+  const [canConsult, setCanConsult] = useState(false);
+
+  useEffect(() => {
+    getAuthenticatedUser().then((u) => {
+      setCanAdult(canWriteAdultMedicalCareFromUser(u));
+      setCanMch(canWriteMaternalChildHealthFromUser(u));
+      setCanConsult(canAccessConsultationFromUser(u));
+    });
+  }, []);
 
   const path = location.pathname;
 
   const referralsActive =
     path.startsWith("/doctor/referrals");
   const clinicalActive =
-    path.startsWith("/doctor/consultation") ||
-    path.startsWith("/doctor/adult") ||
-    path.startsWith("/doctor/maternal");
+    (canConsult && path.startsWith("/doctor/consultation")) ||
+    (canAdult && path.startsWith("/doctor/adult")) ||
+    (canMch && path.startsWith("/doctor/maternal"));
 
   // Close dropdowns on route change
   useEffect(() => {
@@ -216,6 +231,7 @@ export default function DoctorSidebar() {
             />
           </DesktopDropdown>
 
+          {(canConsult || canAdult || canMch) && (
           <DesktopDropdown
             id="clinical"
             label="Clinical Care"
@@ -223,28 +239,35 @@ export default function DoctorSidebar() {
             onToggle={() => toggleMenu("clinical")}
             active={clinicalActive}
           >
-            <DropdownItem
-              to="/doctor/consultation/triage"
-              icon="bi-clipboard2-pulse"
-              title="Consultation Queue"
-              description="General consultation"
-              onNavigate={closeAll}
-            />
-            <DropdownItem
-              to="/doctor/adult/triage"
-              icon="bi-heart-pulse"
-              title="Adult Care Queue"
-              description="Adult medical care"
-              onNavigate={closeAll}
-            />
-            <DropdownItem
-              to="/doctor/maternal/triage"
-              icon="bi-gender-female"
-              title="Maternal & Child Queue"
-              description="Maternal & child health"
-              onNavigate={closeAll}
-            />
+            {canConsult && (
+              <DropdownItem
+                to="/doctor/consultation/triage"
+                icon="bi-clipboard2-pulse"
+                title="Consultation Queue"
+                description="General consultation"
+                onNavigate={closeAll}
+              />
+            )}
+            {canAdult && (
+              <DropdownItem
+                to="/doctor/adult/triage"
+                icon="bi-heart-pulse"
+                title="Adult Care Queue"
+                description="Adult medical care"
+                onNavigate={closeAll}
+              />
+            )}
+            {canMch && (
+              <DropdownItem
+                to="/doctor/maternal/triage"
+                icon="bi-gender-female"
+                title="Maternal & Child Queue"
+                description="Maternal & child health"
+                onNavigate={closeAll}
+              />
+            )}
           </DesktopDropdown>
+          )}
 
           <TopLink to="/doctor/appointments" onNavigate={closeAll}>
             <i className="bi bi-calendar-check text-base" />
@@ -349,6 +372,7 @@ export default function DoctorSidebar() {
           </div>
 
           {/* Clinical Care accordion */}
+          {(canConsult || canAdult || canMch) && (
           <div>
             <button
               type="button"
@@ -377,51 +401,58 @@ export default function DoctorSidebar() {
               }`}
             >
               <div className="pl-4 space-y-0.5">
-                <NavLink
-                  to="/doctor/consultation/triage"
-                  onClick={closeAll}
-                  className={({ isActive }) =>
-                    `flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
-                      isActive
-                        ? "bg-indigo-50 text-indigo-700 font-medium"
-                        : "text-slate-600 hover:bg-slate-50"
-                    }`
-                  }
-                >
-                  <i className="bi bi-clipboard2-pulse text-xs" />
-                  Consultation Queue
-                </NavLink>
-                <NavLink
-                  to="/doctor/adult/triage"
-                  onClick={closeAll}
-                  className={({ isActive }) =>
-                    `flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
-                      isActive
-                        ? "bg-indigo-50 text-indigo-700 font-medium"
-                        : "text-slate-600 hover:bg-slate-50"
-                    }`
-                  }
-                >
-                  <i className="bi bi-heart-pulse text-xs" />
-                  Adult Care Queue
-                </NavLink>
-                <NavLink
-                  to="/doctor/maternal/triage"
-                  onClick={closeAll}
-                  className={({ isActive }) =>
-                    `flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
-                      isActive
-                        ? "bg-indigo-50 text-indigo-700 font-medium"
-                        : "text-slate-600 hover:bg-slate-50"
-                    }`
-                  }
-                >
-                  <i className="bi bi-gender-female text-xs" />
-                  Maternal & Child Queue
-                </NavLink>
+                {canConsult && (
+                  <NavLink
+                    to="/doctor/consultation/triage"
+                    onClick={closeAll}
+                    className={({ isActive }) =>
+                      `flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
+                        isActive
+                          ? "bg-indigo-50 text-indigo-700 font-medium"
+                          : "text-slate-600 hover:bg-slate-50"
+                      }`
+                    }
+                  >
+                    <i className="bi bi-clipboard2-pulse text-xs" />
+                    Consultation Queue
+                  </NavLink>
+                )}
+                {canAdult && (
+                  <NavLink
+                    to="/doctor/adult/triage"
+                    onClick={closeAll}
+                    className={({ isActive }) =>
+                      `flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
+                        isActive
+                          ? "bg-indigo-50 text-indigo-700 font-medium"
+                          : "text-slate-600 hover:bg-slate-50"
+                      }`
+                    }
+                  >
+                    <i className="bi bi-heart-pulse text-xs" />
+                    Adult Care Queue
+                  </NavLink>
+                )}
+                {canMch && (
+                  <NavLink
+                    to="/doctor/maternal/triage"
+                    onClick={closeAll}
+                    className={({ isActive }) =>
+                      `flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
+                        isActive
+                          ? "bg-indigo-50 text-indigo-700 font-medium"
+                          : "text-slate-600 hover:bg-slate-50"
+                      }`
+                    }
+                  >
+                    <i className="bi bi-gender-female text-xs" />
+                    Maternal & Child Queue
+                  </NavLink>
+                )}
               </div>
             </div>
           </div>
+          )}
 
           <NavLink
             to="/doctor/appointments"

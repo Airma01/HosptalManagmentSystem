@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import {useParams, useSearchParams, useNavigate} from "react-router-dom";
 import API from "../../../../../Config/API";
 import { canWriteMaternalChildHealth } from "../../../../../utils/canWriteMaternalChildHealth";
 import MCHContextHeader from "../shared/MCHContextHeader";
@@ -9,6 +9,26 @@ import { Field, fmtDate } from "../shared/Field";
 const inputCls = "w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500";
 
 export default function PNCVisit() {
+  const navigate = useNavigate();
+  const [mchAccessAllowed, setMchAccessAllowed] = useState(null); // null = checking
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const ok = await canWriteMaternalChildHealth();
+      if (cancelled) return;
+      if (!ok) {
+        navigate("/doctor", { replace: true });
+        setMchAccessAllowed(false);
+      } else {
+        setMchAccessAllowed(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
+
   const { patientId, visitId } = useParams();
   const [sp] = useSearchParams();
   const api = `/api/doctor/patient/${patientId}/maternal-child`;
@@ -74,6 +94,15 @@ export default function PNCVisit() {
       setFormError(err.response?.data?.message || "Failed to save PNC visit.");
     } finally { setSaving(false); }
   };
+
+  if (mchAccessAllowed !== true) {
+    return (
+      <div className="p-6 text-slate-500 text-sm flex items-center gap-2">
+        <i className="bi bi-arrow-repeat animate-spin" />
+        Checking access…
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 max-w-6xl mx-auto px-2 sm:px-0">

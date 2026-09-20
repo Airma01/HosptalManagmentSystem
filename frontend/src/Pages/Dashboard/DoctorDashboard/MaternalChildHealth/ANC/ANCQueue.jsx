@@ -10,9 +10,29 @@ const inputCls =
   "w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500";
 
 export default function ANCQueue() {
+  const navigate = useNavigate();
+  const [mchAccessAllowed, setMchAccessAllowed] = useState(null); // null = checking
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const ok = await canWriteMaternalChildHealth();
+      if (cancelled) return;
+      if (!ok) {
+        navigate("/doctor", { replace: true });
+        setMchAccessAllowed(false);
+      } else {
+        setMchAccessAllowed(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
+
   const { patientId, visitId } = useParams();
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+  
   const base = `/doctor/maternal/patient/${patientId}/${visitId}`;
   const api = `/api/doctor/patient/${patientId}/maternal-child`;
   const preselected = searchParams.get("pregnancyId") || "";
@@ -133,6 +153,15 @@ export default function ANCQueue() {
   };
 
   const detail = (id) => detailCache[id];
+
+  if (mchAccessAllowed !== true) {
+    return (
+      <div className="p-6 text-slate-500 text-sm flex items-center gap-2">
+        <i className="bi bi-arrow-repeat animate-spin" />
+        Checking access…
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 max-w-6xl mx-auto px-2 sm:px-0">

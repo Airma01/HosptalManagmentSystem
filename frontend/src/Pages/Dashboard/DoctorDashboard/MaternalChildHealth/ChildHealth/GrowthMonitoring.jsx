@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import {useParams, useNavigate} from "react-router-dom";
 import API from "../../../../../Config/API";
 import { canWriteMaternalChildHealth } from "../../../../../utils/canWriteMaternalChildHealth";
 import { Field, fmtDate } from "../shared/Field";
@@ -7,6 +7,26 @@ import { Field, fmtDate } from "../shared/Field";
 const inputCls = "w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500";
 
 export default function GrowthMonitoring() {
+  const navigate = useNavigate();
+  const [mchAccessAllowed, setMchAccessAllowed] = useState(null); // null = checking
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const ok = await canWriteMaternalChildHealth();
+      if (cancelled) return;
+      if (!ok) {
+        navigate("/doctor", { replace: true });
+        setMchAccessAllowed(false);
+      } else {
+        setMchAccessAllowed(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
+
   const { patientId, visitId } = useParams();
   const api = `/api/doctor/patient/${patientId}/child-health`;
   const [rows, setRows] = useState([]);
@@ -60,6 +80,15 @@ export default function GrowthMonitoring() {
       setFormError(err.response?.data?.message || "Failed to save.");
     } finally { setSaving(false); }
   };
+
+  if (mchAccessAllowed !== true) {
+    return (
+      <div className="p-6 text-slate-500 text-sm flex items-center gap-2">
+        <i className="bi bi-arrow-repeat animate-spin" />
+        Checking access…
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">

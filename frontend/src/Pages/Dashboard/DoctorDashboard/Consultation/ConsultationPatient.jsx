@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import API from "../../../../Config/API";
+import { canAccessConsultation } from "../../../../utils/canAccessConsultation";
 import Allergies from "./Allergies";
 import MedicalHistory from "./MedicalHistory";
 import FamilyHistory from "./FamilyHistory";
@@ -36,6 +37,25 @@ export default function ConsultationPatient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [accessAllowed, setAccessAllowed] = useState(null); // null = checking
+
+  // Department gate — unauthorized → /doctor
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const ok = await canAccessConsultation();
+      if (cancelled) return;
+      if (!ok) {
+        navigate("/doctor", { replace: true });
+        setAccessAllowed(false);
+      } else {
+        setAccessAllowed(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -52,18 +72,21 @@ export default function ConsultationPatient() {
   }, [patientId, visitId]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    if (accessAllowed === true) {
+      load();
+    }
+  }, [accessAllowed, load]);
 
   const flash = (msg) => {
     setMessage(msg);
     setTimeout(() => setMessage(""), 3000);
   };
 
-  if (loading) {
+  if (accessAllowed !== true || loading) {
     return (
-      <div className="flex items-center justify-center min-h-[40vh] text-slate-500">
-        Loading patient data...
+      <div className="flex items-center justify-center min-h-[40vh] text-slate-500 gap-2">
+        <i className="bi bi-arrow-repeat animate-spin" />
+        {accessAllowed !== true ? "Checking access…" : "Loading patient data..."}
       </div>
     );
   }
