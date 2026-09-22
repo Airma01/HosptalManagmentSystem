@@ -90,7 +90,7 @@ const DispenseDetails = () => {
           </div>
           <div>
             <p className="text-sm text-gray-500">Total Amount</p>
-            <p className="text-lg font-bold text-blue-600">${dispense.totalAmount.toFixed(2)}</p>
+            <p className="text-lg font-bold text-blue-600">{dispense.totalAmount.toFixed(2)} Birr</p>
           </div>
         </div>
       </div>
@@ -128,8 +128,8 @@ const DispenseDetails = () => {
                 <tr key={index} className="border-b hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium text-gray-800">{item.medicineName}</td>
                   <td className="px-4 py-3 text-gray-600">{item.quantityDispensed}</td>
-                  <td className="px-4 py-3 text-gray-600">${item.unitPrice.toFixed(2)}</td>
-                  <td className="px-4 py-3 font-medium text-gray-700">${item.lineTotal.toFixed(2)}</td>
+                  <td className="px-4 py-3 text-gray-600">{item.unitPrice.toFixed(2)} Birr</td>
+                  <td className="px-4 py-3 font-medium text-gray-700">${item.lineTotal.toFixed(2)} Birr</td>
                 </tr>
               ))}
             </tbody>
@@ -139,7 +139,7 @@ const DispenseDetails = () => {
                   Total
                 </td>
                 <td className="px-4 py-3 font-bold text-blue-600">
-                  ${dispense.totalAmount.toFixed(2)}
+                  ${dispense.totalAmount.toFixed(2)} Birr
                 </td>
               </tr>
             </tfoot>

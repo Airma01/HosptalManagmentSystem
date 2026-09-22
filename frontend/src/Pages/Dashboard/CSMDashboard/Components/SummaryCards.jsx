@@ -41,7 +41,7 @@ const SummaryCards = ({ summary }) => {
     },
     {
       title: "Total Inventory Value",
-      value: `$${summary.totalInventoryValue?.toFixed(2) || "0.00"}`,
+      value: `${summary.totalInventoryValue?.toFixed(2) || "0.00"} Birr`,
       icon: <BsCurrencyDollar className="text-purple-500 text-xl" />,
       bg: "bg-purple-50",
       border: "border-purple-200",

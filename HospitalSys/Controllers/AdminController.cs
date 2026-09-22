@@ -966,6 +966,80 @@ public async Task<IActionResult> GetAllUsers()
     }
 }
 
+
+        /// <summary>
+        /// Get a single user by ID (safe fields only — never HashPassword).
+        /// GET /Hospital/Admin/get_user/{userId}
+        /// </summary>
+        [HttpGet("get_user/{userId:int}")]
+        [AuthorizeRole("Admin")]
+        public async Task<IActionResult> GetUserById(int userId)
+        {
+            try
+            {
+                var user = await _context.Users
+                    .AsNoTracking()
+                    .Include(u => u.UserRole)
+                        .ThenInclude(ur => ur.Role)
+                    .Where(u => u.UserID == userId)
+                    .Select(u => new
+                    {
+                        u.UserID,
+                        u.FirstName,
+                        u.FatherName,
+                        u.Gender,
+                        u.Email,
+                        u.Phone,
+                        u.Username,
+                        u.IsActive,
+                        u.Created_at,
+                        Roles = u.UserRole.Select(ur => ur.Role != null ? ur.Role.RoleName : "").ToList()
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (user == null)
+                    return NotFound(new { message = "User not found." });
+
+                return Ok(user);
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { message = "An error occurred while retrieving the user." });
+            }
+        }
+
+        /// <summary>
+        /// Admin password reset for a user. Uses existing BCrypt hashing.
+        /// PUT /Hospital/Admin/change_user_password/{userId}
+        /// Body: { "newPassword": "..." }
+        /// </summary>
+        [HttpPut("change_user_password/{userId:int}")]
+        [AuthorizeRole("Admin")]
+        public async Task<IActionResult> ChangeUserPassword(int userId, [FromBody] AdminChangePasswordDto dto)
+        {
+            try
+            {
+                if (dto == null || string.IsNullOrWhiteSpace(dto.NewPassword))
+                    return BadRequest(new { message = "New password is required." });
+
+                if (dto.NewPassword.Length < 6)
+                    return BadRequest(new { message = "Password must be at least 6 characters." });
+
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.UserID == userId);
+                if (user == null)
+                    return NotFound(new { message = "User not found." });
+
+                user.HashPassword = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Password changed successfully.", userId = user.UserID });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { message = "An error occurred while changing the password." });
+            }
+        }
+
         [HttpGet("get_all_clinical_departments")]
         public async Task<IActionResult> GetClinicalDepartment()
         {

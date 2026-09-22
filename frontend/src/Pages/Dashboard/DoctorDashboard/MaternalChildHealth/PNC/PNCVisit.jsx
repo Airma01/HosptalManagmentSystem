@@ -38,6 +38,7 @@ export default function PNCVisit() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [show, setShow] = useState(false);
+  const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
   const [expandedId, setExpandedId] = useState(null);
@@ -89,7 +90,10 @@ export default function PNCVisit() {
         treatmentPlan: form.treatmentPlan || null,
         notes: form.notes || null,
       });
-      setShow(false); load();
+      setShow(false);
+      setMessage("PNC visit saved. Overall Visit Status set to PNC.");
+      setTimeout(() => setMessage(""), 4000);
+      load();
     } catch (err) {
       setFormError(err.response?.data?.message || "Failed to save PNC visit.");
     } finally { setSaving(false); }
@@ -106,6 +110,12 @@ export default function PNCVisit() {
 
   return (
     <div className="space-y-4 max-w-6xl mx-auto px-2 sm:px-0">
+      {message && (
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl px-4 py-3 text-sm mb-3">
+          <i className="bi bi-check-circle me-2" />
+          {message}
+        </div>
+      )}
       <MCHModuleNav patientId={patientId} visitId={visitId} pregnancyId={pregnancyId} />
       <MCHContextHeader patientId={patientId} visitId={visitId} pregnancyId={pregnancyId || undefined}
         moduleTitle="Postnatal Care (PNC)" moduleIcon="bi-person-heart" />

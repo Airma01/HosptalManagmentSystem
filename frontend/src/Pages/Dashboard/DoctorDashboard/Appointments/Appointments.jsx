@@ -7,6 +7,10 @@ import {
   createDoctorAppointment,
   getPatientsForSearch,
 } from "../Services/appointmentApi";
+import { getAuthenticatedUser } from "../../../../utils/getAuthenticatedUser";
+import { canWriteAdultMedicalCareFromUser } from "../../../../utils/canWriteAdultMedicalCare";
+import { canWriteMaternalChildHealthFromUser } from "../../../../utils/canWriteMaternalChildHealth";
+import { canAccessConsultationFromUser } from "../../../../utils/canAccessConsultation";
 
 // ETHIOPIAN CALENDAR
 import { DayPicker } from "@daypicker/ethiopic";
@@ -236,6 +240,8 @@ export default function Appointments() {
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState("");
+  // After start/continue: choose clinical destination by department permission
+  const [destinations, setDestinations] = useState(null); // { patientID, visitID, options: [{id,label,path,icon}] }
 
   // Create modal + patient search
   const [showCreate, setShowCreate] = useState(false);
@@ -386,6 +392,41 @@ export default function Appointments() {
     }
   }
 
+  function buildClinicalDestinations(patientID, visitID, user) {
+    const options = [];
+    if (canAccessConsultationFromUser(user)) {
+      options.push({
+        id: "consultation",
+        label: "Consultation",
+        description: "History, examination, diagnosis, lab, radiology, prescription",
+        path: `/doctor/consultation/patient/${patientID}/${visitID}`,
+        icon: "bi-clipboard2-pulse",
+        color: "bg-indigo-600 hover:bg-indigo-700",
+      });
+    }
+    if (canWriteAdultMedicalCareFromUser(user)) {
+      options.push({
+        id: "adult",
+        label: "Adult Medical Care",
+        description: "Chronic adult care (diabetes, hypertension, asthma, etc.)",
+        path: `/doctor/adult/patient/${patientID}/${visitID}`,
+        icon: "bi-heart-pulse",
+        color: "bg-sky-600 hover:bg-sky-700",
+      });
+    }
+    if (canWriteMaternalChildHealthFromUser(user)) {
+      options.push({
+        id: "maternal",
+        label: "Maternal & Child Health",
+        description: "ANC, PNC, pregnancy, delivery, child health",
+        path: `/doctor/maternal/patient/${patientID}/${visitID}`,
+        icon: "bi-balloon-heart",
+        color: "bg-rose-600 hover:bg-rose-700",
+      });
+    }
+    return options;
+  }
+
   async function handleStartOrContinue() {
     if (!details) return;
     setStarting(true);
@@ -393,10 +434,25 @@ export default function Appointments() {
     try {
       const res = await startDoctorAppointment(details.appointmentID);
       const data = res.data;
+      const patientID = data.patientID ?? data.PatientID;
+      const visitID = data.visitID ?? data.VisitID;
+
+      const user = await getAuthenticatedUser();
+      const options = buildClinicalDestinations(patientID, visitID, user);
+
       setDetails(null);
-      navigate(
-        `/doctor/consultation/patient/${data.patientID}/${data.visitID}`
-      );
+
+      if (options.length === 0) {
+        // Fallback: consultation path (backend still created the visit)
+        navigate(`/doctor/consultation/patient/${patientID}/${visitID}`);
+        return;
+      }
+      if (options.length === 1) {
+        navigate(options[0].path);
+        return;
+      }
+      // Multiple permissions → let the doctor choose
+      setDestinations({ patientID, visitID, options });
     } catch (err) {
       setStartError(
         err.response?.data?.message ||
@@ -1068,6 +1124,51 @@ export default function Appointments() {
           </div>
         </div>
       )}
+
+      {/* Choose clinical module after Start / Continue (by department permission) */}
+      {destinations && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-slate-800">Continue patient care</h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Visit #{destinations.visitID} · choose a module you are allowed to use
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDestinations(null)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <i className="bi bi-x-lg" />
+              </button>
+            </div>
+            <div className="p-4 space-y-2">
+              {destinations.options.map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => {
+                    const path = opt.path;
+                    setDestinations(null);
+                    navigate(path);
+                  }}
+                  className={`w-full text-left flex items-start gap-3 px-4 py-3 rounded-xl text-white ${opt.color} transition`}
+                >
+                  <i className={`bi ${opt.icon} text-xl mt-0.5`} />
+                  <span>
+                    <span className="block font-semibold text-sm">{opt.label}</span>
+                    <span className="block text-xs opacity-90 mt-0.5">{opt.description}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+
     </div>
   );
 }

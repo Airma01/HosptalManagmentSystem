@@ -196,7 +196,7 @@ const AdminLogin = () => {
           {/* Footer */}
           <div className="mt-8 text-center">
             <p className="text-sm text-gray-500">
-              Demo Credentials: <span className="font-mono text-gray-700">admin</span> / <span className="font-mono text-gray-700">admin123</span>
+              For Bishoftu General Hospital Staff Only. Unauthorized access is prohibited.
             </p>
             <p className="mt-2 text-xs text-gray-400">
               © 2024 Hospital Management System. All rights reserved.

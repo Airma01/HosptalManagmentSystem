@@ -37,9 +37,9 @@ export default function ConsultationPatient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [accessAllowed, setAccessAllowed] = useState(null); // null = checking
+  const [accessAllowed, setAccessAllowed] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
-  // Department gate — unauthorized → /doctor
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -82,6 +82,54 @@ export default function ConsultationPatient() {
     setTimeout(() => setMessage(""), 3000);
   };
 
+  const normalizeStatus = (s) => {
+    if (!s) return "";
+    const t = String(s).trim();
+    if (/^triaged$/i.test(t) || /^in\s*progress$/i.test(t)) return "Progress";
+    if (/^completed$/i.test(t)) return "Complete";
+    return t;
+  };
+
+  const startConsultation = async () => {
+    setActionLoading(true);
+    try {
+      const res = await API.put(
+        `/api/doctor/patient/${patientId}/visit/${visitId}/start-consultation`
+      );
+      flash(res.data?.message || "Consultation started.");
+      await load();
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to start consultation.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const finishConsultation = async () => {
+    if (!window.confirm("Finish this consultation and mark the visit as Complete?")) return;
+    setActionLoading(true);
+    try {
+      const res = await API.put(
+        `/api/doctor/patient/${patientId}/visit/${visitId}/complete`
+      );
+      flash(res.data?.message || "Visit completed.");
+      await load();
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to complete visit.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const statusBadgeClass = (status) => {
+    const n = normalizeStatus(status);
+    if (n === "Scheduled") return "bg-blue-100 text-blue-800";
+    if (n === "Progress") return "bg-amber-100 text-amber-800";
+    if (n === "OnConsultation") return "bg-indigo-100 text-indigo-800";
+    if (n === "Complete") return "bg-emerald-100 text-emerald-800";
+    return "bg-slate-100 text-slate-700";
+  };
+
   if (accessAllowed !== true || loading) {
     return (
       <div className="flex items-center justify-center min-h-[40vh] text-slate-500 gap-2">
@@ -108,14 +156,18 @@ export default function ConsultationPatient() {
   const patient = data.patient || {};
   const visit = data.currentVisit || {};
   const triage = data.currentTriage;
+
+  // ALL consultations for this patient (every VisitID) from backend
   const consultations = data.previousConsultations || [];
 
-  // Only use consultations that belong to the CURRENT visit.
-  // Do NOT fall back to consultations from other visits.
+  // Current visit only — for lab / radiology / prescription
   const visitConsultations = consultations.filter(
     (c) => String(c.visitID) === String(visitId)
   );
   const primaryConsultationId = visitConsultations[0]?.consultationID || null;
+
+  // Full history for Consultation tab
+  const allConsultations = consultations;
 
   const laboratoryTests = data.laboratoryTests || [];
   const radiologyRequests = data.radiologyRequests || [];
@@ -130,14 +182,43 @@ export default function ConsultationPatient() {
         >
           <i className="bi bi-arrow-left" /> Back to queue
         </button>
-        {message && (
-          <span className="text-sm text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
-            {message}
+        <div className="flex items-center gap-2 flex-wrap">
+          {message && (
+            <span className="text-sm text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
+              {message}
+            </span>
+          )}
+          <span
+            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${statusBadgeClass(
+              visit.status
+            )}`}
+          >
+            Visit Status: {normalizeStatus(visit.status) || visit.status || "—"}
           </span>
-        )}
+          {["Scheduled", "Progress"].includes(normalizeStatus(visit.status)) && (
+            <button
+              type="button"
+              disabled={actionLoading}
+              onClick={startConsultation}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
+            >
+              <i className="bi bi-play-fill" />
+              Start Consultation
+            </button>
+          )}
+          {normalizeStatus(visit.status) === "OnConsultation" && (
+            <button
+              type="button"
+              disabled={actionLoading}
+              onClick={finishConsultation}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 disabled:opacity-50"
+            >
+              <i className="bi bi-check2-circle" />
+              Finish Consultation
+            </button>
+          )}
+        </div>
       </div>
-
-     
 
       {/* Section tabs */}
       <div className="flex flex-wrap gap-1 bg-white border rounded-xl p-2 shadow-sm">
@@ -161,64 +242,68 @@ export default function ConsultationPatient() {
       {/* Content */}
       <div className="min-h-[320px]">
         {section === "overview" && (
-          
           <div className="bg-white border rounded-xl shadow-sm p-5 space-y-3 text-sm">
-             {/* Patient card */}
-      <div className="bg-white border rounded-xl shadow-sm p-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-semibold text-slate-800">
-              {patient.firstName} {patient.lastName}
-            </h2>
-            <p className="text-sm text-slate-500 mt-1">
-              MRN: <strong>{patient.mrn || "—"}</strong> · {patient.gender || "—"} · DOB:{" "}
-              {patient.dateOfBirth
-                ? new Date(patient.dateOfBirth).toLocaleDateString()
-                : "—"}
-            </p>
-            <p className="text-sm text-slate-500">
-              Phone: {patient.phone || "—"} · {patient.address || "—"}
-            </p>
-          </div>
-          <div className="text-sm text-right">
-            <p>
-              Visit #{visit.visitID} · {visit.visitType || "—"} ·{" "}
-              <span className="font-medium">{visit.status || "—"}</span>
-            </p>
-            <p className="text-slate-500">
-              {visit.visitDate ? new Date(visit.visitDate).toLocaleString() : "—"}
-            </p>
-          </div>
-        </div>
-        {triage && (
-          <div className="mt-4 pt-4 border-t grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 text-sm">
-            <div>
-              <span className="text-slate-400 block text-xs">Temp</span>
-              {triage.temprature ?? "—"} °C
+            <div className="bg-white border rounded-xl shadow-sm p-5">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-semibold text-slate-800">
+                    {patient.firstName} {patient.lastName}
+                  </h2>
+                  <p className="text-sm text-slate-500 mt-1">
+                    MRN: <strong>{patient.mrn || "—"}</strong> · {patient.gender || "—"} · DOB:{" "}
+                    {patient.dateOfBirth
+                      ? new Date(patient.dateOfBirth).toLocaleDateString()
+                      : "—"}
+                  </p>
+                  <p className="text-sm text-slate-500">
+                    Phone: {patient.phone || "—"} · {patient.address || "—"}
+                  </p>
+                </div>
+                <div className="text-sm text-right">
+                  <p>
+                    Visit #{visit.visitID} · {visit.visitType || "—"} ·{" "}
+                    <span
+                      className={`font-medium px-2 py-0.5 rounded-full text-xs ${statusBadgeClass(
+                        visit.status
+                      )}`}
+                    >
+                      {normalizeStatus(visit.status) || visit.status || "—"}
+                    </span>
+                  </p>
+                  <p className="text-slate-500">
+                    {visit.visitDate ? new Date(visit.visitDate).toLocaleString() : "—"}
+                  </p>
+                </div>
+              </div>
+              {triage && (
+                <div className="mt-4 pt-4 border-t grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 text-sm">
+                  <div>
+                    <span className="text-slate-400 block text-xs">Temp</span>
+                    {triage.temprature ?? "—"} °C
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-xs">BP</span>
+                    {triage.bloodPressure ?? "—"}
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-xs">HR</span>
+                    {triage.heartRate ?? "—"}
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-xs">RR</span>
+                    {triage.respiratotyRate ?? "—"}
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-xs">Weight</span>
+                    {triage.weight ?? "—"} kg
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-xs">Notes</span>
+                    {triage.notes || "—"}
+                  </div>
+                </div>
+              )}
             </div>
-            <div>
-              <span className="text-slate-400 block text-xs">BP</span>
-              {triage.bloodPressure ?? "—"}
-            </div>
-            <div>
-              <span className="text-slate-400 block text-xs">HR</span>
-              {triage.heartRate ?? "—"}
-            </div>
-            <div>
-              <span className="text-slate-400 block text-xs">RR</span>
-              {triage.respiratotyRate ?? "—"}
-            </div>
-            <div>
-              <span className="text-slate-400 block text-xs">Weight</span>
-              {triage.weight ?? "—"} kg
-            </div>
-            <div>
-              <span className="text-slate-400 block text-xs">Notes</span>
-              {triage.notes || "—"}
-            </div>
-          </div>
-        )}
-      </div>
             <p>
               Consultations (this visit): <strong>{visitConsultations.length}</strong>
               {" · "}
@@ -276,7 +361,8 @@ export default function ConsultationPatient() {
           <Consultation
             patientId={patientId}
             visitId={visitId}
-            consultations={visitConsultations}
+            consultations={allConsultations}
+            currentVisitConsultations={visitConsultations}
             onReload={load}
           />
         )}

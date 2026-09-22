@@ -5,6 +5,7 @@ import { getAuthenticatedUser } from "../../../utils/getAuthenticatedUser";
 import { canWriteAdultMedicalCareFromUser } from "../../../utils/canWriteAdultMedicalCare";
 import { canWriteMaternalChildHealthFromUser } from "../../../utils/canWriteMaternalChildHealth";
 import { canAccessConsultationFromUser } from "../../../utils/canAccessConsultation";
+import DoctorStatisticsDashboard from "./DoctorStatisticsDashboard";
 
 export default function DoctorDashboard() {
   const [doctor, setDoctor] = useState(null);
@@ -22,7 +23,7 @@ export default function DoctorDashboard() {
   }, []);
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6">
       <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
         <h2 className="text-2xl font-bold text-slate-800">
           Welcome, {doctor?.fullName || "Doctor"}
@@ -32,6 +33,8 @@ export default function DoctorDashboard() {
           {doctor?.departmentName ? ` · ${doctor.departmentName}` : ""}
         </p>
       </div>
+
+      <DoctorStatisticsDashboard />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {canConsult && (

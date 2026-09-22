@@ -41,7 +41,7 @@ namespace HospitalSys.Controllers.Doctor
             return id;
         }
 
-        private async Task<(PatientVisit? visit, bool forbidden)> ValidateVisitAccessAsync(
+       private async Task<(PatientVisit? visit, bool forbidden)> ValidateVisitAccessAsync(
             int patientId, int visitId, int departmentId)
         {
             var visit = await _context.PatientVisits
@@ -94,7 +94,7 @@ namespace HospitalSys.Controllers.Doctor
         // ============================================================
         // GET /api/doctor/patient/{patientId}/visit/{visitId}
         // ============================================================
-        [HttpGet("patient/{patientId:int}/visit/{visitId:int}")]
+         [HttpGet("patient/{patientId:int}/visit/{visitId:int}")]
         public async Task<IActionResult> GetPatientVisitDetails(int patientId, int visitId)
         {
             try
@@ -205,41 +205,51 @@ namespace HospitalSys.Controllers.Doctor
                     })
                     .ToListAsync();
 
-                var previousConsultations = await _context.Consultations
-                    .AsNoTracking()
-                    .Where(c => c.PatientVisit!.PatientID == patientId)
-                    .OrderByDescending(c => c.ConsultationDate)
-                    .Select(c => new ConsultationSummaryDto
-                    {
-                        ConsultationID = c.ConsultationID,
-                        VisitID = c.VisitID,
-                        DoctorID = c.DoctorID,
-                        ConsultationDate = c.ConsultationDate,
-                        ChiefComplaint = c.ChiefComplaint,
-                        HistoryOfPresentIllness = c.HistoryOfPresentIllness,
-                        Assessment = c.Assessment,
-                        TreatmentPlan = c.TreatmentPlan,
-                        ClinicalNotes = c.ClinicalNotes,
-                        PhysicalExaminations = c.PhysicalExaminations.Select(pe => new PhysicalExaminationDto
-                        {
-                            PhysicalExaminationID = pe.PhysicalExaminationID,
-                            ConsultationID = pe.ConsultationID,
-                            ExaminationArea = pe.ExaminationArea,
-                            Findings = pe.Findings,
-                            Notes = pe.Notes
-                        }).ToList(),
-                        Diagnoses = c.Diagnose.Select(d => new DiagnosisDto
-                        {
-                            DiagnosisID = d.DiagnosisID,
-                            ConsultationID = d.ConsultationID,
-                            Code = d.Code,
-                            Description = d.Description,
-                            CodingSystem = d.CodingSystem,
-                            DiagnosisType = d.DiagnosisType,
-                            IsPrimary = d.IsPrimary
-                        }).ToList()
-                    })
-                    .ToListAsync();
+               // All consultations for this patient (every previous VisitID)
+var patientVisitIds = await _context.PatientVisits
+    .AsNoTracking()
+    .Where(v => v.PatientID == patientId)
+    .Select(v => v.VisitID)
+    .ToListAsync();
+
+var previousConsultations = await _context.Consultations
+    .AsNoTracking()
+    .Include(c => c.PatientVisit)
+    .Include(c => c.PhysicalExaminations)
+    .Include(c => c.Diagnose)
+    .Where(c => patientVisitIds.Contains(c.VisitID))
+    .OrderByDescending(c => c.ConsultationDate)
+    .Select(c => new ConsultationSummaryDto
+    {
+        ConsultationID = c.ConsultationID,
+        VisitID = c.VisitID,
+        DoctorID = c.DoctorID,
+        ConsultationDate = c.ConsultationDate,
+        ChiefComplaint = c.ChiefComplaint,
+        HistoryOfPresentIllness = c.HistoryOfPresentIllness,
+        Assessment = c.Assessment,
+        TreatmentPlan = c.TreatmentPlan,
+        ClinicalNotes = c.ClinicalNotes,
+        PhysicalExaminations = c.PhysicalExaminations.Select(pe => new PhysicalExaminationDto
+        {
+            PhysicalExaminationID = pe.PhysicalExaminationID,
+            ConsultationID = pe.ConsultationID,
+            ExaminationArea = pe.ExaminationArea,
+            Findings = pe.Findings,
+            Notes = pe.Notes
+        }).ToList(),
+        Diagnoses = c.Diagnose.Select(d => new DiagnosisDto
+        {
+            DiagnosisID = d.DiagnosisID,
+            ConsultationID = d.ConsultationID,
+            Code = d.Code,
+            Description = d.Description,
+            CodingSystem = d.CodingSystem,
+            DiagnosisType = d.DiagnosisType,
+            IsPrimary = d.IsPrimary
+        }).ToList()
+    })
+    .ToListAsync();
 
                 var latestPrescription = await _context.Prescriptions
                     .AsNoTracking()
@@ -404,6 +414,11 @@ var radiologyRequests = await _context.RadiologyRequests
                 };
 
                 _context.Consultations.Add(consultation);
+
+                // Consultation.VisitID → PatientVisit: starting clinical documentation moves overall visit to OnConsultation.
+                // Lab / Radiology / Prescription do NOT do this (they only have ConsultationID).
+                await SetVisitStatusIfAllowedAsync(visitId, "OnConsultation");
+
                 await _context.SaveChangesAsync();
 
                 var response = new ConsultationSummaryDto
@@ -1399,6 +1414,156 @@ var radiologyRequests = await _context.RadiologyRequests
                 // ============================================================
         // LOOKUPS (names for dropdowns — Doctor role)
         // ============================================================
+
+
+        // ============================================================
+        // Overall Visit Status (PatientVisit.Status only)
+        // Consultation has VisitID FK → can update overall status.
+        // Lab / Radiology / Prescription have ConsultationID only → MUST NOT change PatientVisit.Status.
+        // Scheduled → Progress → OnConsultation → Complete
+        // ============================================================
+
+        [HttpPut("patient/{patientId:int}/visit/{visitId:int}/start-consultation")]
+        public async Task<IActionResult> StartConsultation(int patientId, int visitId)
+        {
+            try
+            {
+                int doctorId = GetDoctorId();
+                int departmentId = GetDepartmentId();
+
+                var (visitTracked, forbidden) = await GetVisitForStatusUpdateAsync(patientId, visitId, departmentId);
+                if (visitTracked == null)
+                    return NotFound(new { message = "Visit not found." });
+                if (forbidden)
+                    return Forbid();
+
+                var current = NormalizeVisitStatus(visitTracked.Status);
+
+                if (current == "Complete")
+                    return BadRequest(new { message = "Visit is already complete. Cannot start consultation." });
+                if (current == "OnConsultation")
+                    return Ok(new { message = "Consultation already in progress.", visitId = visitTracked.VisitID, visitStatus = visitTracked.Status });
+
+                if (current != "Scheduled" && current != "Progress")
+                    return BadRequest(new { message = $"Invalid status transition from '{visitTracked.Status}' to OnConsultation." });
+
+                visitTracked.Status = "OnConsultation";
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    message = "Consultation started.",
+                    visitId = visitTracked.VisitID,
+                    visitStatus = visitTracked.Status,
+                    doctorId
+                });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Unauthorized(new { message = "Unauthorized" });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { message = "An error occurred while starting consultation." });
+            }
+        }
+
+        [HttpPut("patient/{patientId:int}/visit/{visitId:int}/complete")]
+        public async Task<IActionResult> CompleteVisit(int patientId, int visitId)
+        {
+            try
+            {
+                int doctorId = GetDoctorId();
+                int departmentId = GetDepartmentId();
+
+                var (visitTracked, forbidden) = await GetVisitForStatusUpdateAsync(patientId, visitId, departmentId);
+                if (visitTracked == null)
+                    return NotFound(new { message = "Visit not found." });
+                if (forbidden)
+                    return Forbid();
+
+                var current = NormalizeVisitStatus(visitTracked.Status);
+
+                if (current == "Complete")
+                    return Ok(new { message = "Visit is already complete.", visitId = visitTracked.VisitID, visitStatus = visitTracked.Status });
+
+                if (current != "OnConsultation")
+                    return BadRequest(new { message = $"Visit must be OnConsultation before completion. Current status: '{visitTracked.Status}'." });
+
+                visitTracked.Status = "Complete";
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    message = "Visit completed successfully.",
+                    visitId = visitTracked.VisitID,
+                    visitStatus = visitTracked.Status,
+                    doctorId
+                });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Unauthorized(new { message = "Unauthorized" });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { message = "An error occurred while completing the visit." });
+            }
+        }
+
+        /// <summary>
+        /// Load PatientVisit for status update (authorized by triage → clinical department).
+        /// Uses VisitID directly (same FK Consultation.VisitID points to).
+        /// </summary>
+        private async Task<(PatientVisit? visit, bool forbidden)> GetVisitForStatusUpdateAsync(
+            int patientId, int visitId, int departmentId)
+        {
+            var visit = await _context.PatientVisits
+                .Include(v => v.Triage)
+                .FirstOrDefaultAsync(v => v.VisitID == visitId && v.PatientID == patientId);
+
+            if (visit == null)
+                return (null, false);
+
+            bool inDepartment = visit.Triage != null &&
+                                visit.Triage.Any(t => t.ClinicalDepartmentID == departmentId);
+
+            if (!inDepartment)
+                return (null, true);
+
+            return (visit, false);
+        }
+
+        /// <summary>
+        /// Set overall PatientVisit.Status via VisitID (used when creating Consultation).
+        /// Does not create a new visit. Skips if already Complete or already target.
+        /// </summary>
+        private async Task SetVisitStatusIfAllowedAsync(int visitId, string targetStatus)
+        {
+            var visit = await _context.PatientVisits.FirstOrDefaultAsync(v => v.VisitID == visitId);
+            if (visit == null) return;
+
+            var current = NormalizeVisitStatus(visit.Status);
+            if (current == "Complete") return;
+            if (current == targetStatus) return;
+
+            if (targetStatus == "OnConsultation")
+            {
+                if (current == "Scheduled" || current == "Progress")
+                    visit.Status = "OnConsultation";
+            }
+        }
+
+        private static string NormalizeVisitStatus(string? status)
+        {
+            if (string.IsNullOrWhiteSpace(status)) return "";
+            var s = status.Trim();
+            if (s.Equals("Triaged", StringComparison.OrdinalIgnoreCase)) return "Progress";
+            if (s.Equals("InProgress", StringComparison.OrdinalIgnoreCase)) return "Progress";
+            if (s.Equals("Completed", StringComparison.OrdinalIgnoreCase)) return "Complete";
+            if (s.Equals("In Progress", StringComparison.OrdinalIgnoreCase)) return "Progress";
+            return s;
+        }
 
         [HttpGet("lookups/branch-pharmacies")]
         public async Task<IActionResult> GetBranchPharmacies()

@@ -216,7 +216,23 @@ export default function TriageDepartmentQueueSections({
                     </td>
                     <td className="px-4 py-2.5">
                       <span className="inline-flex px-2 py-0.5 rounded-full text-xs bg-slate-100 text-slate-600">
-                        {r.visitStatus || "—"}
+                        <span
+                          className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
+                            (() => {
+                              const s = (r.visitStatus || "").trim();
+                              if (/^scheduled$/i.test(s)) return "bg-blue-100 text-blue-800";
+                              if (/^progress$/i.test(s) || /^triaged$/i.test(s)) return "bg-amber-100 text-amber-800";
+                              if (/^onconsultation$/i.test(s)) return "bg-indigo-100 text-indigo-800";
+                              if (/^anc$/i.test(s)) return "bg-pink-100 text-pink-800";
+                              if (/^pnc$/i.test(s)) return "bg-purple-100 text-purple-800";
+                              if (/^childhealth$/i.test(s)) return "bg-cyan-100 text-cyan-800";
+                              if (/^complete/i.test(s)) return "bg-emerald-100 text-emerald-800";
+                              return "bg-slate-100 text-slate-600";
+                            })()
+                          }`}
+                        >
+                          {r.visitStatus || "—"}
+                        </span>
                       </span>
                     </td>
                     {showVitals && (

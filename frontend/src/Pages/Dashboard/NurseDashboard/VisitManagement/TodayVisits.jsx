@@ -5,7 +5,12 @@ import { Link } from 'react-router-dom';
 const statusBadge = (status) => {
   const map = {
     Scheduled: 'bg-blue-50 text-blue-700 ring-blue-100',
+    Progress: 'bg-amber-50 text-amber-700 ring-amber-100',
     'In Progress': 'bg-amber-50 text-amber-700 ring-amber-100',
+    InProgress: 'bg-amber-50 text-amber-700 ring-amber-100',
+    Triaged: 'bg-amber-50 text-amber-700 ring-amber-100',
+    OnConsultation: 'bg-indigo-50 text-indigo-700 ring-indigo-100',
+    Complete: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
     Completed: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
   };
   const cls = map[status] || 'bg-slate-50 text-slate-600 ring-slate-100';

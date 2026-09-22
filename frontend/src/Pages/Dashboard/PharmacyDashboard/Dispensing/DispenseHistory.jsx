@@ -120,7 +120,7 @@ const DispenseHistory = () => {
                     <td className="px-4 py-3 text-gray-600">{d.pharmacistName}</td>
                     <td className="px-4 py-3 text-gray-600">{d.totalItems}</td>
                     <td className="px-4 py-3 font-medium text-gray-700">
-                      ${d.totalAmount.toFixed(2)}
+                      {d.totalAmount.toFixed(2)} Birr
                     </td>
                     <td className="px-4 py-3">
                       <button

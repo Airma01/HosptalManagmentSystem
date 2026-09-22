@@ -104,6 +104,12 @@ namespace HospitalSys.Controllers.Doctor
                     .AsNoTracking()
                     .Where(t => t.ClinicalDepartmentID == departmentId);
 
+                // Active queue: exclude completed overall visits (PatientVisit.Status)
+                query = query.Where(t =>
+                    t.PatientVisit != null &&
+                    t.PatientVisit.Status != "Complete" &&
+                    t.PatientVisit.Status != "Completed");
+
                 // Optional Triage Department filter (Central / Emergency / etc.)
                 if (triageDepartmentId.HasValue && triageDepartmentId.Value > 0)
                 {

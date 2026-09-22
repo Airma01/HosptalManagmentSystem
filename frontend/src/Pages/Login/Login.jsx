@@ -19,23 +19,21 @@ const roleConfig = {
     me: '/Hospital/nurse/NurseAuth/auth_me',
     redirect: '/nurse',
   },
-  // 🆕 CSM (Central Store Manager)
   CSM: {
     login: '/Hospital/CSM/CSMAuth/CSM_login',
     me: '/Hospital/CSM/CSMAuth/auth_me',
     redirect: '/csm/dashboard',
   },
-  // 🆕 Pharmacist
   Pharmacist: {
     login: '/Hospital/Pharmacist/PharmacistAuth/pharmacist_login',
     me: '/Hospital/Pharmacist/PharmacistAuth/auth_me',
     redirect: '/pharmacy',
   },
   LaboratoryTechnician: {
-  login: '/mlt/MLTAuth/mlt_login',
-  me: '/mlt/MLTAuth/auth_me',
-  redirect: '/mlt/dashboard',
-},
+    login: '/mlt/MLTAuth/mlt_login',
+    me: '/mlt/MLTAuth/auth_me',
+    redirect: '/mlt/dashboard',
+  },
   Radiographer: {
     login: '/radiographer/RadiographerAuth/radiographer_login',
     me: '/radiographer/RadiographerAuth/auth_me',
@@ -70,18 +68,13 @@ export default function Login() {
     }
 
     try {
-      // 1️⃣ Login – sets the HttpOnly cookie
       await API.post(config.login, { username, password });
-
-      // 2️⃣ Fetch authenticated user info (cookie is sent automatically)
       const meRes = await API.get(config.me);
       const userData = meRes.data;
 
-      // 3️⃣ Store user info in localStorage
       localStorage.setItem('user', JSON.stringify(userData));
       localStorage.setItem('role', selectedRole);
 
-      // 4️⃣ Redirect to the dashboard
       navigate(config.redirect, { replace: true });
     } catch (err) {
       console.error('Login error:', err);
@@ -96,101 +89,133 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 p-4">
-      <div className="w-full max-w-md bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl p-8 md:p-10 border border-white/30 transition-all duration-300 hover:shadow-3xl">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg mb-4">
-            <span className="text-4xl">🏥</span>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-4">
+      <div className="w-full max-w-md">
+        {/* Card */}
+        <div className="bg-white/90 backdrop-blur-md rounded-3xl shadow-xl border border-white/40 p-8 md:p-10 transition-all duration-300 hover:shadow-2xl">
+          
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg mb-4">
+              <i className="bi bi-hospital text-white text-3xl"></i>
+            </div>
+            <h1 className="text-3xl font-bold text-gray-800 tracking-tight">Bishoftu General</h1>
+            <p className="text-gray-500 text-sm mt-1.5">Secure role-based access</p>
           </div>
-          <h1 className="text-3xl font-extrabold text-gray-800 tracking-tight">MediCare</h1>
-          <p className="text-gray-500 text-sm mt-1">Secure role‑based access</p>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            
+            {/* Username */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Username
+              </label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-gray-400">
+                  <i className="bi bi-person text-lg"></i>
+                </span>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl 
+                             focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 
+                             outline-none transition bg-gray-50/50 hover:bg-white"
+                  placeholder="Enter your username"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Password */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Password
+              </label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-gray-400">
+                  <i className="bi bi-lock text-lg"></i>
+                </span>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl 
+                             focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 
+                             outline-none transition bg-gray-50/50 hover:bg-white"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Role Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Select your role
+              </label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-gray-400 pointer-events-none">
+                  <i className="bi bi-person-badge text-lg"></i>
+                </span>
+                <select
+                  value={selectedRole}
+                  onChange={(e) => setSelectedRole(e.target.value)}
+                  className="w-full appearance-none pl-11 pr-10 py-3 border border-gray-200 rounded-xl 
+                             focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 
+                             outline-none transition bg-gray-50/50 hover:bg-white cursor-pointer"
+                >
+                  <option value="Doctor">Doctor</option>
+                  <option value="Receptionist">Receptionist</option>
+                  <option value="Nurse">Nurse</option>
+                  <option value="CSM">CSM (Central Store Manager)</option>
+                  <option value="Pharmacist">Pharmacist</option>
+                  <option value="LaboratoryTechnician">Laboratory Technician</option>
+                  <option value="Radiographer">Radiographer</option>
+                </select>
+                <span className="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-gray-400">
+                  <i className="bi bi-chevron-down"></i>
+                </span>
+              </div>
+            </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="flex items-center gap-2.5 text-red-600 text-sm bg-red-50 px-4 py-3 rounded-xl border border-red-100">
+                <i className="bi bi-exclamation-circle-fill text-base"></i>
+                <span>{error}</span>
+              </div>
+            )}
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3.5 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 
+                         hover:from-indigo-700 hover:to-purple-700 text-white font-semibold 
+                         rounded-xl shadow-md hover:shadow-lg transition-all duration-300 
+                         flex items-center justify-center gap-2
+                         disabled:opacity-60 disabled:cursor-not-allowed
+                         active:scale-[0.98]"
+            >
+              {loading ? (
+                <>
+                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                  <span>Signing in...</span>
+                </>
+              ) : (
+                <>
+                  <i className="bi bi-box-arrow-in-right text-lg"></i>
+                  <span>Sign In</span>
+                </>
+              )}
+            </button>
+          </form>
+
+          <p className="text-center text-xs text-gray-400 mt-7">
+            Use real credentials for your role
+          </p>
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Username */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Username</label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </span>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 outline-none transition bg-white/80"
-                placeholder="Enter your username"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Password */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Password</label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-              </span>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 outline-none transition bg-white/80"
-                placeholder="••••••••"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Role Selection */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Select your role</label>
-            <div className="relative">
-              <select
-                value={selectedRole}
-                onChange={(e) => setSelectedRole(e.target.value)}
-                className="w-full appearance-none bg-white/80 border border-gray-300 rounded-xl px-4 py-2.5 pr-10 focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 outline-none transition cursor-pointer"
-              >
-                <option value="Doctor">Doctor</option>
-                <option value="Receptionist">Receptionist</option>
-                <option value="Nurse">Nurse</option>
-                <option value="CSM">CSM (Central Store Manager)</option>
-                <option value="Pharmacist">Pharmacist</option>
-                <option value="LaboratoryTechnician">LaboratoryTechnician</option>
-                <option value="Radiographer">Radiographer</option>
-              </select>
-              <span className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                </svg>
-              </span>
-            </div>
-          </div>
-
-          {error && (
-            <div className="text-red-500 text-sm bg-red-50 p-2.5 rounded-xl border border-red-200 flex items-center gap-2">
-              <span>⚠️</span> {error}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="btn btn-primary w-full py-2.5 text-white font-semibold rounded-xl transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ backgroundColor: '#4f46e5', border: 'none' }}
-          >
-            {loading ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
-
-        <p className="text-center text-xs text-gray-400 mt-6">
-          Use real credentials for your role.
-        </p>
       </div>
     </div>
   );

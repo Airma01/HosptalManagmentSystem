@@ -1,3 +1,4 @@
+
 using HospitalSys.Data;
 using HospitalSys.Dto.DoctorDtos;
 using HospitalSys.Models.MaternalChildHealth;
@@ -30,6 +31,103 @@ namespace HospitalSys.Controllers.Doctor
             if (string.IsNullOrEmpty(claim) || !int.TryParse(claim, out int id))
                 throw new UnauthorizedAccessException("Invalid department claim");
             return id;
+        }
+
+        /// <summary>
+        /// Set overall PatientVisit.Status via PatientVisitID (same VisitID as ANC/PNC).
+        /// Does not create a new visit. Skips if already Complete.
+        /// </summary>
+        private async Task SetPatientVisitStatusAsync(int patientVisitId, string status)
+        {
+            var visit = await _context.PatientVisits
+                .FirstOrDefaultAsync(v => v.VisitID == patientVisitId);
+            if (visit == null) return;
+
+            var current = (visit.Status ?? "").Trim();
+            if (current.Equals("Complete", StringComparison.OrdinalIgnoreCase)
+                || current.Equals("Completed", StringComparison.OrdinalIgnoreCase))
+                return;
+
+            visit.Status = status;
+        }
+
+        private static string NormalizeVisitStatus(string? status)
+        {
+            if (string.IsNullOrWhiteSpace(status)) return "";
+            var s = status.Trim();
+            if (s.Equals("Triaged", StringComparison.OrdinalIgnoreCase)) return "Progress";
+            if (s.Equals("InProgress", StringComparison.OrdinalIgnoreCase)) return "Progress";
+            if (s.Equals("In Progress", StringComparison.OrdinalIgnoreCase)) return "Progress";
+            if (s.Equals("Completed", StringComparison.OrdinalIgnoreCase)) return "Complete";
+            return s;
+        }
+
+        /// <summary>
+        /// MCH-specific complete visit.
+        /// Allows completion from OnConsultation, ANC, PNC, ChildHealth, Progress.
+        /// PUT /api/doctor/patient/{patientId}/maternal-child/visit/{visitId}/complete
+        /// </summary>
+        [HttpPut("visit/{visitId:int}/complete")]
+        public async Task<IActionResult> CompleteMaternalVisit(int patientId, int visitId)
+        {
+            try
+            {
+                var writeDenied = await CheckWritePermissionAsync();
+                if (writeDenied != null) return writeDenied;
+
+                await EnsurePatientAccessAsync(patientId);
+                await EnsureVisitBelongsToPatientAsync(patientId, visitId);
+
+                var visit = await _context.PatientVisits
+                    .FirstOrDefaultAsync(v => v.VisitID == visitId && v.PatientID == patientId);
+
+                if (visit == null)
+                    return NotFound(new { message = "Visit not found." });
+
+                var current = NormalizeVisitStatus(visit.Status);
+
+                if (current == "Complete")
+                {
+                    return Ok(new
+                    {
+                        message = "Visit is already complete.",
+                        visitId = visit.VisitID,
+                        visitStatus = visit.Status
+                    });
+                }
+
+                // Maternal / consultation activity statuses may all finish the overall visit
+                var allowed = new[] { "OnConsultation", "ANC", "PNC", "ChildHealth", "Progress" };
+                if (!allowed.Contains(current, StringComparer.OrdinalIgnoreCase))
+                {
+                    return BadRequest(new
+                    {
+                        message = $"Visit cannot be completed from status '{visit.Status}'. Allowed: OnConsultation, ANC, PNC, ChildHealth, Progress."
+                    });
+                }
+
+                visit.Status = "Complete";
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    message = "Visit completed successfully.",
+                    visitId = visit.VisitID,
+                    visitStatus = visit.Status
+                });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Unauthorized(new { message = "Unauthorized" });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { message = "An error occurred while completing the visit." });
+            }
         }
 
         private async Task EnsurePatientAccessAsync(int patientId)
@@ -512,6 +610,10 @@ namespace HospitalSys.Controllers.Doctor
                     Notes = dto.Notes
                 };
                 _context.ANCVisits.Add(entity);
+
+                // Overall PatientVisit.Status via PatientVisitID FK → ANC
+                await SetPatientVisitStatusAsync(dto.PatientVisitID, "ANC");
+
                 await _context.SaveChangesAsync();
                 return StatusCode(201, ToANCVisitDto(entity));
             }
@@ -1959,6 +2061,10 @@ return StatusCode(201, ToUltrasoundDto(entity));
                     Notes = dto.Notes
                 };
                 _context.PNCVisits.Add(entity);
+
+                // Overall PatientVisit.Status via PatientVisitID FK → PNC
+                await SetPatientVisitStatusAsync(dto.PatientVisitID, "PNC");
+
                 await _context.SaveChangesAsync();
                 return StatusCode(201, ToPNCVisitDto(entity));
             }

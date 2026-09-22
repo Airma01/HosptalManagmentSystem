@@ -40,6 +40,7 @@ export default function ANCQueue() {
   const [rows, setRows] = useState([]);
   const [pregnancies, setPregnancies] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -144,6 +145,8 @@ export default function ANCQueue() {
         fetalCondition: "", fetalHeartRate: "", fundalHeight: "", edema: "",
         counselingProvided: "", treatmentPlan: "", notes: "",
       }));
+      setMessage("ANC visit saved. Overall Visit Status set to ANC.");
+      setTimeout(() => setMessage(""), 4000);
       load();
     } catch (err) {
       setFormError(err.response?.data?.message || "Failed to create ANC visit.");
@@ -192,7 +195,15 @@ export default function ANCQueue() {
           Loading ANC records...
         </div>
       )}
+      {message && (
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl px-4 py-3 text-sm">
+          <i className="bi bi-check-circle me-2" />
+          {message}
+        </div>
+      )}
+
       {error && !loading && (
+
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">{error}</div>
       )}
       {!loading && rows.length === 0 && !error && (

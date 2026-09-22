@@ -214,7 +214,7 @@ namespace HospitalSys.Controllers.Doctor
                         PatientID = appointment.PatientID,
                         VisitDate = DateTime.UtcNow,
                         VisitType = "Appointment",          // conventional string used in project
-                        Status = "InProgress",
+                        Status = "Progress",
                         Created_at = DateTime.UtcNow
                     };
                     _context.PatientVisits.Add(visit);

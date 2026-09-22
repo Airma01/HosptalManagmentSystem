@@ -439,6 +439,10 @@ public async Task<IActionResult> RegisterPatient([FromBody] RegisterPatientDto d
                         Notes = dto.Notes
                     };
                     _context.Triages.Add(triage);
+
+                    // Same VisitID: after triage + department → Progress
+                    visit.Status = "Progress";
+
                     await _context.SaveChangesAsync();
 
                     await transaction.CommitAsync();
@@ -730,6 +734,15 @@ public async Task<IActionResult> GetClinicalDepartments()
                 };
 
                 _context.Triages.Add(triage);
+
+                // Overall visit → Progress (one VisitID; patient sent to clinical department)
+                if (string.IsNullOrWhiteSpace(visit.Status)
+                    || visit.Status.Equals("Scheduled", StringComparison.OrdinalIgnoreCase)
+                    || visit.Status.Equals("Triaged", StringComparison.OrdinalIgnoreCase))
+                {
+                    visit.Status = "Progress";
+                }
+
                 await _context.SaveChangesAsync();
 
                 var patient = await _context.Patients.FindAsync(visit.PatientID);
@@ -891,11 +904,10 @@ public async Task<IActionResult> GetClinicalDepartments()
                 if (visit == null)
                     return NotFound(new { message = "Associated visit not found" });
 
-                // Set visit status to "Triaged" or something meaningful
-                visit.Status = "Triaged";
+                visit.Status = "Progress";
                 await _context.SaveChangesAsync();
 
-                return Ok(new { message = "Triage completed successfully" });
+                return Ok(new { message = "Triage completed successfully", visitStatus = visit.Status });
             }
             catch (Exception)
             {

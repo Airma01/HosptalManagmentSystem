@@ -196,4 +196,14 @@ namespace HospitalSys.Dto
         [MinLength(6)]
         public string NewPassword { get; set; } = "";
     }
+
+
+    // Admin-only password reset (no current password required)
+    public class AdminChangePasswordDto
+    {
+        [Required(ErrorMessage = "New password is required")]
+        [MinLength(6, ErrorMessage = "Password must be at least 6 characters")]
+        public string NewPassword { get; set; } = "";
+    }
+
 }
