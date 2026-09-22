@@ -8,7 +8,8 @@ function pageTitle(pathname) {
   if (pathname.includes("/maternal/patient/")) return "Maternal & Child Patient";
   if (pathname.includes("/consultation/triage")) return "Consultation Queue";
   if (pathname.includes("/adult/triage")) return "Adult Care Queue";
-  if (pathname.includes("/maternal/triage")) return "Maternal & Child Queue";
+  if (pathname.includes("/maternal/child-health/triage")) return "Child Health Queue";
+  if (pathname.includes("/maternal/triage")) return "Maternal Health Queue";
   if (pathname.includes("/referrals/create")) return "Create Referral";
   if (pathname.includes("/referrals")) return "Referral Queue";
   if (pathname.includes("/appointments")) return "Appointments";

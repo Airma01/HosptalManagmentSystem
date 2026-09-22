@@ -5,7 +5,7 @@ import API from "../../../../Config/API";
 import TriageDepartmentQueueSections from "../Components/TriageDepartmentQueueSections";
 import { canWriteMaternalChildHealth } from "../../../../utils/canWriteMaternalChildHealth";
 
-export default function MaternalChildQueue() {
+export default function ChildHealthQueue() {
   const navigate = useNavigate();
   const [mchAccessAllowed, setMchAccessAllowed] = useState(null); // null = checking
 
@@ -39,7 +39,7 @@ export default function MaternalChildQueue() {
       try {
         // Backend filters VisitType in the database (not in React)
         const res = await API.get("/api/doctor/triage", {
-          params: { visitType: "Maternal" },
+          params: { visitType: "ChildHealth" },
         });
         if (!cancelled) setRows(Array.isArray(res.data) ? res.data : []);
       } catch (err) {
@@ -65,7 +65,8 @@ export default function MaternalChildQueue() {
         String(r.mrn ?? "").toLowerCase().includes(q) ||
         (r.patientName || "").toLowerCase().includes(q) ||
         (r.departmentName || "").toLowerCase().includes(q) ||
-        (r.triageDepartmentName || "").toLowerCase().includes(q)
+        (r.triageDepartmentName || "").toLowerCase().includes(q) ||
+        String(r.visitType || "").toLowerCase().includes(q)
     );
   }, [rows, search]);
 
@@ -82,9 +83,9 @@ export default function MaternalChildQueue() {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold text-slate-800">Maternal Health Queue</h2>
+          <h2 className="text-xl font-semibold text-slate-800">Child Health Queue</h2>
           <p className="text-sm text-slate-500">
-            Patients with Visit Type Maternal · Emergency prioritized
+            Patients with Visit Type Child Health · Emergency prioritized
           </p>
         </div>
         <div className="relative">
@@ -93,7 +94,7 @@ export default function MaternalChildQueue() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search name, MRN, ID..."
-            className="pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-sm w-full sm:w-56 focus:outline-none focus:ring-2 focus:ring-rose-500"
+            className="pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-sm w-full sm:w-56 focus:outline-none focus:ring-2 focus:ring-sky-500"
           />
         </div>
       </div>
@@ -119,10 +120,24 @@ export default function MaternalChildQueue() {
           renderActions={(r) => (
             <button
               type="button"
-              onClick={() =>
-                navigate(`/doctor/maternal/patient/${r.patientID}/${r.visitID}`)
-              }
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-medium hover:bg-rose-700"
+              onClick={() => {
+                // Direct child entry — do not treat patient as mother
+                try {
+                  sessionStorage.setItem(
+                    "ch_queue_direct",
+                    JSON.stringify({
+                      patientId: r.patientID,
+                      visitId: r.visitID,
+                    })
+                  );
+                } catch (_e) {
+                  /* ignore */
+                }
+                navigate(
+                  `/doctor/maternal/patient/${r.patientID}/${r.visitID}/child-health`
+                );
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-600 text-white text-xs font-medium hover:bg-sky-700"
             >
               <i className="bi bi-eye" />
               View

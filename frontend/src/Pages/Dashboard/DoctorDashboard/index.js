@@ -37,3 +37,4 @@ export { default as ChildHealthDashboard } from "./MaternalChildHealth/ChildHeal
 export { default as ReferralQueue } from "./Referral/ReferralQueue";
 export { default as ReferralDetails } from "./Referral/ReferralDetails";
 export { default as CreateReferral } from "./Referral/CreateReferral";
+export { default as ChildHealthQueue } from "./MaternalChildHealth/ChildHealthQueue";

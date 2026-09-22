@@ -23,6 +23,7 @@ import {
   AdultMedicalCareQueue,
   AdultMedicalCarePatient,
   MaternalChildQueue,
+  ChildHealthQueue,
   MaternalChildDashboard,
   PregnancyList,
   PregnancyRegistration,
@@ -283,6 +284,7 @@ function App() {
               element={<AdultMedicalCarePatient />}
             />
             <Route path="maternal/triage" element={<MaternalChildQueue />} />
+            <Route path="maternal/child-health/triage" element={<ChildHealthQueue />} />
             <Route path="maternal/patient/:patientId/:visitId" element={<MaternalChildDashboard />} />
             <Route path="maternal/patient/:patientId/:visitId/pregnancies" element={<PregnancyList />} />
             <Route path="maternal/patient/:patientId/:visitId/pregnancies/register" element={<PregnancyRegistration />} />

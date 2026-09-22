@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { getAuthenticatedUser } from "../../../utils/getAuthenticatedUser";
@@ -261,8 +262,17 @@ export default function DoctorSidebar() {
               <DropdownItem
                 to="/doctor/maternal/triage"
                 icon="bi-gender-female"
-                title="Maternal & Child Queue"
-                description="Maternal & child health"
+                title="Maternal Health Queue"
+                description="Visit type Maternal"
+                onNavigate={closeAll}
+              />
+            )}
+            {canMch && (
+              <DropdownItem
+                to="/doctor/maternal/child-health/triage"
+                icon="bi-emoji-smile"
+                title="Child Health Queue"
+                description="Visit type Child Health"
                 onNavigate={closeAll}
               />
             )}
@@ -446,7 +456,23 @@ export default function DoctorSidebar() {
                     }
                   >
                     <i className="bi bi-gender-female text-xs" />
-                    Maternal & Child Queue
+                    Maternal Health Queue
+                  </NavLink>
+                )}
+                {canMch && (
+                  <NavLink
+                    to="/doctor/maternal/child-health/triage"
+                    onClick={closeAll}
+                    className={({ isActive }) =>
+                      `flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
+                        isActive
+                          ? "bg-indigo-50 text-indigo-700 font-medium"
+                          : "text-slate-600 hover:bg-slate-50"
+                      }`
+                    }
+                  >
+                    <i className="bi bi-emoji-smile text-xs" />
+                    Child Health Queue
                   </NavLink>
                 )}
               </div>

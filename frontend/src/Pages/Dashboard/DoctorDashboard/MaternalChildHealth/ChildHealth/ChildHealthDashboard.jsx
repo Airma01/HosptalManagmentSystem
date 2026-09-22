@@ -1,3 +1,4 @@
+
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import API from "../../../../../Config/API";
@@ -17,6 +18,29 @@ const TABS = [
   { key: "nutrition", label: "Nutrition", icon: "bi-apple" },
   { key: "imnci", label: "IMNCI", icon: "bi-clipboard2-pulse" },
 ];
+
+
+function readDirectChildEntry(routePatientId, routeVisitId) {
+  try {
+    const raw = sessionStorage.getItem("ch_queue_direct");
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    const pid = Number(data.patientId);
+    const vid = Number(data.visitId);
+    if (
+      pid > 0 &&
+      vid > 0 &&
+      pid === Number(routePatientId) &&
+      vid === Number(routeVisitId)
+    ) {
+      sessionStorage.removeItem("ch_queue_direct");
+      return { patientId: pid, visitId: vid };
+    }
+  } catch (_e) {
+    /* ignore */
+  }
+  return null;
+}
 
 function readSessionNumber(key, fallback) {
   try {
@@ -73,9 +97,28 @@ export default function ChildHealthDashboard() {
   const [actionMsg, setActionMsg] = useState("");
   const [busyChildId, setBusyChildId] = useState(null);
 
-  const [selectedChildId, setSelectedChildId] = useState(null);
-  const [selectedChild, setSelectedChild] = useState(null);
-  const [selectedVisitId, setSelectedVisitId] = useState(null);
+  // Direct entry from Child Health Queue: open this patient as the child immediately
+  // (do not load a mother → children list).
+  const [directChildEntry] = useState(() =>
+    readDirectChildEntry(routePatientId, routeVisitId)
+  );
+
+  const [selectedChildId, setSelectedChildId] = useState(() =>
+    directChildEntry ? directChildEntry.patientId : null
+  );
+  const [selectedChild, setSelectedChild] = useState(() =>
+    directChildEntry
+      ? {
+          childPatientID: directChildEntry.patientId,
+          firstName: "",
+          lastName: "",
+          childMRN: "",
+        }
+      : null
+  );
+  const [selectedVisitId, setSelectedVisitId] = useState(() =>
+    directChildEntry ? directChildEntry.visitId : null
+  );
 
   useEffect(() => {
     if (selectedChildId != null) return;
@@ -118,6 +161,7 @@ export default function ChildHealthDashboard() {
       loadChildren();
     }
   }, [loadChildren, selectedChildId]);
+
 
   const createVisit = async (child) => {
     setBusyChildId(child.childPatientID);
@@ -181,6 +225,11 @@ export default function ChildHealthDashboard() {
   };
 
   const backToList = () => {
+    // From Child Health Queue direct entry → go back to that queue, not mother list
+    if (directChildEntry) {
+      navigate("/doctor/maternal/child-health/triage");
+      return;
+    }
     setSelectedChildId(null);
     setSelectedChild(null);
     setSelectedVisitId(null);
@@ -189,6 +238,31 @@ export default function ChildHealthDashboard() {
       { replace: true }
     );
   };
+
+  // Load basic patient label for direct child entry (queue → child modules)
+  useEffect(() => {
+    if (!directChildEntry || !selectedChildId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await API.get(`/api/doctor/patient/${selectedChildId}`);
+        const p = res.data || {};
+        if (cancelled) return;
+        setSelectedChild((prev) => ({
+          ...(prev || {}),
+          childPatientID: selectedChildId,
+          firstName: p.firstName || p.FirstName || prev?.firstName || "",
+          lastName: p.lastName || p.LastName || prev?.lastName || "",
+          childMRN: p.mrn || p.MRN || prev?.childMRN || "",
+        }));
+      } catch (_e) {
+        /* optional – modules still work with ids only */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [directChildEntry, selectedChildId]);
 
   if (selectedChildId == null) {
     return (
@@ -361,7 +435,8 @@ export default function ChildHealthDashboard() {
         onClick={backToList}
         className="text-sm text-slate-500 hover:text-sky-600"
       >
-        <i className="bi bi-arrow-left" /> All children
+        <i className="bi bi-arrow-left" />{" "}
+        {directChildEntry ? "Child Health Queue" : "All children"}
       </button>
 
       <div className="bg-white border rounded-xl p-4">
@@ -407,7 +482,7 @@ export default function ChildHealthDashboard() {
 }
 
 function ChildHealthModules({ childPatientId, childVisitId, tab }) {
-  
+  const navigate = useNavigate();
   const { patientId: currentParamId, visitId: currentVisitId } = useParams();
 
   useEffect(() => {
