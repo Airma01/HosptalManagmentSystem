@@ -39,6 +39,28 @@ const roleConfig = {
     me: '/radiographer/RadiographerAuth/auth_me',
     redirect: '/radiology/radiographer',
   },
+
+  // ===== CASHIER ROLES =====
+  Cashier: {
+    login: '/Hospital/Cashier/CashierAuth/login',
+    me: '/Hospital/Cashier/CashierAuth/auth_me',
+    redirect: '/cashier/dashboard',
+  },
+  LaboratoryCashier: {
+    login: '/Hospital/LaboratoryCashier/LaboratoryCashierAuth/login',
+    me: '/Hospital/LaboratoryCashier/LaboratoryCashierAuth/auth_me',
+    redirect: '/laboratory-cashier/dashboard',
+  },
+  RadiologyCashier: {
+    login: '/Hospital/RadiologyCashier/RadiologyCashierAuth/login',
+    me: '/Hospital/RadiologyCashier/RadiologyCashierAuth/auth_me',
+    redirect: '/radiology-cashier/dashboard',
+  },
+  PharmacyCashier: {
+    login: '/Hospital/PharmacyCashier/PharmacyCashierAuth/login',
+    me: '/Hospital/PharmacyCashier/PharmacyCashierAuth/auth_me',
+    redirect: '/pharmacy-cashier/dashboard',
+  },
 };
 
 export default function Login() {
@@ -68,7 +90,12 @@ export default function Login() {
     }
 
     try {
-      await API.post(config.login, { username, password });
+      // Login body matches your backend LoginDto: { username, Password }
+      await API.post(config.login, {
+        username: username.trim(),
+        Password: password,
+      });
+
       const meRes = await API.get(config.me);
       const userData = meRes.data;
 
@@ -91,7 +118,6 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-4">
       <div className="w-full max-w-md">
-        {/* Card */}
         <div className="bg-white/90 backdrop-blur-md rounded-3xl shadow-xl border border-white/40 p-8 md:p-10 transition-all duration-300 hover:shadow-2xl">
           
           {/* Header */}
@@ -167,11 +193,17 @@ export default function Login() {
                 >
                   <option value="Doctor">Doctor</option>
                   <option value="Receptionist">Receptionist</option>
-                  <option value="Nurse">Nurse</option>
+                  <option value="Nurse">Triage (Nurse)</option>
                   <option value="CSM">CSM (Central Store Manager)</option>
                   <option value="Pharmacist">Pharmacist</option>
                   <option value="LaboratoryTechnician">Laboratory Technician</option>
                   <option value="Radiographer">Radiographer</option>
+
+                  {/* Cashier roles */}
+                  <option value="Cashier">Cashier (Consultation)</option>
+                  <option value="LaboratoryCashier">Laboratory Cashier</option>
+                  <option value="RadiologyCashier">Radiology Cashier</option>
+                  <option value="PharmacyCashier">Pharmacy Cashier</option>
                 </select>
                 <span className="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-gray-400">
                   <i className="bi bi-chevron-down"></i>

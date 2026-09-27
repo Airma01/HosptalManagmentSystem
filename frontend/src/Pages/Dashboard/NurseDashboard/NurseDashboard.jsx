@@ -46,7 +46,7 @@ const NurseDashboard = () => {
 
   if (!stats || !nurse) return null;
 
-  const fullName = nurse.fullName || 'Nurse';
+  const fullName = nurse.fullName || 'Triage';
 
   const cards = [
     {
@@ -103,7 +103,7 @@ const NurseDashboard = () => {
           Good day, {fullName.split(' ')[0]}
         </h1>
         <p className="text-slate-500 mt-1 text-sm sm:text-base">
-          Nursing workspace overview — patients, visits, triage, prescriptions & laboratory
+          Triage workspace overview — patients, visits, triage, prescriptions & laboratory
         </p>
       </div>
 

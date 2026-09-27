@@ -6,7 +6,9 @@ import { getAuthenticatedUser } from "./getAuthenticatedUser";
  */
 const ALLOWED_EXACT = new Set([
   "GENERAL",
-  "ADULT",
+  "ADULT OPD-1",
+  "ADULT OPD-2",
+  "ART",
   "GENRAL",
   "GENERAL MEDICINE",
   "EMERGENCY",

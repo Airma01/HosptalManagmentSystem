@@ -212,6 +212,53 @@ import UpdateRadiologyRequest from './Pages/Dashboard/RadiologyDashboard/Request
 import RadiologyResultDetails from './Pages/Dashboard/RadiologyDashboard/Result/RadiologyResultDetails';
 import Appointments from "./Pages/Dashboard/DoctorDashboard/Appointments/Appointments";
 
+// ===== Cashier Protect Routes =====
+import CashierProtectRoute from "./ProtectRoute/CashierProtectRoute";
+import LaboratoryCashierProtectRoute from "./ProtectRoute/LaboratoryCashierProtectRoute";
+import RadiologyCashierProtectRoute from "./ProtectRoute/RadiologyCashierProtectRoute";
+import PharmacyCashierProtectRoute from "./ProtectRoute/PharmacyCashierProtectRoute";
+
+// ===== Cashier Dashboard =====
+import {
+  CashierLayout,
+  CashierDashboard,
+  UnpaidBills,
+  BillDetails,
+  CollectPayment,
+  PaymentSuccess,
+  TodayCollection,
+  Profile as CashierProfile,
+} from "./Pages/Dashboard/CashierDashboard";
+
+// ===== Laboratory Cashier =====
+import {
+  LaboratoryCashierLayout,
+  LaboratoryCashierDashboard,
+  UnpaidTests,
+  CollectLabPayment,
+  LabPaymentSuccess,
+  LabTodayCollection,
+} from "./Pages/Dashboard/LaboratoryCashierDashboard";
+
+// ===== Radiology Cashier =====
+import {
+  RadiologyCashierLayout,
+  RadiologyCashierDashboard,
+  UnpaidRequests,
+  CollectRadiologyPayment,
+  RadPaymentSuccess,
+  RadTodayCollection,
+} from "./Pages/Dashboard/RadiologyCashierDashboard";
+
+// ===== Pharmacy Cashier =====
+import {
+  PharmacyCashierLayout,
+  PharmacyCashierDashboard,
+  UnpaidPrescriptions,
+  CollectPharmacyPayment,
+  PharmPaymentSuccess,
+  PharmTodayCollection,
+} from "./Pages/Dashboard/PharmacyCashierDashboard";
 // ─── ⚠️ PLACEHOLDER COMPONENTS FOR MISSING NURSE ROUTES ───
 const AssignDepartment = () => (
   <div className="p-4 text-gray-600">Assign Department – Coming Soon</div>
@@ -504,6 +551,56 @@ function App() {
         <Route path="/radiology/results/:id" element={<RadiologyLayout mode="doctor" />}>
           <Route index element={<RadiologyResultDetails />} />
         </Route>
+
+        {/* ===== MAIN CASHIER (Consultation) ===== */}
+<Route element={<CashierProtectRoute />}>
+  <Route path="/cashier" element={<CashierLayout />}>
+    <Route index element={<Navigate to="dashboard" replace />} />
+    <Route path="dashboard" element={<CashierDashboard />} />
+    <Route path="unpaid-bills" element={<UnpaidBills />} />
+    <Route path="bill/:billId" element={<BillDetails />} />
+    <Route path="pay/:billId" element={<CollectPayment />} />
+    <Route path="payment-success" element={<PaymentSuccess />} />
+    <Route path="today-collection" element={<TodayCollection />} />
+    <Route path="profile" element={<CashierProfile />} />
+  </Route>
+</Route>
+
+{/* ===== LABORATORY CASHIER ===== */}
+<Route element={<LaboratoryCashierProtectRoute />}>
+  <Route path="/laboratory-cashier" element={<LaboratoryCashierLayout />}>
+    <Route index element={<Navigate to="dashboard" replace />} />
+    <Route path="dashboard" element={<LaboratoryCashierDashboard />} />
+    <Route path="unpaid-tests" element={<UnpaidTests />} />
+    <Route path="pay/:testId" element={<CollectLabPayment />} />
+    <Route path="payment-success" element={<LabPaymentSuccess />} />
+    <Route path="today-collection" element={<LabTodayCollection />} />
+  </Route>
+</Route>
+
+{/* ===== RADIOLOGY CASHIER ===== */}
+<Route element={<RadiologyCashierProtectRoute />}>
+  <Route path="/radiology-cashier" element={<RadiologyCashierLayout />}>
+    <Route index element={<Navigate to="dashboard" replace />} />
+    <Route path="dashboard" element={<RadiologyCashierDashboard />} />
+    <Route path="unpaid-requests" element={<UnpaidRequests />} />
+    <Route path="pay/:requestId" element={<CollectRadiologyPayment />} />
+    <Route path="payment-success" element={<RadPaymentSuccess />} />
+    <Route path="today-collection" element={<RadTodayCollection />} />
+  </Route>
+</Route>
+
+{/* ===== PHARMACY CASHIER (all branches) ===== */}
+<Route element={<PharmacyCashierProtectRoute />}>
+  <Route path="/pharmacy-cashier" element={<PharmacyCashierLayout />}>
+    <Route index element={<Navigate to="dashboard" replace />} />
+    <Route path="dashboard" element={<PharmacyCashierDashboard />} />
+    <Route path="unpaid-prescriptions" element={<UnpaidPrescriptions />} />
+    <Route path="pay/:prescriptionId" element={<CollectPharmacyPayment />} />
+    <Route path="payment-success" element={<PharmPaymentSuccess />} />
+    <Route path="today-collection" element={<PharmTodayCollection />} />
+  </Route>
+</Route>
 
         {/* Fallback routes */}
         <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />

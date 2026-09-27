@@ -38,7 +38,7 @@ const NurseLayout = () => {
       <div className="flex items-center justify-center min-h-screen bg-slate-50">
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 border-4 border-teal-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-slate-600 text-sm font-medium">Loading nurse workspace...</p>
+          <p className="text-slate-600 text-sm font-medium">Loading Triage workspace...</p>
         </div>
       </div>
     );
@@ -62,7 +62,7 @@ const NurseLayout = () => {
             <i className="bi bi-heart-pulse text-white text-lg" />
           </div>
           <div>
-            <h1 className="text-base font-bold text-slate-800 leading-tight">Nurse Workspace</h1>
+            <h1 className="text-base font-bold text-slate-800 leading-tight">Triage Workspace</h1>
             <p className="text-xs text-slate-500 mt-0.5">Hospital EHR</p>
           </div>
         </div>
@@ -72,7 +72,7 @@ const NurseLayout = () => {
           </div>
           <div className="min-w-0">
             <p className="text-sm font-medium text-slate-800 truncate">{fullName}</p>
-            <p className="text-xs text-slate-500">Nurse</p>
+            <p className="text-xs text-slate-500">Triage</p>
           </div>
         </div>
       </div>

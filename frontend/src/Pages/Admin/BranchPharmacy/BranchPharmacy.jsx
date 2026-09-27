@@ -12,6 +12,12 @@ const BranchPharmacy = () => {
   const [showPharmacistModal, setShowPharmacistModal] = useState(false);
   const [pharmacistForm, setPharmacistForm] = useState({ userID: '', branchPharmacyID: '' });
 
+  // Edit state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({ BranchName: '', Location: '' });
+  const [saving, setSaving] = useState(false);
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -45,7 +51,44 @@ const BranchPharmacy = () => {
       alert('Branch pharmacy added!');
     } catch (error) {
       console.error(error);
-      alert('Failed to add branch.');
+      const msg = error.response?.data?.message || error.response?.data || 'Failed to add branch.';
+      alert(typeof msg === 'string' ? msg : JSON.stringify(msg));
+    }
+  };
+
+  const openEditModal = (ph) => {
+    setEditingId(ph.branchPharmacyID);
+    setEditForm({
+      BranchName: ph.branchName || '',
+      Location: ph.location || ''
+    });
+    setShowEditModal(true);
+  };
+
+  const closeEditModal = () => {
+    setShowEditModal(false);
+    setEditingId(null);
+    setEditForm({ BranchName: '', Location: '' });
+  };
+
+  const handleUpdateBranch = async (e) => {
+    e.preventDefault();
+    if (!editingId) return;
+    setSaving(true);
+    try {
+      await API.put(`/Hospital/Admin/update_branch_pharmacy/${editingId}`, editForm);
+      closeEditModal();
+      await fetchData();
+      alert('Branch pharmacy updated successfully!');
+    } catch (error) {
+      console.error(error);
+      const msg =
+        error.response?.data?.message ||
+        error.response?.data ||
+        'Failed to update branch pharmacy.';
+      alert(typeof msg === 'string' ? msg : JSON.stringify(msg));
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -111,12 +154,19 @@ const BranchPharmacy = () => {
             <div className="font-semibold text-lg">{ph.branchName}</div>
             <div className="text-sm text-gray-600">{ph.location || 'No location'}</div>
             <div className="text-xs text-gray-400 mt-1">ID: {ph.branchPharmacyID}</div>
-            <div className="mt-3 flex gap-2">
+            <div className="mt-3 flex gap-2 flex-wrap">
               <button
                 onClick={() => handleView(ph.branchPharmacyID)}
                 className="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-sm py-1.5 rounded"
               >
                 Manage
+              </button>
+              <button
+                onClick={() => openEditModal(ph)}
+                className="px-3 bg-indigo-500 hover:bg-indigo-600 text-white text-sm py-1.5 rounded"
+                title="Edit"
+              >
+                <i className="bi bi-pencil"></i>
               </button>
               <button
                 onClick={() => handleDelete(ph.branchPharmacyID)}
@@ -158,6 +208,53 @@ const BranchPharmacy = () => {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
+                  className="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Branch Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold">Edit Branch Pharmacy</h3>
+              <button onClick={closeEditModal} className="text-gray-500 hover:text-gray-700">
+                <i className="bi bi-x-lg"></i>
+              </button>
+            </div>
+            <form onSubmit={handleUpdateBranch} className="space-y-3">
+              <input
+                type="text"
+                placeholder="Branch Name"
+                value={editForm.BranchName}
+                onChange={(e) => setEditForm({ ...editForm, BranchName: e.target.value })}
+                className="w-full px-4 py-2 border rounded-lg"
+                required
+              />
+              <input
+                type="text"
+                placeholder="Location"
+                value={editForm.Location}
+                onChange={(e) => setEditForm({ ...editForm, Location: e.target.value })}
+                className="w-full px-4 py-2 border rounded-lg"
+              />
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex-1 bg-indigo-500 text-white py-2 rounded-lg hover:bg-indigo-600 disabled:opacity-50"
+                >
+                  {saving ? 'Saving...' : 'Update Branch'}
+                </button>
+                <button
+                  type="button"
+                  onClick={closeEditModal}
                   className="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400"
                 >
                   Cancel

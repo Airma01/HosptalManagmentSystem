@@ -661,7 +661,7 @@ namespace HospitalSys.Migrations
                     b.Property<decimal>("AmountPaid")
                         .HasColumnType("numeric");
 
-                    b.Property<int>("LaboratoryCashierID")
+                    b.Property<int?>("LaboratoryCashierID")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("PaymentDate")
@@ -678,11 +678,16 @@ namespace HospitalSys.Migrations
                     b.Property<int>("TestID")
                         .HasColumnType("integer");
 
+                    b.Property<int>("UserID")
+                        .HasColumnType("integer");
+
                     b.HasKey("LaboratoryPaymentID");
 
                     b.HasIndex("LaboratoryCashierID");
 
                     b.HasIndex("TestID");
+
+                    b.HasIndex("UserID");
 
                     b.ToTable("LaboratoryPayments");
                 });
@@ -701,7 +706,7 @@ namespace HospitalSys.Migrations
                     b.Property<int>("BillID")
                         .HasColumnType("integer");
 
-                    b.Property<int>("CashierID")
+                    b.Property<int?>("CashierID")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("PaymentDate")
@@ -715,11 +720,16 @@ namespace HospitalSys.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int>("UserID")
+                        .HasColumnType("integer");
+
                     b.HasKey("PaymentID");
 
                     b.HasIndex("BillID");
 
                     b.HasIndex("CashierID");
+
+                    b.HasIndex("UserID");
 
                     b.ToTable("PaymentHospitals");
                 });
@@ -746,10 +756,13 @@ namespace HospitalSys.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("PharmacyCashierID")
+                    b.Property<int?>("PharmacyCashierID")
                         .HasColumnType("integer");
 
                     b.Property<int>("PrescriptionID")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("UserID")
                         .HasColumnType("integer");
 
                     b.HasKey("PharmacyPaymentID");
@@ -757,6 +770,8 @@ namespace HospitalSys.Migrations
                     b.HasIndex("PharmacyCashierID");
 
                     b.HasIndex("PrescriptionID");
+
+                    b.HasIndex("UserID");
 
                     b.ToTable("PharmacyPayments");
                 });
@@ -783,10 +798,13 @@ namespace HospitalSys.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("RadiologyCashierID")
+                    b.Property<int?>("RadiologyCashierID")
                         .HasColumnType("integer");
 
                     b.Property<int>("RadiologyRequestID")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("UserID")
                         .HasColumnType("integer");
 
                     b.HasKey("RadiologyPaymentID");
@@ -794,6 +812,8 @@ namespace HospitalSys.Migrations
                     b.HasIndex("RadiologyCashierID");
 
                     b.HasIndex("RadiologyRequestID");
+
+                    b.HasIndex("UserID");
 
                     b.ToTable("RadiologyPayments");
                 });
@@ -4714,11 +4734,9 @@ namespace HospitalSys.Migrations
 
             modelBuilder.Entity("HospitalSys.Models.BillingAndPayment.LaboratoryPayment", b =>
                 {
-                    b.HasOne("HospitalSys.Models.LaboratoryCashier", "LaboratoryCashier")
+                    b.HasOne("HospitalSys.Models.LaboratoryCashier", null)
                         .WithMany("LaboratoryPayments")
-                        .HasForeignKey("LaboratoryCashierID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("LaboratoryCashierID");
 
                     b.HasOne("HospitalSys.Models.Laboratory.LaboratoryTest", "LaboratoryTest")
                         .WithMany("LaboratoryPayments")
@@ -4726,9 +4744,15 @@ namespace HospitalSys.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("LaboratoryCashier");
+                    b.HasOne("HospitalSys.Models.Users", "User")
+                        .WithMany()
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("LaboratoryTest");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("HospitalSys.Models.BillingAndPayment.PaymentHospital", b =>
@@ -4739,24 +4763,26 @@ namespace HospitalSys.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("HospitalSys.Models.Cashier", "Cashier")
+                    b.HasOne("HospitalSys.Models.Cashier", null)
                         .WithMany("PaymentHospital")
-                        .HasForeignKey("CashierID")
+                        .HasForeignKey("CashierID");
+
+                    b.HasOne("HospitalSys.Models.Users", "User")
+                        .WithMany()
+                        .HasForeignKey("UserID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Bill");
 
-                    b.Navigation("Cashier");
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("HospitalSys.Models.BillingAndPayment.PharmacyPayment", b =>
                 {
-                    b.HasOne("HospitalSys.Models.PharmacyCashier", "PharmacyCashier")
+                    b.HasOne("HospitalSys.Models.PharmacyCashier", null)
                         .WithMany("PharmacyPayment")
-                        .HasForeignKey("PharmacyCashierID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("PharmacyCashierID");
 
                     b.HasOne("HospitalSys.Models.Pharmacy.Common.Prescription", "Prescription")
                         .WithMany("PharmacyPayment")
@@ -4764,18 +4790,22 @@ namespace HospitalSys.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("PharmacyCashier");
+                    b.HasOne("HospitalSys.Models.Users", "User")
+                        .WithMany()
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Prescription");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("HospitalSys.Models.BillingAndPayment.RadiologyPayment", b =>
                 {
-                    b.HasOne("HospitalSys.Models.RadiologyCashier", "RadiologyCashier")
+                    b.HasOne("HospitalSys.Models.RadiologyCashier", null)
                         .WithMany("RadiologyPayment")
-                        .HasForeignKey("RadiologyCashierID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("RadiologyCashierID");
 
                     b.HasOne("HospitalSys.Models.Radiology.RadiologyRequest", "RadiologyRequest")
                         .WithMany("RadiologyPayment")
@@ -4783,9 +4813,15 @@ namespace HospitalSys.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("RadiologyCashier");
+                    b.HasOne("HospitalSys.Models.Users", "User")
+                        .WithMany()
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("RadiologyRequest");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("HospitalSys.Models.Cashier", b =>

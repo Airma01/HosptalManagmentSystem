@@ -5,4 +5,10 @@ namespace HospitalSys.Dto
         public string DepartmentName {get;set;} = "";
         public string Description {get;set;} = "";
     }
+
+    public class UpdateClinicalDepartmentDto
+    {
+        public string DepartmentName { get; set; } = "";
+        public string Description { get; set; } = "";
+    }
 }

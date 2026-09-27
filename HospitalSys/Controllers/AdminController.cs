@@ -1258,5 +1258,125 @@ public async Task<IActionResult> CreateTriageDepartment([FromBody] CreateTriageD
 
     return Ok(new { message = "Created", id = dept.TriageDepartmentID });
 }
+
+        // ===================== UPDATE CLINICAL DEPARTMENT =====================
+        [HttpPut("update_clinical_department/{id:int}")]
+        [AuthorizeRole("Admin")]
+        public async Task<IActionResult> UpdateClinicalDepartment(int id, [FromBody] UpdateClinicalDepartmentDto dto)
+        {
+            try
+            {
+                if (dto == null || string.IsNullOrWhiteSpace(dto.DepartmentName))
+                    return BadRequest(new { message = "Department name is required." });
+
+                var department = await _context.ClinicalDepartments
+                    .FirstOrDefaultAsync(d => d.ClinicalDepartmentID == id);
+
+                if (department == null)
+                    return NotFound(new { message = "Clinical department not found." });
+
+                bool nameTaken = await _context.ClinicalDepartments
+                    .AnyAsync(d => d.DepartmentName == dto.DepartmentName && d.ClinicalDepartmentID != id);
+                if (nameTaken)
+                    return Conflict(new { message = "This clinical department name is already registered." });
+
+                department.DepartmentName = dto.DepartmentName.Trim();
+                department.Description = dto.Description?.Trim() ?? "";
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    message = "Clinical department updated successfully.",
+                    clinicalDepartmentID = department.ClinicalDepartmentID,
+                    departmentName = department.DepartmentName,
+                    description = department.Description
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { message = "An error occurred while updating the clinical department." });
+            }
         }
+
+        // ===================== UPDATE BRANCH PHARMACY =====================
+        [HttpPut("update_branch_pharmacy/{id:int}")]
+        [AuthorizeRole("Admin")]
+        public async Task<IActionResult> UpdateBranchPharmacy(int id, [FromBody] UpdateBranchPharmacyDto dto)
+        {
+            try
+            {
+                if (dto == null || string.IsNullOrWhiteSpace(dto.BranchName))
+                    return BadRequest(new { message = "Branch name is required." });
+
+                var branch = await _context.BranchPharmacies
+                    .FirstOrDefaultAsync(b => b.BranchPharmacyID == id);
+
+                if (branch == null)
+                    return NotFound(new { message = "Branch pharmacy not found." });
+
+                bool nameTaken = await _context.BranchPharmacies
+                    .AnyAsync(b => b.BranchName == dto.BranchName && b.BranchPharmacyID != id);
+                if (nameTaken)
+                    return Conflict(new { message = "This branch pharmacy name is already registered." });
+
+                branch.BranchName = dto.BranchName.Trim();
+                branch.Location = dto.Location?.Trim() ?? "";
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    message = "Branch pharmacy updated successfully.",
+                    branchPharmacyID = branch.BranchPharmacyID,
+                    branchName = branch.BranchName,
+                    location = branch.Location
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { message = "An error occurred while updating the branch pharmacy." });
+            }
+        }
+
+        // ===================== UPDATE CENTRAL PHARMACY =====================
+        [HttpPut("update_central_pharmacy/{id:int}")]
+        [AuthorizeRole("Admin")]
+        public async Task<IActionResult> UpdateCentralPharmacy(int id, [FromBody] UpdateCentralPharmacyDto dto)
+        {
+            try
+            {
+                if (dto == null || string.IsNullOrWhiteSpace(dto.Name))
+                    return BadRequest(new { message = "Central pharmacy name is required." });
+
+                var central = await _context.CentralStorePharmacies
+                    .FirstOrDefaultAsync(c => c.CentralPharmacyID == id);
+
+                if (central == null)
+                    return NotFound(new { message = "Central pharmacy not found." });
+
+                bool nameTaken = await _context.CentralStorePharmacies
+                    .AnyAsync(c => c.Name == dto.Name && c.CentralPharmacyID != id);
+                if (nameTaken)
+                    return Conflict(new { message = "This central pharmacy name is already registered." });
+
+                central.Name = dto.Name.Trim();
+                central.Location = dto.Location?.Trim() ?? "";
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    message = "Central pharmacy updated successfully.",
+                    centralPharmacyID = central.CentralPharmacyID,
+                    name = central.Name,
+                    location = central.Location
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { message = "An error occurred while updating the central pharmacy." });
+            }
+        }
+    }
 }

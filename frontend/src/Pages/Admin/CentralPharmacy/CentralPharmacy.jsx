@@ -12,9 +12,12 @@ const CentralPharmacy = () => {
   const [showAddPharmacyModal, setShowAddPharmacyModal] = useState(false);
   const [showRegisterManagerModal, setShowRegisterManagerModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
+  const [showEditPharmacyModal, setShowEditPharmacyModal] = useState(false);
+  const [editingPharmacyId, setEditingPharmacyId] = useState(null);
 
   // Form states
   const [pharmacyForm, setPharmacyForm] = useState({ name: '', location: '' });
+  const [editPharmacyForm, setEditPharmacyForm] = useState({ Name: '', Location: '' });
   const [managerForm, setManagerForm] = useState({ userID: '' });
   const [assignForm, setAssignForm] = useState({ managerID: '', centralPharmacyID: '' });
 
@@ -112,6 +115,34 @@ const CentralPharmacy = () => {
     }
   };
 
+  const openEditPharmacy = (ph) => {
+    setEditingPharmacyId(ph.centralPharmacyID);
+    setEditPharmacyForm({
+      Name: ph.name || '',
+      Location: ph.location || ''
+    });
+    setShowEditPharmacyModal(true);
+  };
+
+  const handleUpdatePharmacy = async (e) => {
+    e.preventDefault();
+    try {
+      await API.put(`/Hospital/Admin/update_central_pharmacy/${editingPharmacyId}`, editPharmacyForm);
+      setShowEditPharmacyModal(false);
+      setEditingPharmacyId(null);
+      setEditPharmacyForm({ Name: '', Location: '' });
+      await fetchData();
+      alert('Central pharmacy updated successfully!');
+    } catch (error) {
+      console.error(error);
+      const msg =
+        error.response?.data?.message ||
+        error.response?.data ||
+        'Failed to update central pharmacy.';
+      alert(typeof msg === 'string' ? msg : JSON.stringify(msg));
+    }
+  };
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6 flex-wrap gap-2">
@@ -147,12 +178,19 @@ const CentralPharmacy = () => {
             <div className="font-semibold text-lg">{ph.name}</div>
             <div className="text-sm text-gray-600">{ph.location || 'No location'}</div>
             <div className="text-xs text-gray-400 mt-1">ID: {ph.centralPharmacyID}</div>
-            <div className="mt-3 flex gap-2">
+            <div className="mt-3 flex gap-2 flex-wrap">
               <button
                 onClick={() => handleView(ph.centralPharmacyID)}
                 className="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white text-sm py-1.5 rounded"
               >
                 Manage
+              </button>
+              <button
+                onClick={() => openEditPharmacy(ph)}
+                className="px-3 bg-blue-500 hover:bg-blue-600 text-white text-sm py-1.5 rounded"
+                title="Edit"
+              >
+                <i className="bi bi-pencil"></i>
               </button>
               <button
                 onClick={() => handleDelete(ph.centralPharmacyID)}
@@ -302,6 +340,54 @@ const CentralPharmacy = () => {
                 <button
                   type="button"
                   onClick={() => setShowAssignModal(false)}
+                  className="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Central Pharmacy Modal */}
+      {showEditPharmacyModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-xl font-bold mb-4">Edit Central Pharmacy</h3>
+            <form onSubmit={handleUpdatePharmacy} className="space-y-3">
+              <input
+                type="text"
+                placeholder="Pharmacy Name"
+                value={editPharmacyForm.Name}
+                onChange={(e) =>
+                  setEditPharmacyForm({ ...editPharmacyForm, Name: e.target.value })
+                }
+                className="w-full px-4 py-2 border rounded-lg"
+                required
+              />
+              <input
+                type="text"
+                placeholder="Location"
+                value={editPharmacyForm.Location}
+                onChange={(e) =>
+                  setEditPharmacyForm({ ...editPharmacyForm, Location: e.target.value })
+                }
+                className="w-full px-4 py-2 border rounded-lg"
+              />
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  className="flex-1 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600"
+                >
+                  Update Pharmacy
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditPharmacyModal(false);
+                    setEditingPharmacyId(null);
+                  }}
                   className="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400"
                 >
                   Cancel

@@ -1,0 +1,8 @@
+/* Optional extra styles – Tailwind covers most UI */
+@media print {
+  aside,
+  header,
+  button {
+    display: none !important;
+  }
+}

@@ -39,6 +39,16 @@ namespace HospitalSys.Dto
         public string Location {get;set;} = "";
        
     }
+    public class UpdateBranchPharmacyDto
+    {
+        public string BranchName { get; set; } = "";
+        public string Location { get; set; } = "";
+    }
+    public class UpdateCentralPharmacyDto
+    {
+        public string Name { get; set; } = "";
+        public string Location { get; set; } = "";
+    }
     public class CreateAidPharmacyDto
     {
         public string Name {get;set;} = "";
