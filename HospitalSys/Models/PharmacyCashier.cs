@@ -16,6 +16,6 @@ namespace HospitalSys.Models
         [ForeignKey(nameof(BranchPharmacyID))]
         public BranchPharmacy? BranchPharmacy {get;set;}
 
-        public List<PharmacyPayment> PharmacyPayment {get;set;} = new();
+        // public List<PharmacyPayment> PharmacyPayment {get;set;} = new();
     }
 }

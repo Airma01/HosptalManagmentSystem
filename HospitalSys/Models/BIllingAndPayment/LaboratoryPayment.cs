@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using HospitalSys.Models.Laboratory;
-using HospitalSys.Models;
 
 namespace HospitalSys.Models.BillingAndPayment
 {
@@ -14,7 +13,6 @@ namespace HospitalSys.Models.BillingAndPayment
         [ForeignKey(nameof(TestID))]
         public LaboratoryTest? LaboratoryTest { get; set; }
 
-        /// <summary>Who collected payment (Users – role LaboratoryCashier)</summary>
         public int UserID { get; set; }
         [ForeignKey(nameof(UserID))]
         public Users? User { get; set; }

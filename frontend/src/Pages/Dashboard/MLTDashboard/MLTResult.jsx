@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate, useSearchParams } from 'react-router-dom';
 import API from '../../../Config/API';
 import MLTError from './MLTError';
 import MLTMessage from './MLTMessage';
+import { ensureLabTestPaid } from './Services/mltPaymentApi';
 
 const navItems = [
   { to: '/mlt/dashboard', label: 'Dashboard', icon: 'bi-speedometer2' },
@@ -30,6 +31,8 @@ export default function MLTResult() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [paymentOk, setPaymentOk] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState('Unpaid');
 
   useEffect(() => {
     if (queryTestId) setTestId(queryTestId);
@@ -40,7 +43,7 @@ export default function MLTResult() {
       const res = await API.get('/mlt/MLTResult/completed');
       setCompleted(Array.isArray(res.data) ? res.data.slice(0, 20) : []);
     } catch {
-      /* optional list */
+      /* optional */
     }
   }, []);
 
@@ -60,7 +63,22 @@ export default function MLTResult() {
     setExistingResults([]);
     setEditResultId(null);
     setResultDescription('');
+    setPaymentOk(false);
+    setPaymentStatus('Unpaid');
     try {
+      try {
+        const pay = await ensureLabTestPaid(tid);
+        setPaymentOk(true);
+        setPaymentStatus(pay.data?.paymentStatus || 'Paid');
+      } catch (payErr) {
+        setPaymentOk(false);
+        setPaymentStatus('Unpaid');
+        setError(
+          payErr?.response?.data?.message ||
+            'Laboratory test is unpaid. Patient must pay at Laboratory Cashier before entering results.'
+        );
+      }
+
       const [testRes, resultsRes] = await Promise.all([
         API.get(`/mlt/MLTTest/${tid}`),
         API.get(`/mlt/MLTResult/by-test/${tid}`),
@@ -82,6 +100,12 @@ export default function MLTResult() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!paymentOk) {
+      setError(
+        'Laboratory test is unpaid. Patient must pay at Laboratory Cashier first.'
+      );
+      return;
+    }
     if (!testId || !resultDescription.trim()) {
       setError('Test ID and Result Description are required.');
       return;
@@ -90,6 +114,8 @@ export default function MLTResult() {
     setError('');
     setMessage('');
     try {
+      await ensureLabTestPaid(Number(testId));
+
       if (editResultId) {
         const body = {
           resultID: editResultId,
@@ -126,6 +152,10 @@ export default function MLTResult() {
   };
 
   const startEdit = (r) => {
+    if (!paymentOk) {
+      setError('Unpaid — cannot edit result until Laboratory Cashier pays.');
+      return;
+    }
     setEditResultId(r.resultID);
     setResultDescription(r.resultDescription || '');
     setResultDate(r.resultDate ? r.resultDate.slice(0, 16) : '');
@@ -144,7 +174,10 @@ export default function MLTResult() {
   return (
     <div className="flex min-h-screen bg-gray-100">
       {sidebarOpen && (
-        <div className="fixed inset-0 z-30 bg-black/40 lg:hidden" onClick={() => setSidebarOpen(false)} />
+        <div
+          className="fixed inset-0 z-30 bg-black/40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
       )}
       <aside
         className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-white shadow-lg transition-transform lg:static lg:translate-x-0 ${
@@ -171,7 +204,11 @@ export default function MLTResult() {
           ))}
         </nav>
         <div className="border-t p-3">
-          <button type="button" onClick={handleLogout} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+          >
             <i className="bi bi-box-arrow-right" /> Logout
           </button>
         </div>
@@ -179,7 +216,11 @@ export default function MLTResult() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-20 flex items-center gap-3 border-b bg-white px-4 py-3 shadow-sm">
-          <button type="button" className="rounded-lg p-2 lg:hidden" onClick={() => setSidebarOpen(true)}>
+          <button
+            type="button"
+            className="rounded-lg p-2 lg:hidden"
+            onClick={() => setSidebarOpen(true)}
+          >
             <i className="bi bi-list text-xl" />
           </button>
           <h2 className="text-lg font-semibold">Laboratory Results</h2>
@@ -190,7 +231,9 @@ export default function MLTResult() {
           {error && <MLTError message={error} />}
 
           <div className="rounded-xl border bg-white p-4 shadow-sm">
-            <label className="mb-1 block text-sm font-medium text-gray-700">Load test by ID</label>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Load test by ID
+            </label>
             <div className="flex flex-wrap gap-2">
               <input
                 type="number"
@@ -217,30 +260,78 @@ export default function MLTResult() {
 
           {testInfo && (
             <div className="rounded-xl border bg-white p-4 shadow-sm">
-              <h3 className="mb-3 font-semibold text-gray-900">
-                <i className="bi bi-flask mr-2 text-teal-600" />
-                Test #{testInfo.testID} — {testInfo.testName}
-              </h3>
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <h3 className="font-semibold text-gray-900">
+                  <i className="bi bi-flask mr-2 text-teal-600" />
+                  Test #{testInfo.testID} — {testInfo.testName}
+                </h3>
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                    paymentOk
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : 'bg-red-100 text-red-800'
+                  }`}
+                >
+                  <i
+                    className={`bi ${
+                      paymentOk ? 'bi-check-circle-fill' : 'bi-x-circle-fill'
+                    }`}
+                  />
+                  {paymentStatus}
+                </span>
+              </div>
+
+              {!paymentOk && (
+                <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                  <i className="bi bi-lock-fill mr-1" />
+                  Waiting for Laboratory Cashier payment before submit is allowed.
+                </div>
+              )}
+
               <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
-                <p><span className="text-gray-500">Patient:</span> {testInfo.patientName} ({testInfo.patientMRN})</p>
-                <p><span className="text-gray-500">Doctor:</span> {testInfo.doctorName || '—'}</p>
-                <p><span className="text-gray-500">Section:</span> {testInfo.sectionName || '—'}</p>
-                <p><span className="text-gray-500">Status:</span> {testInfo.status}</p>
-                <p><span className="text-gray-500">Normal range:</span> {testInfo.normalRange ?? '—'}</p>
+                <p>
+                  <span className="text-gray-500">Patient:</span>{' '}
+                  {testInfo.patientName} ({testInfo.patientMRN})
+                </p>
+                <p>
+                  <span className="text-gray-500">Doctor:</span>{' '}
+                  {testInfo.doctorName || '—'}
+                </p>
+                <p>
+                  <span className="text-gray-500">Section:</span>{' '}
+                  {testInfo.sectionName || '—'}
+                </p>
+                <p>
+                  <span className="text-gray-500">Status:</span> {testInfo.status}
+                </p>
+                <p>
+                  <span className="text-gray-500">Normal range:</span>{' '}
+                  {testInfo.normalRange ?? '—'}
+                </p>
               </div>
 
               {existingResults.length > 0 && (
                 <div className="mt-4 border-t pt-3">
                   <h4 className="mb-2 text-sm font-medium">Existing results</h4>
                   {existingResults.map((r) => (
-                    <div key={r.resultID} className="mb-2 flex flex-wrap items-start justify-between gap-2 rounded-lg bg-gray-50 p-3 text-sm">
+                    <div
+                      key={r.resultID}
+                      className="mb-2 flex flex-wrap items-start justify-between gap-2 rounded-lg bg-gray-50 p-3 text-sm"
+                    >
                       <div>
                         <p>{r.resultDescription}</p>
                         <p className="text-xs text-gray-500">
-                          {r.technicianName} · {r.resultDate ? new Date(r.resultDate).toLocaleString() : ''}
+                          {r.technicianName} ·{' '}
+                          {r.resultDate
+                            ? new Date(r.resultDate).toLocaleString()
+                            : ''}
                         </p>
                       </div>
-                      <button type="button" onClick={() => startEdit(r)} className="text-xs text-blue-600 hover:underline">
+                      <button
+                        type="button"
+                        onClick={() => startEdit(r)}
+                        className="text-xs text-blue-600 hover:underline"
+                      >
                         Edit
                       </button>
                     </div>
@@ -250,24 +341,32 @@ export default function MLTResult() {
 
               <form onSubmit={handleSubmit} className="mt-4 space-y-3 border-t pt-4">
                 <h4 className="font-medium">
-                  {editResultId ? `Update result #${editResultId}` : 'Enter new result'}
+                  {editResultId
+                    ? `Update result #${editResultId}`
+                    : 'Enter new result'}
                 </h4>
                 <div>
-                  <label className="mb-1 block text-xs text-gray-500">Result description *</label>
+                  <label className="mb-1 block text-xs text-gray-500">
+                    Result description *
+                  </label>
                   <textarea
-                    className="w-full rounded-lg border px-3 py-2 text-sm"
+                    className="w-full rounded-lg border px-3 py-2 text-sm disabled:bg-gray-50"
                     rows={4}
                     required
+                    disabled={!paymentOk}
                     value={resultDescription}
                     onChange={(e) => setResultDescription(e.target.value)}
                     placeholder="Enter laboratory findings…"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs text-gray-500">Result date (optional)</label>
+                  <label className="mb-1 block text-xs text-gray-500">
+                    Result date (optional)
+                  </label>
                   <input
                     type="datetime-local"
-                    className="rounded-lg border px-3 py-2 text-sm"
+                    className="rounded-lg border px-3 py-2 text-sm disabled:bg-gray-50"
+                    disabled={!paymentOk}
                     value={resultDate}
                     onChange={(e) => setResultDate(e.target.value)}
                   />
@@ -278,10 +377,14 @@ export default function MLTResult() {
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="submit"
-                    disabled={saving}
+                    disabled={saving || !paymentOk}
                     className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-60"
                   >
-                    {saving ? 'Saving…' : editResultId ? 'Update result' : 'Submit result'}
+                    {saving
+                      ? 'Saving…'
+                      : editResultId
+                        ? 'Update result'
+                        : 'Submit result'}
                   </button>
                   {editResultId && (
                     <button
@@ -308,7 +411,9 @@ export default function MLTResult() {
           )}
 
           <div className="rounded-xl border bg-white shadow-sm">
-            <div className="border-b px-4 py-3 font-semibold text-gray-900">Recent results</div>
+            <div className="border-b px-4 py-3 font-semibold text-gray-900">
+              Recent results
+            </div>
             <div className="overflow-x-auto">
               {completed.length === 0 ? (
                 <p className="p-6 text-center text-sm text-gray-500">No results yet.</p>
@@ -321,23 +426,28 @@ export default function MLTResult() {
                       <th className="px-4 py-2">Description</th>
                       <th className="px-4 py-2">Technician</th>
                       <th className="px-4 py-2">Date</th>
-                      <th className="px-4 py-2">Report</th>
                     </tr>
                   </thead>
                   <tbody>
                     {completed.map((r) => (
-                      <tr key={r.resultID} className="border-t hover:bg-gray-50">
+                      <tr key={r.resultID} className="border-t">
                         <td className="px-4 py-2">#{r.resultID}</td>
-                        <td className="px-4 py-2">#{r.testID}</td>
-                        <td className="px-4 py-2 max-w-xs truncate">{r.resultDescription}</td>
-                        <td className="px-4 py-2">{r.technicianName}</td>
-                        <td className="px-4 py-2 whitespace-nowrap">
-                          {r.resultDate ? new Date(r.resultDate).toLocaleString() : '—'}
-                        </td>
                         <td className="px-4 py-2">
-                          <Link to={`/mlt/reports?testId=${r.testID}`} className="text-teal-600 hover:underline">
-                            Open
+                          <Link
+                            to={`/mlt/results?testId=${r.testID}`}
+                            className="text-teal-600 hover:underline"
+                          >
+                            #{r.testID}
                           </Link>
+                        </td>
+                        <td className="px-4 py-2 max-w-xs truncate">
+                          {r.resultDescription}
+                        </td>
+                        <td className="px-4 py-2">{r.technicianName || '—'}</td>
+                        <td className="px-4 py-2 whitespace-nowrap">
+                          {r.resultDate
+                            ? new Date(r.resultDate).toLocaleString()
+                            : '—'}
                         </td>
                       </tr>
                     ))}

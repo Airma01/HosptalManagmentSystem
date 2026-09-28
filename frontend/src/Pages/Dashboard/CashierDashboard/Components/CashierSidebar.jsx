@@ -18,7 +18,7 @@ const CashierSidebar = ({ sidebarOpen, setSidebarOpen, userName }) => {
     } catch (_) {}
     localStorage.removeItem("user");
     localStorage.removeItem("role");
-    navigate("/login");
+    navigate("Bishoftu/login");
   };
 
   return (

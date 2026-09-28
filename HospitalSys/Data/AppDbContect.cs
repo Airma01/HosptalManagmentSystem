@@ -78,7 +78,6 @@ namespace HospitalSys.Data
                 .Property(u => u.Status)
                 .HasConversion<string>();
 
-            // Additional enums from your models
             modelBuilder.Entity<DiabetesManagement>()
                 .Property(d => d.DiabetesType)
                 .HasConversion<string>();
@@ -102,7 +101,6 @@ namespace HospitalSys.Data
             // ==============================================
             // 3. STAFF -> USERS RELATIONSHIPS (Restrict Delete)
             // ==============================================
-            // Doctor
             modelBuilder.Entity<Doctor>(entity =>
             {
                 entity.HasKey(d => d.DoctorID);
@@ -112,7 +110,6 @@ namespace HospitalSys.Data
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // Nurse
             modelBuilder.Entity<Nurse>(entity =>
             {
                 entity.HasKey(n => n.NurseID);
@@ -122,7 +119,6 @@ namespace HospitalSys.Data
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // Pharmacist
             modelBuilder.Entity<Pharmacist>(entity =>
             {
                 entity.HasKey(p => p.PharmacistID);
@@ -132,7 +128,6 @@ namespace HospitalSys.Data
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // LaboratoryTechnician
             modelBuilder.Entity<LaboratoryTechnician>(entity =>
             {
                 entity.HasKey(l => l.TechnicianID);
@@ -142,7 +137,6 @@ namespace HospitalSys.Data
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // RadiologyTechnician
             modelBuilder.Entity<RadiologyTechnician>(entity =>
             {
                 entity.HasKey(r => r.RadiologyTechnicianID);
@@ -152,7 +146,6 @@ namespace HospitalSys.Data
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // Cashier
             modelBuilder.Entity<Cashier>(entity =>
             {
                 entity.HasKey(c => c.CashierID);
@@ -162,7 +155,6 @@ namespace HospitalSys.Data
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // PharmacyCashier
             modelBuilder.Entity<PharmacyCashier>(entity =>
             {
                 entity.HasKey(p => p.PharmacyCashierID);
@@ -172,7 +164,6 @@ namespace HospitalSys.Data
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // LaboratoryCashier
             modelBuilder.Entity<LaboratoryCashier>(entity =>
             {
                 entity.HasKey(l => l.LaboratoryCashierID);
@@ -182,7 +173,6 @@ namespace HospitalSys.Data
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // RadiologyCashier
             modelBuilder.Entity<RadiologyCashier>(entity =>
             {
                 entity.HasKey(r => r.RadiologyCashierID);
@@ -192,7 +182,6 @@ namespace HospitalSys.Data
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // MainPharmacyManager
             modelBuilder.Entity<MainPharmacyManager>(entity =>
             {
                 entity.HasKey(m => m.ManagerID);
@@ -202,7 +191,6 @@ namespace HospitalSys.Data
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // Receptionist (if you have navigation in Users)
             modelBuilder.Entity<Receptionist>(entity =>
             {
                 entity.HasKey(r => r.ReceptionistID);
@@ -213,7 +201,80 @@ namespace HospitalSys.Data
             });
 
             // ==============================================
-            // 4. PERFORMANCE INDEXES (Foreign Keys)
+            // 4. PAYMENT -> USERS RELATIONSHIPS
+            // ==============================================
+           // ==============================================
+// 4. PAYMENT -> USERS RELATIONSHIPS ONLY
+//    (Prescription/Bill/Test/Request FKs come from [ForeignKey] on the models)
+// ==============================================
+// ==============================================
+// PAYMENT -> USERS (use inverse collections on Users)
+// ==============================================
+modelBuilder.Entity<PharmacyPayment>(entity =>
+{
+    entity.HasKey(p => p.PharmacyPaymentID);
+
+    entity.HasOne(p => p.User)
+        .WithMany(u => u.PharmacyPayments)
+        .HasForeignKey(p => p.UserID)
+        .OnDelete(DeleteBehavior.Restrict);
+
+    // Prevent shadow FK if PharmacyCashier still has a payments collection
+    entity.Ignore("PharmacyCashierID");
+
+    entity.HasIndex(p => p.PrescriptionID);
+    entity.HasIndex(p => p.UserID);
+    entity.HasIndex(p => p.PaymentDate);
+});
+
+modelBuilder.Entity<LaboratoryPayment>(entity =>
+{
+    entity.HasKey(p => p.LaboratoryPaymentID);
+
+    entity.HasOne(p => p.User)
+        .WithMany(u => u.LaboratoryPayments)
+        .HasForeignKey(p => p.UserID)
+        .OnDelete(DeleteBehavior.Restrict);
+
+    entity.Ignore("LaboratoryCashierID");
+
+    entity.HasIndex(p => p.TestID);
+    entity.HasIndex(p => p.UserID);
+    entity.HasIndex(p => p.PaymentDate);
+});
+
+modelBuilder.Entity<RadiologyPayment>(entity =>
+{
+    entity.HasKey(p => p.RadiologyPaymentID);
+
+    entity.HasOne(p => p.User)
+        .WithMany(u => u.RadiologyPayments)
+        .HasForeignKey(p => p.UserID)
+        .OnDelete(DeleteBehavior.Restrict);
+
+    entity.Ignore("RadiologyCashierID");
+
+    entity.HasIndex(p => p.RadiologyRequestID);
+    entity.HasIndex(p => p.UserID);
+    entity.HasIndex(p => p.PaymentDate);
+});
+
+modelBuilder.Entity<PaymentHospital>(entity =>
+{
+    entity.HasKey(p => p.PaymentID);
+
+    entity.HasOne(p => p.User)
+        .WithMany(u => u.PaymentHospitals)
+        .HasForeignKey(p => p.UserID)
+        .OnDelete(DeleteBehavior.Restrict);
+
+    entity.HasIndex(p => p.BillID);
+    entity.HasIndex(p => p.UserID);
+    entity.HasIndex(p => p.PaymentDate);
+});
+
+            // ==============================================
+            // 5. PERFORMANCE INDEXES (Foreign Keys)
             // ==============================================
             modelBuilder.Entity<PatientVisit>().HasIndex(pv => pv.PatientID);
             modelBuilder.Entity<Consultation>().HasIndex(c => c.VisitID);
@@ -235,14 +296,14 @@ namespace HospitalSys.Data
         }
 
         // ==============================================
-        // 5. DbSet PROPERTIES (Complete List)
+        // 6. DbSet PROPERTIES
         // ==============================================
 
         // ---- Core / Users ----
         public DbSet<Users> Users { get; set; }
         public DbSet<Role> Roles { get; set; }
         public DbSet<UserRole> UserRoles { get; set; }
-        public DbSet<SuperAdmins> SuperAdmin { get; set; }  // Fixed naming (was SuperAdmin)
+        public DbSet<SuperAdmins> SuperAdmin { get; set; }
 
         // ---- Staff ----
         public DbSet<Doctor> Doctors { get; set; }
@@ -266,7 +327,7 @@ namespace HospitalSys.Data
 
         // ---- Patient Management ----
         public DbSet<Patient> Patients { get; set; }
-        public DbSet<PatientVisit> PatientVisits { get; set; }  // Fixed typo (was PatientVists)
+        public DbSet<PatientVisit> PatientVisits { get; set; }
         public DbSet<Appointment> Appointments { get; set; }
         public DbSet<Triage> Triages { get; set; }
 
@@ -380,6 +441,6 @@ namespace HospitalSys.Data
         public DbSet<PaymentHospital> PaymentHospitals { get; set; }
         public DbSet<PharmacyPayment> PharmacyPayments { get; set; }
         public DbSet<LaboratoryPayment> LaboratoryPayments { get; set; }
-        public DbSet<RadiologyPayment> RadiologyPayments { get; set; } // Added missing DbSet
+        public DbSet<RadiologyPayment> RadiologyPayments { get; set; }
     }
 }

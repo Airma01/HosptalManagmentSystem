@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using HospitalSys.Models; // Users
 
 namespace HospitalSys.Models.BillingAndPayment
 {
@@ -13,7 +12,6 @@ namespace HospitalSys.Models.BillingAndPayment
         [ForeignKey(nameof(BillID))]
         public Bill? Bill { get; set; }
 
-        /// <summary>Who collected payment (Users table – role Cashier)</summary>
         public int UserID { get; set; }
         [ForeignKey(nameof(UserID))]
         public Users? User { get; set; }

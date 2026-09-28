@@ -1,5 +1,3 @@
-
-
 using HospitalSys.Data;
 using HospitalSys.Branch.Dto;
 using HospitalSys.Models;
@@ -62,7 +60,8 @@ namespace HospitalSys.Controllers
                 var totalStockQuantity = inventory.Sum(i => i.QuantityAvailable);
                 var lowStockCount = inventory.Count(i => i.QuantityAvailable <= 20);
                 var expiredCount = inventory.Count(i => i.ExpiryDate < DateTime.UtcNow);
-                var nearExpiryCount = inventory.Count(i => i.ExpiryDate >= DateTime.UtcNow && i.ExpiryDate <= DateTime.UtcNow.AddDays(30));
+                var nearExpiryCount = inventory.Count(i =>
+                    i.ExpiryDate >= DateTime.UtcNow && i.ExpiryDate <= DateTime.UtcNow.AddDays(30));
 
                 var pendingRequests = await _context.CentralStoreRequests
                     .Where(r => r.BranchPharmacyID == branchId && r.Status == "Pending")
@@ -70,6 +69,11 @@ namespace HospitalSys.Controllers
 
                 var pendingTransfers = await _context.CentralStoreTransfers
                     .Where(t => t.BranchPharmacyID == branchId && t.Status == "Pending")
+                    .CountAsync();
+
+                var pendingPrescriptions = await _context.Prescriptions
+                    .Where(p => p.BranchPharmacyID == branchId)
+                    .Where(p => !_context.DispenseMedicines.Any(d => d.PrescriptionID == p.PrescriptionID))
                     .CountAsync();
 
                 var recentRequests = await _context.CentralStoreRequests
@@ -105,7 +109,7 @@ namespace HospitalSys.Controllers
                     LowStockItems = lowStockCount,
                     ExpiredItems = expiredCount,
                     NearExpiryItems = nearExpiryCount,
-                    PendingPrescriptions = 0,
+                    PendingPrescriptions = pendingPrescriptions,
                     PendingRequests = pendingRequests,
                     RecentTransfers = pendingTransfers,
                     RecentRequests = recentRequests,
@@ -157,26 +161,27 @@ namespace HospitalSys.Controllers
         }
 
         [HttpGet("GetAllMedicines")]
-public async Task<IActionResult> GetAllMedicines()
-{
-    try
-    {
-        var medicines = await _context.Medicines
-            .Select(m => new {
-                m.MedicineID,
-                m.MedicineName,
-                m.UnitOfMeasure,
-                m.UnitPrice,
-                m.GenericName
-            })
-            .ToListAsync();
-        return Ok(medicines);
-    }
-    catch (Exception ex)
-    {
-        return BadRequest(new { message = ex.Message });
-    }
-}
+        public async Task<IActionResult> GetAllMedicines()
+        {
+            try
+            {
+                var medicines = await _context.Medicines
+                    .Select(m => new
+                    {
+                        m.MedicineID,
+                        m.MedicineName,
+                        m.UnitOfMeasure,
+                        m.UnitPrice,
+                        m.GenericName
+                    })
+                    .ToListAsync();
+                return Ok(medicines);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
 
         [HttpGet("GetMedicineStock/{medicineId}")]
         public async Task<IActionResult> GetMedicineStock(int medicineId)
@@ -464,7 +469,6 @@ public async Task<IActionResult> GetAllMedicines()
             try
             {
                 var branchId = GetBranchPharmacyId();
-                var pharmacistId = GetPharmacistId();
 
                 var request = await _context.CentralStoreRequests
                     .FirstOrDefaultAsync(r => r.CentralRequestID == requestId && r.BranchPharmacyID == branchId);
@@ -547,8 +551,12 @@ public async Task<IActionResult> GetAllMedicines()
                     TransferDate = transfer.TransferDate,
                     Status = transfer.Status,
                     FromCentralStore = transfer.CentralStorePharmacy?.Name ?? "",
-                    ProcessedByManager = transfer.CentralStoreManager != null && transfer.CentralStoreManager.MainPharmacyManager != null && transfer.CentralStoreManager.MainPharmacyManager.Users != null
-                        ? transfer.CentralStoreManager.MainPharmacyManager.Users.FirstName + " " + transfer.CentralStoreManager.MainPharmacyManager.Users.FatherName : "",
+                    ProcessedByManager = transfer.CentralStoreManager != null
+                        && transfer.CentralStoreManager.MainPharmacyManager != null
+                        && transfer.CentralStoreManager.MainPharmacyManager.Users != null
+                        ? transfer.CentralStoreManager.MainPharmacyManager.Users.FirstName + " "
+                          + transfer.CentralStoreManager.MainPharmacyManager.Users.FatherName
+                        : "",
                     Details = transfer.CentralStoreTransferDetail.Select(d => new CentralStoreTransferDetailDto
                     {
                         MedicineId = d.CentralStoreInventory?.MedicineID ?? 0,
@@ -620,7 +628,6 @@ public async Task<IActionResult> GetAllMedicines()
                             });
                         }
 
-                        // 1) Dispense from the exact CSM inventory batch
                         inv.QuantityAvailable -= detail.QuantityTransferred;
 
                         var medicineId = inv.MedicineID;
@@ -629,7 +636,6 @@ public async Task<IActionResult> GetAllMedicines()
                             ? $"TRF-{transfer.CentralTransferID}-{inv.CentralInventoryID}"
                             : inv.BatchNumber;
 
-                        // 2) Add to branch with same expiry + batch
                         var existing = await _context.BranchInventories
                             .FirstOrDefaultAsync(i =>
                                 i.BranchPharmacyID == branchId &&
@@ -708,8 +714,11 @@ public async Task<IActionResult> GetAllMedicines()
 
         #endregion
 
-        #region Prescriptions
+        #region Prescriptions + Payment
 
+        /// <summary>
+        /// Pending Rx for this branch, with payment status (Paid / Unpaid).
+        /// </summary>
         [HttpGet("GetPendingPrescriptions")]
         public async Task<IActionResult> GetPendingPrescriptions()
         {
@@ -719,25 +728,152 @@ public async Task<IActionResult> GetAllMedicines()
 
                 var prescriptions = await _context.Prescriptions
                     .Where(p => p.BranchPharmacyID == branchId)
-                    .Include(p => p.PrescriptionDetail)
-                    .Include(p => p.Patient)
-                    .Include(p => p.Doctor)
-                        .ThenInclude(d => d.Users)
                     .Where(p => !_context.DispenseMedicines.Any(d => d.PrescriptionID == p.PrescriptionID))
                     .OrderByDescending(p => p.PrescriptionDate)
-                    .Select(p => new PendingPrescriptionDto
+                    .Select(p => new
                     {
                         PrescriptionId = p.PrescriptionID,
                         PrescriptionDate = p.PrescriptionDate,
                         PatientId = p.PatientID,
-                        PatientName = p.Patient != null ? p.Patient.FirstName + " " + p.Patient.LastName : "",
-                        DoctorName = p.Doctor != null && p.Doctor.Users != null ? p.Doctor.Users.FirstName + " " + p.Doctor.Users.FatherName : "",
+                        PatientName = p.Patient != null
+                            ? p.Patient.FirstName + " " + p.Patient.LastName : "",
+                        Mrn = p.Patient != null ? p.Patient.MRN : "",
+                        DoctorName = p.Doctor != null && p.Doctor.Users != null
+                            ? p.Doctor.Users.FirstName + " " + p.Doctor.Users.FatherName : "",
                         TotalItems = p.PrescriptionDetail.Sum(d => (int)d.Quantity),
-                        Status = "Pending"
+                        Status = "Pending",
+                        PaymentStatus = _context.PharmacyPayments.Any(pp =>
+                            pp.PrescriptionID == p.PrescriptionID && pp.PaymentStatus == "Paid")
+                            ? "Paid" : "Unpaid",
+                        CanDispense = _context.PharmacyPayments.Any(pp =>
+                            pp.PrescriptionID == p.PrescriptionID && pp.PaymentStatus == "Paid"),
+                        PaidAmount = _context.PharmacyPayments
+                            .Where(pp => pp.PrescriptionID == p.PrescriptionID && pp.PaymentStatus == "Paid")
+                            .Sum(pp => (decimal?)pp.AmountPaid) ?? 0
                     })
                     .ToListAsync();
 
                 return Ok(prescriptions);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// All branch prescriptions with payment filter: ?paymentStatus=Paid|Unpaid
+        /// </summary>
+        [HttpGet("prescriptions-payment-status")]
+        public async Task<IActionResult> GetPrescriptionsPaymentStatus(
+            [FromQuery] string? paymentStatus = null,
+            [FromQuery] string? search = null)
+        {
+            try
+            {
+                var branchId = GetBranchPharmacyId();
+                var q = _context.Prescriptions.AsNoTracking()
+                    .Where(p => p.BranchPharmacyID == branchId);
+
+                if (!string.IsNullOrWhiteSpace(search))
+                {
+                    var s = search.Trim();
+                    q = q.Where(p => p.Patient != null && (
+                        p.Patient.MRN.Contains(s) ||
+                        p.Patient.FirstName.Contains(s) ||
+                        p.Patient.LastName.Contains(s)));
+                }
+
+                var list = await q
+                    .OrderByDescending(p => p.PrescriptionDate)
+                    .Select(p => new
+                    {
+                        prescriptionID = p.PrescriptionID,
+                        patientID = p.PatientID,
+                        patientName = p.Patient != null
+                            ? p.Patient.FirstName + " " + p.Patient.LastName : "",
+                        mrn = p.Patient != null ? p.Patient.MRN : "",
+                        prescriptionDate = p.PrescriptionDate,
+                        alreadyDispensed = _context.DispenseMedicines.Any(d =>
+                            d.PrescriptionID == p.PrescriptionID),
+                        paymentStatus = _context.PharmacyPayments.Any(pp =>
+                            pp.PrescriptionID == p.PrescriptionID && pp.PaymentStatus == "Paid")
+                            ? "Paid" : "Unpaid",
+                        canDispense = _context.PharmacyPayments.Any(pp =>
+                            pp.PrescriptionID == p.PrescriptionID && pp.PaymentStatus == "Paid")
+                            && !_context.DispenseMedicines.Any(d => d.PrescriptionID == p.PrescriptionID),
+                        paidAmount = _context.PharmacyPayments
+                            .Where(pp => pp.PrescriptionID == p.PrescriptionID && pp.PaymentStatus == "Paid")
+                            .Sum(pp => (decimal?)pp.AmountPaid) ?? 0
+                    })
+                    .ToListAsync();
+
+                if (!string.IsNullOrWhiteSpace(paymentStatus))
+                {
+                    var ps = paymentStatus.Trim();
+                    list = list
+                        .Where(x => string.Equals(x.paymentStatus, ps, StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+                }
+
+                return Ok(list);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("prescriptions/{id:int}/payment-status")]
+        public async Task<IActionResult> GetPrescriptionPaymentStatus(int id)
+        {
+            try
+            {
+                var branchId = GetBranchPharmacyId();
+                var exists = await _context.Prescriptions.AnyAsync(p =>
+                    p.PrescriptionID == id && p.BranchPharmacyID == branchId);
+                if (!exists)
+                    return NotFound(new { message = "Prescription not found." });
+
+                var paid = await _context.PharmacyPayments
+                    .Where(p => p.PrescriptionID == id && p.PaymentStatus == "Paid")
+                    .OrderByDescending(p => p.PaymentDate)
+                    .Select(p => new { p.AmountPaid, p.PaymentDate, p.PaymentMethod })
+                    .FirstOrDefaultAsync();
+
+                return Ok(new
+                {
+                    prescriptionID = id,
+                    paymentStatus = paid != null ? "Paid" : "Unpaid",
+                    canDispense = paid != null,
+                    paid
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("prescriptions/{id:int}/ensure-paid")]
+        public async Task<IActionResult> EnsurePrescriptionPaid(int id)
+        {
+            try
+            {
+                var isPaid = await _context.PharmacyPayments.AnyAsync(p =>
+                    p.PrescriptionID == id && p.PaymentStatus == "Paid");
+
+                if (!isPaid)
+                {
+                    return BadRequest(new
+                    {
+                        message = "Prescription is unpaid. Patient must pay at Pharmacy Cashier before dispense.",
+                        paymentStatus = "Unpaid",
+                        canDispense = false
+                    });
+                }
+
+                return Ok(new { paymentStatus = "Paid", canDispense = true });
             }
             catch (Exception ex)
             {
@@ -764,13 +900,28 @@ public async Task<IActionResult> GetAllMedicines()
                 if (prescription == null)
                     return NotFound(new { message = "Prescription not found." });
 
-                var result = new PrescriptionDetailResponseDto
+                var isPaid = await _context.PharmacyPayments.AnyAsync(pp =>
+                    pp.PrescriptionID == prescriptionId && pp.PaymentStatus == "Paid");
+
+                var paidInfo = await _context.PharmacyPayments
+                    .Where(pp => pp.PrescriptionID == prescriptionId && pp.PaymentStatus == "Paid")
+                    .OrderByDescending(pp => pp.PaymentDate)
+                    .Select(pp => new { pp.AmountPaid, pp.PaymentDate, pp.PaymentMethod })
+                    .FirstOrDefaultAsync();
+
+                var result = new
                 {
                     PrescriptionId = prescription.PrescriptionID,
                     PrescriptionDate = prescription.PrescriptionDate,
                     PatientId = prescription.PatientID,
-                    PatientName = prescription.Patient != null ? prescription.Patient.FirstName + " " + prescription.Patient.LastName : "",
-                    DoctorName = prescription.Doctor != null && prescription.Doctor.Users != null ? prescription.Doctor.Users.FirstName + " " + prescription.Doctor.Users.FatherName : "",
+                    PatientName = prescription.Patient != null
+                        ? prescription.Patient.FirstName + " " + prescription.Patient.LastName : "",
+                    Mrn = prescription.Patient != null ? prescription.Patient.MRN : "",
+                    DoctorName = prescription.Doctor != null && prescription.Doctor.Users != null
+                        ? prescription.Doctor.Users.FirstName + " " + prescription.Doctor.Users.FatherName : "",
+                    PaymentStatus = isPaid ? "Paid" : "Unpaid",
+                    CanDispense = isPaid,
+                    Paid = paidInfo,
                     Medicines = prescription.PrescriptionDetail.Select(d => new PrescriptionMedicineDto
                     {
                         MedicineId = d.MedicineID,
@@ -874,6 +1025,17 @@ public async Task<IActionResult> GetAllMedicines()
                 if (prescription == null)
                     return NotFound(new { message = "Prescription not found." });
 
+                // ----- PAYMENT GATE -----
+                var isPaid = await _context.PharmacyPayments.AnyAsync(p =>
+                    p.PrescriptionID == model.PrescriptionId && p.PaymentStatus == "Paid");
+                if (!isPaid)
+                {
+                    return BadRequest(new
+                    {
+                        message = "Prescription is unpaid. Patient must pay at Pharmacy Cashier before dispense."
+                    });
+                }
+
                 var existingDispense = await _context.DispenseMedicines
                     .AnyAsync(d => d.PrescriptionID == model.PrescriptionId);
                 if (existingDispense)
@@ -886,7 +1048,14 @@ public async Task<IActionResult> GetAllMedicines()
                         .SumAsync(i => i.QuantityAvailable);
 
                     if (available < item.QuantityDispensed)
-                        return BadRequest(new { message = $"Insufficient stock for medicine ID {item.MedicineId}. Available: {available}, Requested: {item.QuantityDispensed}" });
+                    {
+                        return BadRequest(new
+                        {
+                            message =
+                                $"Insufficient stock for medicine ID {item.MedicineId}. " +
+                                $"Available: {available}, Requested: {item.QuantityDispensed}"
+                        });
+                    }
                 }
 
                 var dispense = new DispenseMedicine
@@ -902,7 +1071,10 @@ public async Task<IActionResult> GetAllMedicines()
                 {
                     var remaining = item.QuantityDispensed;
                     var batches = await _context.BranchInventories
-                        .Where(i => i.BranchPharmacyID == branchId && i.MedicineID == item.MedicineId && i.QuantityAvailable > 0)
+                        .Where(i =>
+                            i.BranchPharmacyID == branchId &&
+                            i.MedicineID == item.MedicineId &&
+                            i.QuantityAvailable > 0)
                         .OrderBy(i => i.ExpiryDate)
                         .ToListAsync();
 
@@ -915,7 +1087,10 @@ public async Task<IActionResult> GetAllMedicines()
                     }
 
                     if (remaining > 0)
-                        throw new Exception($"Could not fully allocate required quantity for medicine ID {item.MedicineId}. Missing {remaining} units.");
+                    {
+                        throw new Exception(
+                            $"Could not fully allocate required quantity for medicine ID {item.MedicineId}. Missing {remaining} units.");
+                    }
 
                     dispense.DispenseMedicineDetails.Add(new DispenseMedicineDetail
                     {
@@ -927,7 +1102,11 @@ public async Task<IActionResult> GetAllMedicines()
                 _context.DispenseMedicines.Add(dispense);
                 await _context.SaveChangesAsync();
 
-                return Ok(new { message = "Dispense completed successfully.", dispenseId = dispense.DispenseID });
+                return Ok(new
+                {
+                    message = "Dispense completed successfully.",
+                    dispenseId = dispense.DispenseID
+                });
             }
             catch (Exception ex)
             {
@@ -957,10 +1136,13 @@ public async Task<IActionResult> GetAllMedicines()
                         DispenseDate = d.DispenceDate,
                         PrescriptionId = d.PrescriptionID,
                         PatientId = d.Prescription != null ? d.Prescription.PatientID : 0,
-                        PatientName = d.Prescription != null && d.Prescription.Patient != null ? d.Prescription.Patient.FirstName + " " + d.Prescription.Patient.LastName : "",
-                        PharmacistName = d.Pharmacist != null && d.Pharmacist.Users != null ? d.Pharmacist.Users.FirstName + " " + d.Pharmacist.Users.FatherName : "",
+                        PatientName = d.Prescription != null && d.Prescription.Patient != null
+                            ? d.Prescription.Patient.FirstName + " " + d.Prescription.Patient.LastName : "",
+                        PharmacistName = d.Pharmacist != null && d.Pharmacist.Users != null
+                            ? d.Pharmacist.Users.FirstName + " " + d.Pharmacist.Users.FatherName : "",
                         TotalItems = d.DispenseMedicineDetails.Sum(dt => (int)dt.QuantityDispenced),
-                        TotalAmount = d.DispenseMedicineDetails.Sum(dt => (decimal)dt.QuantityDispenced * (dt.Medicine != null ? dt.Medicine.UnitPrice : 0))
+                        TotalAmount = d.DispenseMedicineDetails.Sum(dt =>
+                            (decimal)dt.QuantityDispenced * (dt.Medicine != null ? dt.Medicine.UnitPrice : 0))
                     })
                     .ToListAsync();
 
@@ -972,6 +1154,9 @@ public async Task<IActionResult> GetAllMedicines()
             }
         }
 
+        /// <summary>
+        /// Use DispenseID from GetDispenseHistory — not PrescriptionID.
+        /// </summary>
         [HttpGet("GetDispenseDetails/{dispenseId}")]
         public async Task<IActionResult> GetDispenseDetails(int dispenseId)
         {
@@ -997,8 +1182,12 @@ public async Task<IActionResult> GetAllMedicines()
                     DispenseId = dispense.DispenseID,
                     DispenseDate = dispense.DispenceDate,
                     PrescriptionId = dispense.PrescriptionID,
-                    PatientName = dispense.Prescription?.Patient != null ? dispense.Prescription.Patient.FirstName + " " + dispense.Prescription.Patient.LastName : "",
-                    PharmacistName = dispense.Pharmacist != null && dispense.Pharmacist.Users != null ? dispense.Pharmacist.Users.FirstName + " " + dispense.Pharmacist.Users.FatherName : "",
+                    PatientName = dispense.Prescription?.Patient != null
+                        ? dispense.Prescription.Patient.FirstName + " " + dispense.Prescription.Patient.LastName
+                        : "",
+                    PharmacistName = dispense.Pharmacist != null && dispense.Pharmacist.Users != null
+                        ? dispense.Pharmacist.Users.FirstName + " " + dispense.Pharmacist.Users.FatherName
+                        : "",
                     Items = dispense.DispenseMedicineDetails.Select(dt => new DispenseDetailItemDto
                     {
                         MedicineId = dt.MedicineID,
@@ -1008,7 +1197,8 @@ public async Task<IActionResult> GetAllMedicines()
                         UnitPrice = dt.Medicine?.UnitPrice ?? 0,
                         LineTotal = (decimal)dt.QuantityDispenced * (dt.Medicine?.UnitPrice ?? 0)
                     }).ToList(),
-                    TotalAmount = dispense.DispenseMedicineDetails.Sum(dt => (decimal)dt.QuantityDispenced * (dt.Medicine != null ? dt.Medicine.UnitPrice : 0))
+                    TotalAmount = dispense.DispenseMedicineDetails.Sum(dt =>
+                        (decimal)dt.QuantityDispenced * (dt.Medicine != null ? dt.Medicine.UnitPrice : 0))
                 };
 
                 return Ok(result);
@@ -1074,7 +1264,8 @@ public async Task<IActionResult> GetAllMedicines()
                         RequestId = r.CentralRequestID,
                         RequestDate = r.RequestDate,
                         Status = r.Status,
-                        RequestedBy = r.Pharmacist != null && r.Pharmacist.Users != null ? r.Pharmacist.Users.FirstName + " " + r.Pharmacist.Users.FatherName : "",
+                        RequestedBy = r.Pharmacist != null && r.Pharmacist.Users != null
+                            ? r.Pharmacist.Users.FirstName + " " + r.Pharmacist.Users.FatherName : "",
                         TotalRequested = r.CentralStoreRequestDetail.Sum(d => d.RequestedQuantity),
                         TotalApproved = r.CentralStoreRequestDetail.Sum(d => d.ApprovedQuantity),
                         Items = r.CentralStoreRequestDetail.Select(d => new RequestItemReportDto
@@ -1160,10 +1351,13 @@ public async Task<IActionResult> GetAllMedicines()
                         DispenseId = d.DispenseID,
                         DispenseDate = d.DispenceDate,
                         PrescriptionId = d.PrescriptionID,
-                        PatientName = d.Prescription != null && d.Prescription.Patient != null ? d.Prescription.Patient.FirstName + " " + d.Prescription.Patient.LastName : "",
-                        PharmacistName = d.Pharmacist != null && d.Pharmacist.Users != null ? d.Pharmacist.Users.FirstName + " " + d.Pharmacist.Users.FatherName : "",
+                        PatientName = d.Prescription != null && d.Prescription.Patient != null
+                            ? d.Prescription.Patient.FirstName + " " + d.Prescription.Patient.LastName : "",
+                        PharmacistName = d.Pharmacist != null && d.Pharmacist.Users != null
+                            ? d.Pharmacist.Users.FirstName + " " + d.Pharmacist.Users.FatherName : "",
                         TotalItems = d.DispenseMedicineDetails.Sum(dt => (int)dt.QuantityDispenced),
-                        TotalAmount = d.DispenseMedicineDetails.Sum(dt => (decimal)dt.QuantityDispenced * (dt.Medicine != null ? dt.Medicine.UnitPrice : 0)),
+                        TotalAmount = d.DispenseMedicineDetails.Sum(dt =>
+                            (decimal)dt.QuantityDispenced * (dt.Medicine != null ? dt.Medicine.UnitPrice : 0)),
                         Items = d.DispenseMedicineDetails.Select(dt => new DispenseItemReportDto
                         {
                             MedicineName = dt.Medicine != null ? dt.Medicine.MedicineName : "",
@@ -1201,7 +1395,9 @@ public async Task<IActionResult> GetAllMedicines()
                         BatchNumber = i.BatchNumber,
                         QuantityAvailable = i.QuantityAvailable,
                         ExpiryDate = i.ExpiryDate,
-                        Status = i.ExpiryDate < now ? "Expired" : (i.ExpiryDate <= now.AddDays(30) ? "Near Expiry" : "Valid"),
+                        Status = i.ExpiryDate < now
+                            ? "Expired"
+                            : (i.ExpiryDate <= now.AddDays(30) ? "Near Expiry" : "Valid"),
                         DaysRemaining = (int)(i.ExpiryDate - now).TotalDays
                     })
                     .ToListAsync();
@@ -1239,7 +1435,8 @@ public async Task<IActionResult> GetAllMedicines()
                 {
                     PharmacistId = pharmacist.PharmacistID,
                     UserId = pharmacist.UserID,
-                    FullName = pharmacist.Users != null ? pharmacist.Users.FirstName + " " + pharmacist.Users.FatherName : "",
+                    FullName = pharmacist.Users != null
+                        ? pharmacist.Users.FirstName + " " + pharmacist.Users.FatherName : "",
                     Email = pharmacist.Users?.Email ?? "",
                     PhoneNumber = pharmacist.Users?.Phone ?? "",
                     BranchPharmacyId = pharmacist.BranchPharmacyID,
@@ -1255,7 +1452,6 @@ public async Task<IActionResult> GetAllMedicines()
             }
         }
 
-        
         #endregion
     }
 }

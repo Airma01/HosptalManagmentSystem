@@ -16,6 +16,7 @@ using HospitalSys.Models.Pharmacy.Common;
 using HospitalSys.Models.Pharmacy.Branch;
 using System.Security.Claims;
 using HospitalSys.Dtos.Nurse;
+using HospitalSys.Models.BillingAndPayment;
 
 namespace HospitalSys.Controllers.Nurse
 {
@@ -385,7 +386,14 @@ public async Task<IActionResult> RegisterPatient([FromBody] RegisterPatientDto d
             }
         }
 
-        // POST: create-visit-triage (one form)
+       // ============================================================
+// REPLACE the body of CreateVisitAndTriage in NurseController.cs
+// Keep the same method signature and route:
+// [HttpPost("create-visit-triage")]
+// ============================================================
+// Add at top of NurseController.cs if missing:
+// using HospitalSys.Models.BillingAndPayment;
+
         [HttpPost("create-visit-triage")]
         public async Task<IActionResult> CreateVisitAndTriage([FromBody] CreateVisitAndTriageDto dto)
         {
@@ -408,11 +416,12 @@ public async Task<IActionResult> RegisterPatient([FromBody] RegisterPatientDto d
                 if (clinicalDept == null)
                     return NotFound(new { message = "Clinical Department not found" });
 
-                using var transaction = await _context.Database.BeginTransactionAsync();
+                // Registration / consultation fee (change as needed)
+                const double registrationFee = 50.0;
 
+                await using var transaction = await _context.Database.BeginTransactionAsync();
                 try
                 {
-                    // 1. Create PatientVisit
                     var visit = new PatientVisit
                     {
                         PatientID = dto.PatientId,
@@ -424,7 +433,6 @@ public async Task<IActionResult> RegisterPatient([FromBody] RegisterPatientDto d
                     _context.PatientVisits.Add(visit);
                     await _context.SaveChangesAsync();
 
-                    // 2. Create Triage using the generated VisitId
                     var triage = new Triage
                     {
                         VisitID = visit.VisitID,
@@ -440,14 +448,32 @@ public async Task<IActionResult> RegisterPatient([FromBody] RegisterPatientDto d
                     };
                     _context.Triages.Add(triage);
 
-                    // Same VisitID: after triage + department → Progress
                     visit.Status = "Progress";
 
+                    // ---- PAYMENT: unpaid hospital bill (doctor queue waits for Paid) ----
+                    var bill = new Bill
+                    {
+                        PatientID = dto.PatientId,
+                        VisitID = visit.VisitID,
+                        TotalAmount = registrationFee,
+                        BillDate = DateTime.UtcNow,
+                        Status = "Unpaid"
+                    };
+                    _context.Bills.Add(bill);
                     await _context.SaveChangesAsync();
 
+                    _context.BillItems.Add(new BillItem
+                    {
+                        BillID = bill.BillID,
+                        ServiceName = "Consultation / Registration",
+                        Quantity = 1,
+                        UnitPrice = (decimal)registrationFee,
+                        TotalPrice = (decimal)registrationFee
+                    });
+
+                    await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
 
-                    // Return combined response (visit + triage)
                     var visitResponse = new PatientVisitResponseDto
                     {
                         VisitId = visit.VisitID,
@@ -476,7 +502,19 @@ public async Task<IActionResult> RegisterPatient([FromBody] RegisterPatientDto d
                         VisitDate = visit.VisitDate
                     };
 
-                    return Ok(new { Visit = visitResponse, Triage = triageResponse });
+                    return Ok(new
+                    {
+                        Visit = visitResponse,
+                        Triage = triageResponse,
+                        Bill = new
+                        {
+                            bill.BillID,
+                            bill.VisitID,
+                            bill.Status,
+                            bill.TotalAmount,
+                            Message = "Bill is Unpaid. Patient will appear on doctor queue only after hospital cashier payment."
+                        }
+                    });
                 }
                 catch
                 {

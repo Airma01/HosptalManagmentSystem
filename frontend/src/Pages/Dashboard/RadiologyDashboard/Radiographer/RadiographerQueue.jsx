@@ -1,11 +1,24 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import API from '../../../../Config/API';
 import LoadingSpinner from '../Components/LoadingSpinner';
 import RequestTable from '../Components/RequestTable';
+import {
+  getRequestsPaymentStatus,
+  ensureRadiologyPaid,
+} from '../Services/radiologyPaymentApi';
 
+/**
+ * Integrates existing queue API with payment status (Paid / Unpaid).
+ * Routes (from your App): /radiology/radiographer/queue
+ * Existing backend: GET /radiology/Radiographer/queue
+ * Payment: GET /Hospital/Radiology/requests-payment-status
+ */
 export default function RadiographerQueue() {
+  const navigate = useNavigate();
   const [rows, setRows] = useState([]);
   const [status, setStatus] = useState('');
+  const [paymentFilter, setPaymentFilter] = useState(''); // '' | Paid | Unpaid
   const [selectedCategory, setSelectedCategory] = useState('');
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,15 +31,62 @@ export default function RadiographerQueue() {
       const res = await API.get('/radiology/Radiographer/queue', {
         params: status ? { status } : undefined,
       });
-      setRows(Array.isArray(res.data) ? res.data : []);
+      let list = Array.isArray(res.data) ? res.data : [];
+
+      // Merge payment status from payment API (all Paid + Unpaid)
+      try {
+        const payRes = await getRequestsPaymentStatus();
+        const payList = Array.isArray(payRes.data) ? payRes.data : [];
+        const payMap = new Map();
+        payList.forEach((p) => {
+          const id = p.radiologyRequestID ?? p.RadiologyRequestID;
+          if (id != null) {
+            payMap.set(Number(id), {
+              paymentStatus: p.paymentStatus ?? p.PaymentStatus ?? 'Unpaid',
+              canProcess: p.canProcess ?? p.CanProcess,
+            });
+          }
+        });
+
+        list = list.map((r) => {
+          const id = Number(r.radiologyRequestID ?? r.RadiologyRequestID);
+          const pay = payMap.get(id);
+          if (pay) {
+            return {
+              ...r,
+              paymentStatus: pay.paymentStatus,
+              canProcess:
+                pay.canProcess ??
+                String(pay.paymentStatus).toLowerCase() === 'paid',
+            };
+          }
+          // If not in payment list, treat as unpaid
+          return {
+            ...r,
+            paymentStatus: r.paymentStatus ?? r.PaymentStatus ?? 'Unpaid',
+            canProcess: false,
+          };
+        });
+      } catch {
+        // Payment endpoint missing: leave rows without payment (show Unpaid)
+        list = list.map((r) => ({
+          ...r,
+          paymentStatus: r.paymentStatus ?? r.PaymentStatus ?? 'Unpaid',
+          canProcess:
+            r.canProcess ??
+            String(r.paymentStatus ?? '').toLowerCase() === 'paid',
+        }));
+      }
+
+      setRows(list);
     } catch (err) {
       setError(err.response?.data?.message || 'Unable to load radiology queue.');
+      setRows([]);
     } finally {
       setLoading(false);
     }
   }, [status]);
 
-  // Categories come from existing RadiologyDepartment (DepartmentName = category).
   const loadCategories = useCallback(async () => {
     try {
       const res = await API.get('/radiology/RadiologyDepartment');
@@ -35,10 +95,8 @@ export default function RadiographerQueue() {
         .map((d) => d.departmentName || d.DepartmentName)
         .filter((n) => typeof n === 'string' && n.trim())
         .map((n) => n.trim());
-      // Unique, sorted
       setCategories([...new Set(names)].sort((a, b) => a.localeCompare(b)));
     } catch {
-      // Fall back: derive categories from loaded queue rows
       setCategories([]);
     }
   }, []);
@@ -51,7 +109,6 @@ export default function RadiographerQueue() {
     loadCategories();
   }, [loadCategories]);
 
-  // If department API fails, still offer categories present in the current queue data.
   const categoryOptions = useMemo(() => {
     if (categories.length > 0) return categories;
     const fromRows = rows
@@ -61,20 +118,54 @@ export default function RadiographerQueue() {
     return [...new Set(fromRows)].sort((a, b) => a.localeCompare(b));
   }, [categories, rows]);
 
-  // Client-side category filter — does not affect status filtering (status is server-side).
   const filteredRows = useMemo(() => {
-    if (!selectedCategory) return rows;
-    const cat = selectedCategory.toLowerCase();
-    return rows.filter((r) => {
-      const name = (r.departmentName || r.DepartmentName || '').toLowerCase();
-      return name === cat;
-    });
-  }, [rows, selectedCategory]);
+    let list = rows;
+    if (selectedCategory) {
+      const cat = selectedCategory.toLowerCase();
+      list = list.filter((r) => {
+        const name = (r.departmentName || r.DepartmentName || '').toLowerCase();
+        return name === cat;
+      });
+    }
+    if (paymentFilter) {
+      const pf = paymentFilter.toLowerCase();
+      list = list.filter(
+        (r) =>
+          String(r.paymentStatus || r.PaymentStatus || 'Unpaid').toLowerCase() ===
+          pf
+      );
+    }
+    return list;
+  }, [rows, selectedCategory, paymentFilter]);
+
+  const handleProcess = async (id, canProcess) => {
+    if (!canProcess) {
+      alert(
+        'Radiology request is unpaid. Patient must pay at Radiology Cashier before examination.'
+      );
+      return;
+    }
+    try {
+      await ensureRadiologyPaid(id);
+      navigate(`/radiology/radiographer/requests/${id}/perform`);
+      // If your App uses a different path, e.g. /radiology/radiographer/perform/:id — change here
+    } catch (e) {
+      alert(
+        e?.response?.data?.message ||
+          'Radiology request is unpaid. Patient must pay at Radiology Cashier first.'
+      );
+    }
+  };
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-bold text-gray-900">Radiology Queue</h2>
+        <div>
+          <h2 className="text-xl font-bold text-gray-900">Radiology Queue</h2>
+          <p className="text-sm text-gray-500">
+            Process examinations only when payment is <strong>Paid</strong>.
+          </p>
+        </div>
         <div className="flex flex-wrap items-center gap-2">
           <label className="flex items-center gap-2 text-sm text-gray-700">
             <span className="whitespace-nowrap font-medium">Category</span>
@@ -104,11 +195,22 @@ export default function RadiographerQueue() {
             <option value="ReadyForReview">Ready for Review</option>
             <option value="Completed">Completed</option>
           </select>
+          <select
+            value={paymentFilter}
+            onChange={(e) => setPaymentFilter(e.target.value)}
+            className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            aria-label="Filter by payment"
+          >
+            <option value="">All payments</option>
+            <option value="Unpaid">Unpaid</option>
+            <option value="Paid">Paid</option>
+          </select>
           <button
             type="button"
             onClick={load}
             className="px-3 py-2 rounded-lg border border-gray-200 text-sm"
           >
+            <i className="bi bi-arrow-clockwise mr-1" />
             Refresh
           </button>
         </div>
@@ -125,9 +227,10 @@ export default function RadiographerQueue() {
           detailsBase="/radiology/radiographer/requests"
           emptyMessage={
             selectedCategory
-              ? `No radiology requests found for this category.`
+              ? 'No radiology requests found for this category.'
               : 'No radiology requests found.'
           }
+          onProcess={handleProcess}
         />
       )}
     </div>

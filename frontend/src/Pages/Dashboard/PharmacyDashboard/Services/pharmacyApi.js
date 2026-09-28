@@ -1,3 +1,4 @@
+
 import API from "../../../../Config/API";
 
 const pharmacyApi = {
@@ -39,9 +40,27 @@ const pharmacyApi = {
   getPendingPrescriptions: () =>
     API.get("/Hospital/Pharmacy/BranchPharmacy/GetPendingPrescriptions"),
   getPrescriptionDetails: (prescriptionId) =>
-    API.get(`/Hospital/Pharmacy/BranchPharmacy/GetPrescriptionDetails/${prescriptionId}`),
+    API.get(
+      `/Hospital/Pharmacy/BranchPharmacy/GetPrescriptionDetails/${prescriptionId}`
+    ),
   checkMedicineAvailability: (prescriptionId) =>
-    API.get(`/Hospital/Pharmacy/BranchPharmacy/CheckMedicineAvailability/${prescriptionId}`),
+    API.get(
+      `/Hospital/Pharmacy/BranchPharmacy/CheckMedicineAvailability/${prescriptionId}`
+    ),
+
+  // ========== PAYMENT STATUS (same BranchPharmacy controller) ==========
+  getPrescriptionsPaymentStatus: (params = {}) =>
+    API.get("/Hospital/Pharmacy/BranchPharmacy/prescriptions-payment-status", {
+      params,
+    }),
+  getPrescriptionPaymentStatus: (prescriptionId) =>
+    API.get(
+      `/Hospital/Pharmacy/BranchPharmacy/prescriptions/${prescriptionId}/payment-status`
+    ),
+  ensurePrescriptionPaid: (prescriptionId) =>
+    API.get(
+      `/Hospital/Pharmacy/BranchPharmacy/prescriptions/${prescriptionId}/ensure-paid`
+    ),
 
   // ========== DISPENSING ==========
   dispenseMedicine: (data) =>
@@ -49,7 +68,9 @@ const pharmacyApi = {
   getDispenseHistory: () =>
     API.get("/Hospital/Pharmacy/BranchPharmacy/GetDispenseHistory"),
   getDispenseDetails: (dispenseId) =>
-    API.get(`/Hospital/Pharmacy/BranchPharmacy/GetDispenseDetails/${dispenseId}`),
+    API.get(
+      `/Hospital/Pharmacy/BranchPharmacy/GetDispenseDetails/${dispenseId}`
+    ),
 
   // ========== REPORTS ==========
   getStockReport: () =>
@@ -64,16 +85,12 @@ const pharmacyApi = {
     API.get("/Hospital/Pharmacy/BranchPharmacy/GetExpiryReport"),
 
   // ========== PROFILE ==========
-  getProfile: () =>
-    API.get("/Hospital/Pharmacy/BranchPharmacy/GetProfile"),
+  getProfile: () => API.get("/Hospital/Pharmacy/BranchPharmacy/GetProfile"),
   changePassword: (data) =>
     API.put("/Hospital/Pharmacy/BranchPharmacy/ChangePassword", data),
 
-  // ========== AUTH (External) ==========
-  getAuthMe: () =>
-    API.get("/Hospital/Pharmacist/PharmacistAuth/auth_me"),
-
-  getAllMedicines: () => 
+  getAuthMe: () => API.get("/Hospital/Pharmacist/PharmacistAuth/auth_me"),
+  getAllMedicines: () =>
     API.get("/Hospital/Pharmacy/BranchPharmacy/GetAllMedicines"),
 };
 

@@ -1,5 +1,15 @@
+C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\HospitalSys.csproj.AssemblyReference.cache
+C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\rpswa.dswa.cache.json
+C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\HospitalSys.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\HospitalSys.AssemblyInfoInputs.cache
+C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\HospitalSys.AssemblyInfo.cs
+C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\HospitalSys.csproj.CoreCompileInputs.cache
+C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\HospitalSys.MvcApplicationPartsAssemblyInfo.cs
+C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\HospitalSys.MvcApplicationPartsAssemblyInfo.cache
+C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\HospitalSys.sourcelink.json
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\appsettings.Development.json
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\appsettings.json
+C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\HospitalSys.staticwebassets.runtime.json
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\HospitalSys.staticwebassets.endpoints.json
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\HospitalSys.exe
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\HospitalSys.deps.json
@@ -107,15 +117,6 @@ C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\tr\Microsoft.CodeAnalysis.Workspaces.MSBuild.resources.dll
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\zh-Hans\Microsoft.CodeAnalysis.Workspaces.MSBuild.resources.dll
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\zh-Hant\Microsoft.CodeAnalysis.Workspaces.MSBuild.resources.dll
-C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\HospitalSys.csproj.AssemblyReference.cache
-C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\rpswa.dswa.cache.json
-C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\HospitalSys.GeneratedMSBuildEditorConfig.editorconfig
-C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\HospitalSys.AssemblyInfoInputs.cache
-C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\HospitalSys.AssemblyInfo.cs
-C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\HospitalSys.csproj.CoreCompileInputs.cache
-C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\HospitalSys.MvcApplicationPartsAssemblyInfo.cs
-C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\HospitalSys.MvcApplicationPartsAssemblyInfo.cache
-C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\HospitalSys.sourcelink.json
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\rjimswa.dswa.cache.json
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\rjsmrazor.dswa.cache.json
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\rjsmcshtml.dswa.cache.json
@@ -131,4 +132,3 @@ C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\HospitalSys.pdb
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\HospitalSys.genruntimeconfig.cache
 C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\obj\Debug\net10.0\ref\HospitalSys.dll
-C:\Users\ermiv\Desktop\.net\HosptalManagmentSystem\HospitalSys\bin\Debug\net10.0\HospitalSys.staticwebassets.runtime.json

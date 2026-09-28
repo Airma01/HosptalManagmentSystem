@@ -1,6 +1,3 @@
-
-// Controllers/Doctor/DoctorTriageController.cs
-using System.Security.Claims;
 using HospitalSys.Data;
 using HospitalSys.Dto.DoctorDtos;
 using Microsoft.AspNetCore.Authorization;
@@ -21,15 +18,6 @@ namespace HospitalSys.Controllers.Doctor
             _context = context;
         }
 
-        private int GetDoctorId()
-        {
-            var claim = User.FindFirst("DoctorID")?.Value;
-            if (string.IsNullOrEmpty(claim) || !int.TryParse(claim, out int id))
-                throw new UnauthorizedAccessException("Invalid doctor authentication");
-
-            return id;
-        }
-
         private int GetDepartmentId()
         {
             var claim = User.FindFirst("DepartmentID")?.Value;
@@ -38,58 +26,27 @@ namespace HospitalSys.Controllers.Doctor
             return id;
         }
 
-        /// <summary>
-        /// Normalize VisitType for matching (handles ChildHealth / "Child Health", case, spaces).
-        /// </summary>
         private static string NormalizeVisitType(string? value)
         {
             if (string.IsNullOrWhiteSpace(value)) return "";
-            return value.Trim().ToLowerInvariant()
-                .Replace(" ", "")
-                .Replace("_", "")
-                .Replace("-", "");
+            return value.Trim().ToLowerInvariant().Replace(" ", "").Replace("_", "").Replace("-", "");
         }
 
-        /// <summary>
-        /// Build accepted stored VisitType strings for a requested filter value.
-        /// Nurse UI uses "Maternal" / "ChildHealth"; doctor child-health create may use "Child Health".
-        /// </summary>
         private static List<string> VisitTypeMatchValues(string visitType)
         {
-            var values = new List<string>();
-            var raw = visitType.Trim();
-            if (raw.Length == 0) return values;
-
-            values.Add(raw);
-
-            var n = NormalizeVisitType(raw);
+            var values = new List<string> { visitType.Trim() };
+            var n = NormalizeVisitType(visitType);
             if (n == "maternal")
-            {
-                values.Add("Maternal");
-                values.Add("maternal");
-                values.Add("MATERNAL");
-            }
+                values.AddRange(new[] { "Maternal", "maternal", "MATERNAL" });
             else if (n == "childhealth")
-            {
-                values.Add("ChildHealth");
-                values.Add("Child Health");
-                values.Add("childhealth");
-                values.Add("child health");
-                values.Add("CHILDHEALTH");
-                values.Add("CHILD HEALTH");
-            }
-
+                values.AddRange(new[] { "ChildHealth", "Child Health", "childhealth", "child health", "CHILDHEALTH", "CHILD HEALTH" });
+            else if (n == "adult" || n == "general")
+                values.AddRange(new[] { "Adult", "General", "adult", "general" });
             return values.Distinct(StringComparer.Ordinal).ToList();
         }
 
         /// <summary>
-        /// GET /api/doctor/triage
-        /// GET /api/doctor/triage?visitType=Maternal
-        /// GET /api/doctor/triage?visitType=ChildHealth
-        /// GET /api/doctor/triage?visitType=ChildHealth&amp;triageDepartmentId=1
-        /// Triage records for the authenticated doctor's ClinicalDepartment only.
-        /// Optional visitType is applied in the database query (not after materialization).
-        /// Optional triageDepartmentId further filters by Triage.TriageDepartmentID.
+        /// GET /api/doctor/triage — ONLY visits with Bill.Status = Paid
         /// </summary>
         [HttpGet("triage")]
         public async Task<IActionResult> GetDepartmentTriageQueue(
@@ -104,26 +61,23 @@ namespace HospitalSys.Controllers.Doctor
                     .AsNoTracking()
                     .Where(t => t.ClinicalDepartmentID == departmentId);
 
-                // Active queue: exclude completed overall visits (PatientVisit.Status)
                 query = query.Where(t =>
                     t.PatientVisit != null &&
                     t.PatientVisit.Status != "Complete" &&
                     t.PatientVisit.Status != "Completed");
 
-                // Optional Triage Department filter (Central / Emergency / etc.)
-                if (triageDepartmentId.HasValue && triageDepartmentId.Value > 0)
-                {
-                    query = query.Where(t => t.TriageDepartmentID == triageDepartmentId.Value);
-                }
+                // *** HOSPITAL PAYMENT GATE ***
+                query = query.Where(t =>
+                    _context.Bills.Any(b => b.VisitID == t.VisitID && b.Status == "Paid"));
 
-                // Optional VisitType filter — applied in SQL via EF, before ToListAsync
+                if (triageDepartmentId.HasValue && triageDepartmentId.Value > 0)
+                    query = query.Where(t => t.TriageDepartmentID == triageDepartmentId.Value);
+
                 if (!string.IsNullOrWhiteSpace(visitType))
                 {
                     var matchValues = VisitTypeMatchValues(visitType);
                     if (matchValues.Count == 0)
-                    {
                         return Ok(new List<DoctorTriageQueueItemDto>());
-                    }
 
                     query = query.Where(t =>
                         t.PatientVisit != null &&
@@ -131,8 +85,7 @@ namespace HospitalSys.Controllers.Doctor
                 }
 
                 var queue = await query
-                    .Include(t => t.PatientVisit!)
-                        .ThenInclude(v => v.Patient)
+                    .Include(t => t.PatientVisit!).ThenInclude(v => v.Patient)
                     .Include(t => t.ClinicalDepartment)
                     .Include(t => t.TriageDepartment)
                     .OrderByDescending(t => t.PatientVisit!.VisitDate)
@@ -169,6 +122,15 @@ namespace HospitalSys.Controllers.Doctor
             {
                 return StatusCode(500, new { message = "An error occurred while retrieving triage queue." });
             }
+        }
+
+        [HttpGet("visit/{visitId:int}/payment-ok")]
+        public async Task<IActionResult> IsVisitPaid(int visitId)
+        {
+            var paid = await _context.Bills.AnyAsync(b => b.VisitID == visitId && b.Status == "Paid");
+            if (!paid)
+                return BadRequest(new { isPaid = false, message = "Visit bill unpaid. Cannot start consultation." });
+            return Ok(new { isPaid = true });
         }
     }
 }
