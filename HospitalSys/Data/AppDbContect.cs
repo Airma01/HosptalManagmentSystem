@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using HospitalSys.Models;
+using HospitalSys.Models.Security;
 using HospitalSys.Models.HospitalStruct;
 using HospitalSys.Models.PatientManagment;
 using HospitalSys.Models.BillingAndPayment;
@@ -293,6 +294,42 @@ modelBuilder.Entity<PaymentHospital>(entity =>
             modelBuilder.Entity<Bill>().HasIndex(b => b.VisitID);
             modelBuilder.Entity<Referral>().HasIndex(r => r.PatientID);
             modelBuilder.Entity<Referral>().HasIndex(r => r.PatientVisitID);
+             // ===== Security indexes =====
+            modelBuilder.Entity<AuditLog>(e =>
+            {
+                e.HasIndex(x => x.Timestamp);
+                e.HasIndex(x => x.UserId);
+                e.HasIndex(x => x.IpAddress);
+                e.HasIndex(x => x.Module);
+                e.HasIndex(x => x.Action);
+                e.HasIndex(x => x.Status);
+            });
+
+            modelBuilder.Entity<ApiRequestLog>(e =>
+            {
+                e.HasIndex(x => x.Timestamp);
+                e.HasIndex(x => x.IpAddress);
+                e.HasIndex(x => x.UserId);
+                e.HasIndex(x => x.Endpoint);
+                e.HasIndex(x => x.StatusCode);
+                e.HasIndex(x => x.WasRateLimited);
+            });
+
+            modelBuilder.Entity<SecurityEvent>(e =>
+            {
+                e.HasIndex(x => x.Timestamp);
+                e.HasIndex(x => x.EventType);
+                e.HasIndex(x => x.IpAddress);
+                e.HasIndex(x => x.UserId);
+                e.HasIndex(x => x.Severity);
+            });
+
+            modelBuilder.Entity<BlockedIpAddress>(e =>
+            {
+                e.HasIndex(x => x.IpAddress);
+                e.HasIndex(x => new { x.IpAddress, x.IsActive });
+                e.HasIndex(x => x.IsActive);
+            });
         }
 
         // ==============================================
@@ -442,5 +479,11 @@ modelBuilder.Entity<PaymentHospital>(entity =>
         public DbSet<PharmacyPayment> PharmacyPayments { get; set; }
         public DbSet<LaboratoryPayment> LaboratoryPayments { get; set; }
         public DbSet<RadiologyPayment> RadiologyPayments { get; set; }
+
+         // ===== Security monitoring =====
+        public DbSet<AuditLog> AuditLogs { get; set; }
+        public DbSet<ApiRequestLog> ApiRequestLogs { get; set; }
+        public DbSet<SecurityEvent> SecurityEvents { get; set; }
+        public DbSet<BlockedIpAddress> BlockedIpAddresses { get; set; }        
     }
 }

@@ -14,16 +14,18 @@ import Settings from "./Settings";
 import AdminAuthRouter from "../../ProtectRoute/AdminAuthRouter";
 import UserAction from "./UserAction";
 import DepartmentDetail from "./DepartmentDetail";
-import PharmacyDetail from "./PharmacyDetail"; // NEW
-import CentralPharmacy from './CentralPharmacy/CentralPharmacy';
-import CentralPharmacyDetail from './CentralPharmacy/CentralPharmacyDetail';
-import BranchPharmacy from './BranchPharmacy/BranchPharmacy';
-import BranchPharmacyDetail from './BranchPharmacy/BranchPharmacyDetail';
+import PharmacyDetail from "./PharmacyDetail";
+import CentralPharmacy from "./CentralPharmacy/CentralPharmacy";
+import CentralPharmacyDetail from "./CentralPharmacy/CentralPharmacyDetail";
+import BranchPharmacy from "./BranchPharmacy/BranchPharmacy";
+import BranchPharmacyDetail from "./BranchPharmacy/BranchPharmacyDetail";
+import SecurityDashboard from "./Security/SecurityDashboard";
+
 const AdminDashboard = () => {
   return (
     <div className="flex bg-gray-100 min-h-screen">
       <AdminNav />
-      
+
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto p-6">
         {/* Header */}
@@ -53,13 +55,14 @@ const AdminDashboard = () => {
             <Route path="medicine" element={<Medicine />} />
             <Route path="inventory" element={<Inventory />} />
             <Route path="central-pharmacy" element={<CentralPharmacy />} />
-<Route path="central-pharmacy/:id" element={<CentralPharmacyDetail />} />
-<Route path="branch-pharmacy" element={<BranchPharmacy />} />
-<Route path="branch-pharmacy/:id" element={<BranchPharmacyDetail />} />
+            <Route path="central-pharmacy/:id" element={<CentralPharmacyDetail />} />
+            <Route path="branch-pharmacy" element={<BranchPharmacy />} />
+            <Route path="branch-pharmacy/:id" element={<BranchPharmacyDetail />} />
             <Route path="pharmacy" element={<Pharmacy />} />
-            <Route path="pharmacy/:type/:id" element={<PharmacyDetail />} /> {/* NEW */}
+            <Route path="pharmacy/:type/:id" element={<PharmacyDetail />} />
             <Route path="admins" element={<Admins />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="security" element={<SecurityDashboard />} />
             <Route path="users/:id" element={<UserAction />} />
             <Route path="departments/:id" element={<DepartmentDetail />} />
             <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />

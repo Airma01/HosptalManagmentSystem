@@ -100,6 +100,13 @@ const AdminNav = () => {
       icon: "bi-gear-fill",
       id: "settings",
     },
+     {
+      name: "Security",
+      path: "/admin/dashboard/security",
+      icon: "bi-gear-fill",
+      id: "security",
+    },
+    
   ];
 
   return (

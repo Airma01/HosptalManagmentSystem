@@ -1,8 +1,12 @@
 using HospitalSys.Configuration;
 using HospitalSys.Data;
+using HospitalSys.Middleware;
+using HospitalSys.RateLimiting;
 using HospitalSys.Services.AI;
+using HospitalSys.Services.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -22,6 +26,17 @@ builder.Services.Configure<GeminiAIOptions>(options =>
 });
 builder.Services.AddHttpClient<IGeminiAIService, GeminiAIService>();
 builder.Services.AddScoped<IClinicalContextService, ClinicalContextService>();
+
+// --- Security monitoring ---
+builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+builder.Services.AddScoped<ISecurityEventService, SecurityEventService>();
+builder.Services.AddHospitalRateLimiting();
+
+// Forwarded headers (enable UseForwardedHeaders only behind a trusted reverse proxy)
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+});
 
 // JWT from cookie "jwt"
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -94,9 +109,18 @@ var wwwroot = Path.Combine(app.Environment.ContentRootPath, "wwwroot");
 Directory.CreateDirectory(wwwroot);
 Directory.CreateDirectory(Path.Combine(wwwroot, "uploads", "radiology"));
 
+// If deployed behind a trusted reverse proxy, uncomment:
+// app.UseForwardedHeaders();
+
 // Pipeline order matters
 app.UseCors("Jwt-Policy");
 app.UseStaticFiles();          // serves /uploads/radiology/...
+
+// Security pipeline
+app.UseMiddleware<IpBlockMiddleware>();           // 1. Blocked IP → 403
+app.UseHospitalRateLimiting();                    // 2. Rate limiter → 429
+app.UseMiddleware<ApiRequestLoggingMiddleware>(); // 3. Log after response
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
