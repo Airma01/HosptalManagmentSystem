@@ -1,7 +1,9 @@
+
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import API from "../../../../../Config/API";
 import { canWriteMaternalChildHealth } from "../../../../../utils/canWriteMaternalChildHealth";
+import AIClinicalAssistant from "../../Components/AIAssistant/AIClinicalAssistant";
 
 export default function PregnancyDetails() {
   const navigate = useNavigate();
@@ -102,6 +104,13 @@ export default function PregnancyDetails() {
               </Link>
             ))}
           </div>
+          {patientId && visitId && (
+            <AIClinicalAssistant
+              patientId={Number(patientId)}
+              visitId={Number(visitId)}
+              module="MaternalHealth"
+            />
+          )}
         </>
       )}
     </div>

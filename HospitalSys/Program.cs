@@ -1,4 +1,6 @@
+using HospitalSys.Configuration;
 using HospitalSys.Data;
+using HospitalSys.Services.AI;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +10,18 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
+
+// --- Google Gemini AI Clinical Assistant ---
+// Prefer env GEMINI_API_KEY or user-secrets; never commit the key.
+builder.Services.Configure<GeminiAIOptions>(options =>
+{
+    builder.Configuration.GetSection(GeminiAIOptions.SectionName).Bind(options);
+    var envKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY");
+    if (!string.IsNullOrWhiteSpace(envKey))
+        options.ApiKey = envKey;
+});
+builder.Services.AddHttpClient<IGeminiAIService, GeminiAIService>();
+builder.Services.AddScoped<IClinicalContextService, ClinicalContextService>();
 
 // JWT from cookie "jwt"
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

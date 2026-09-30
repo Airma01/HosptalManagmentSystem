@@ -1,3 +1,4 @@
+
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import API from "../../../../Config/API";
@@ -13,9 +14,11 @@ import ProblemList from "./ProblemList";
 import Prescription from "./Prescription";
 import Laboratory from "./Laboratory";
 import Radiology from "./Radiology";
+import AIClinicalAssistant from "../Components/AIAssistant/AIClinicalAssistant";
 
 const SECTIONS = [
   { id: "overview", label: "Overview", icon: "bi-person-vcard" },
+  { id: "aiAssistant", label: "AI Assistant", icon: "bi-robot" },
   { id: "allergies", label: "Allergies", icon: "bi-exclamation-triangle" },
   { id: "medicalHistory", label: "Medical History", icon: "bi-journal-medical" },
   { id: "familyHistory", label: "Family History", icon: "bi-people" },
@@ -323,6 +326,14 @@ export default function ConsultationPatient() {
               </p>
             )}
           </div>
+        )}
+
+        {section === "aiAssistant" && (
+          <AIClinicalAssistant
+            patientId={Number(patientId)}
+            visitId={Number(visitId)}
+            module="Consultation"
+          />
         )}
 
         {section === "allergies" && (

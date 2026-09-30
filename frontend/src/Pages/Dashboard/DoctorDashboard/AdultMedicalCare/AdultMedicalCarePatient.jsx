@@ -1,3 +1,4 @@
+
 import { useCallback, useEffect, useState } from "react";
 import ClinicalRecordAccordion from "../Components/ClinicalRecordAccordion";
 import { useNavigate, useParams } from "react-router-dom";
@@ -14,6 +15,7 @@ import ProblemList from "../Consultation/ProblemList";
 import Prescription from "../Consultation/Prescription";
 import Laboratory from "../Consultation/Laboratory";
 import Radiology from "../Consultation/Radiology";
+import AIClinicalAssistant from "../Components/AIAssistant/AIClinicalAssistant";
 
 const CARE_TYPES = [
   { key: "asthma", label: "Asthma", listKey: "asthmaManagement", idKey: "asthmaManagementID" },
@@ -26,6 +28,7 @@ const CARE_TYPES = [
 ];
 
 const CLINICAL_SECTIONS = [
+  { id: "aiAssistant", label: "AI Assistant", icon: "bi-robot" },
   { id: "allergies", label: "Allergies", icon: "bi-exclamation-triangle" },
   { id: "medicalHistory", label: "Medical History", icon: "bi-journal-medical" },
   { id: "familyHistory", label: "Family History", icon: "bi-people" },
@@ -603,6 +606,18 @@ export default function AdultMedicalCarePatient() {
               </p>
             )}
 
+            {clinicalTab === "aiAssistant" && visitId && (
+              <AIClinicalAssistant
+                patientId={Number(patientId)}
+                visitId={Number(visitId)}
+                module="AdultMedicalCare"
+              />
+            )}
+            {clinicalTab === "aiAssistant" && !visitId && (
+              <p className="text-sm text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
+                Open this patient from a visit queue so a Visit ID is available for the AI Assistant.
+              </p>
+            )}
             {clinicalTab === "allergies" && (
               <Allergies
                 patientId={patientId}

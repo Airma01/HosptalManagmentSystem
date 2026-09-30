@@ -1,4 +1,5 @@
 
+
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import API from "../../../../../Config/API";
@@ -9,6 +10,7 @@ import Immunization from "./Immunization";
 import NutritionAssessment from "./NutritionAssessment";
 import IMNCIEncounter from "./IMNCIEncounter";
 import { canWriteMaternalChildHealth } from "../../../../../utils/canWriteMaternalChildHealth";
+import AIClinicalAssistant from "../../Components/AIAssistant/AIClinicalAssistant";
 
 const TABS = [
   { key: "neonatal", label: "Neonatal", icon: "bi-moon-stars" },
@@ -17,6 +19,7 @@ const TABS = [
   { key: "immunization", label: "Immunization", icon: "bi-syringe" },
   { key: "nutrition", label: "Nutrition", icon: "bi-apple" },
   { key: "imnci", label: "IMNCI", icon: "bi-clipboard2-pulse" },
+  { key: "ai", label: "AI Assistant", icon: "bi-robot" },
 ];
 
 
@@ -516,6 +519,13 @@ function ChildHealthModules({ childPatientId, childVisitId, tab }) {
       {tab === "immunization" ? <Immunization /> : null}
       {tab === "nutrition" ? <NutritionAssessment /> : null}
       {tab === "imnci" ? <IMNCIEncounter /> : null}
+      {tab === "ai" && childPatientId && childVisitId ? (
+        <AIClinicalAssistant
+          patientId={Number(childPatientId)}
+          visitId={Number(childVisitId)}
+          module="ChildHealth"
+        />
+      ) : null}
     </>
   );
 }
