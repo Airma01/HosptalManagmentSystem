@@ -4,9 +4,12 @@ namespace HospitalSys.Dto
 {
     public class RegisterDoctorDto
     {
-        public int UserID {get;set;}
-        public int ClinicalDepartmentID {get;set;}
-        public string LicenseNumber {get;set;} = "";
+        public int UserID { get; set; }
+        /// <summary>Legacy single department (still accepted for backward compatibility).</summary>
+        public int ClinicalDepartmentID { get; set; }
+        /// <summary>Preferred: list of department IDs to assign (many-to-many).</summary>
+        public List<int>? DepartmentIds { get; set; }
+        public string LicenseNumber { get; set; } = "";
     }
 
     public class DoctorLoginDto
@@ -65,5 +68,33 @@ public class DoctorDto
     public class SelectedDoctorsDto
     {
         public List<int> UserIDs { get; set; } = new List<int>();
+    }
+
+    /// <summary>
+    /// Request body for switching the doctor's active department.
+    /// DoctorID is NEVER accepted from the client; it comes from the JWT.
+    /// </summary>
+    public class SwitchDepartmentDto
+    {
+        [Required]
+        public int DepartmentID { get; set; }
+    }
+
+    /// <summary>
+    /// Request body for Admin to replace the full list of departments assigned to a doctor.
+    /// </summary>
+    public class AssignDoctorDepartmentsDto
+    {
+        [Required]
+        public List<int> DepartmentIds { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Simple department info returned in auth_me and admin responses.
+    /// </summary>
+    public class DepartmentInfoDto
+    {
+        public int DepartmentID { get; set; }
+        public string DepartmentName { get; set; } = "";
     }
 }

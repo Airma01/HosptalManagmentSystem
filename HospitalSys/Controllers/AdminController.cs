@@ -258,75 +258,160 @@ public async Task<IActionResult> AddUser([FromBody] RegisterUserDto userDto)
         [AuthorizeRole("Admin")]
         public async Task<IActionResult> AddDoctor([FromBody] RegisterDoctorDto DoctorDto)
         {
-            if(string.IsNullOrWhiteSpace(DoctorDto.UserID.ToString()) || string.IsNullOrWhiteSpace(DoctorDto.ClinicalDepartmentID.ToString()))
-            {
-                return BadRequest("Fields Are Required");
-            }
-            if(FindNurse(DoctorDto.UserID).Result)
-            {
-                return BadRequest("This User Is Already Registred As Nurse");
-            }
-            if(FindDoctor(DoctorDto.UserID).Result)
-            {
-                return BadRequest("This User Is Already Registred As Doctor");
-            }
+            if (DoctorDto.UserID <= 0)
+                return BadRequest("UserID is required");
+
+            // Collect department IDs: prefer DepartmentIds list, fall back to single ClinicalDepartmentID
+            var deptIds = new List<int>();
+            if (DoctorDto.DepartmentIds != null && DoctorDto.DepartmentIds.Count > 0)
+                deptIds = DoctorDto.DepartmentIds.Where(id => id > 0).Distinct().ToList();
+            else if (DoctorDto.ClinicalDepartmentID > 0)
+                deptIds.Add(DoctorDto.ClinicalDepartmentID);
+
+            if (deptIds.Count == 0)
+                return BadRequest("At least one ClinicalDepartmentID is required");
+
+            if (await FindNurse(DoctorDto.UserID))
+                return BadRequest("This User Is Already Registered As Nurse");
+            if (await FindDoctor(DoctorDto.UserID))
+                return BadRequest("This User Is Already Registered As Doctor");
+
             try
-            {  
+            {
                 var user = await _context.Users
-                           .Include(u => u.UserRole)
-                           .ThenInclude(ur => ur.Role)
-                           .FirstOrDefaultAsync(u => u.UserID == DoctorDto.UserID);
-                if(user.UserRole.All(r => r.Role.RoleName != "Doctor"))
-                {
+                    .Include(u => u.UserRole)
+                    .ThenInclude(ur => ur.Role)
+                    .FirstOrDefaultAsync(u => u.UserID == DoctorDto.UserID);
+
+                if (user == null)
+                    return NotFound("User not found");
+                if (user.UserRole.All(r => r.Role!.RoleName != "Doctor"))
                     return BadRequest("This User Is Not Assigned The Doctor Role");
-                }
-                var doctor = new Models.Doctor
+
+                // Validate all department IDs exist
+                var validDeptCount = await _context.ClinicalDepartments
+                    .CountAsync(d => deptIds.Contains(d.ClinicalDepartmentID));
+                if (validDeptCount != deptIds.Count)
+                    return BadRequest("One or more department IDs are invalid");
+
+                // Use first department as the legacy ClinicalDepartmentID for compatibility
+                int primaryDeptId = deptIds.First();
+
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                try
                 {
-                    UserID = DoctorDto.UserID,
-                    ClinicalDepartmentID = DoctorDto.ClinicalDepartmentID,
-                    LicenseNumber = DoctorDto.LicenseNumber
-                };
-                await _context.Doctors.AddAsync(doctor);
-                await _context.SaveChangesAsync();
-                return Ok("Doctor Registrated Successfully");
+                    var doctor = new Models.Doctor
+                    {
+                        UserID = DoctorDto.UserID,
+                        ClinicalDepartmentID = primaryDeptId,
+                        LicenseNumber = DoctorDto.LicenseNumber ?? ""
+                    };
+                    await _context.Doctors.AddAsync(doctor);
+                    await _context.SaveChangesAsync();
+
+                    // Create DoctorDepartment rows for all assigned departments
+                    foreach (var deptId in deptIds)
+                    {
+                        await _context.DoctorDepartments.AddAsync(new Models.DoctorDepartment
+                        {
+                            DoctorID = doctor.DoctorID,
+                            ClinicalDepartmentID = deptId
+                        });
+                    }
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    return Ok(new
+                    {
+                        message = "Doctor Registered Successfully",
+                        doctorID = doctor.DoctorID,
+                        departmentIds = deptIds
+                    });
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
             }
             catch (Exception ex)
             {
-                return StatusCode(500,ex.Message);
-                throw;
+                return StatusCode(500, ex.Message);
             }
         }
-        
+
         [HttpPost("add_select_user_doctor_role/{DepartmentID}")]
-        public async Task<IActionResult> AddSelectedDoctorForDepartment(int DepartmentID,[FromBody] SelectedDoctorsDto selectedDoctorsDto)
+        public async Task<IActionResult> AddSelectedDoctorForDepartment(int DepartmentID, [FromBody] SelectedDoctorsDto selectedDoctorsDto)
         {
-            if(DepartmentID == 0)
-            {
+            if (DepartmentID == 0)
                 return BadRequest("Department ID Is Required");
-            }
-        
+
+            if (selectedDoctorsDto?.UserIDs == null || selectedDoctorsDto.UserIDs.Count == 0)
+                return BadRequest("At least one UserID is required");
+
+            var deptExists = await _context.ClinicalDepartments.AnyAsync(d => d.ClinicalDepartmentID == DepartmentID);
+            if (!deptExists)
+                return BadRequest("Department not found");
+
             try
             {
-            var doctor = new SelectedDoctorsDto
-            {
-                UserIDs = selectedDoctorsDto.UserIDs
-            };
-            await _context.Doctors.AddRangeAsync(doctor.UserIDs.Select(id => new Models.Doctor
-            {
-                UserID = id,
-                ClinicalDepartmentID = DepartmentID, // or some default value
-                LicenseNumber = "" // or some default value
-            }));
-            await _context.SaveChangesAsync();
-            return Ok("Selected Doctors Added Successfully");
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    foreach (var userId in selectedDoctorsDto.UserIDs.Distinct())
+                    {
+                        var existingDoctor = await _context.Doctors
+                            .FirstOrDefaultAsync(d => d.UserID == userId);
+
+                        if (existingDoctor == null)
+                        {
+                            // Create new Doctor with this department as primary
+                            var doctor = new Models.Doctor
+                            {
+                                UserID = userId,
+                                ClinicalDepartmentID = DepartmentID,
+                                LicenseNumber = ""
+                            };
+                            await _context.Doctors.AddAsync(doctor);
+                            await _context.SaveChangesAsync();
+
+                            await _context.DoctorDepartments.AddAsync(new Models.DoctorDepartment
+                            {
+                                DoctorID = doctor.DoctorID,
+                                ClinicalDepartmentID = DepartmentID
+                            });
+                        }
+                        else
+                        {
+                            // Doctor already exists – just add the department assignment if missing
+                            bool alreadyAssigned = await _context.DoctorDepartments
+                                .AnyAsync(dd => dd.DoctorID == existingDoctor.DoctorID && dd.ClinicalDepartmentID == DepartmentID);
+                            if (!alreadyAssigned)
+                            {
+                                await _context.DoctorDepartments.AddAsync(new Models.DoctorDepartment
+                                {
+                                    DoctorID = existingDoctor.DoctorID,
+                                    ClinicalDepartmentID = DepartmentID
+                                });
+                            }
+                        }
+                    }
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                    return Ok("Selected Doctors Added Successfully");
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
             }
             catch (Exception ex)
             {
-                return StatusCode(500,ex.Message);
-                throw;
+                return StatusCode(500, ex.Message);
             }
-           
         }
+
         [HttpGet("get_unassigned_doctors")]
         public async Task<IActionResult> GetUnassignedDoctors()
         {
@@ -357,29 +442,163 @@ public async Task<IActionResult> AddUser([FromBody] RegisterUserDto userDto)
         [HttpGet("get_doctor_for_department/{DepartmentID}")]
         public async Task<IActionResult> GetDoctorForDepartment(int DepartmentID)
         {
-            if(DepartmentID == 0)
-            {
+            if (DepartmentID == 0)
                 return BadRequest("Department ID Is Required");
-            }
+
+            // Prefer DoctorDepartment join; also include legacy ClinicalDepartmentID matches for transition
+            var doctorIdsFromJoin = await _context.DoctorDepartments
+                .Where(dd => dd.ClinicalDepartmentID == DepartmentID)
+                .Select(dd => dd.DoctorID)
+                .ToListAsync();
+
             var doctors = await _context.Doctors
-            .Where(d => d.ClinicalDepartmentID == DepartmentID)
-            .Include(d => d.Users)
-            .ThenInclude(u => u.UserRole)
-            .ThenInclude(ur => ur.Role)
-            .Select(d => new DoctorDto
-            {
-                Id = d.UserID,
-                doctorID = d.DoctorID,
-                Username = d.Users.Username,
-                FullName = d.Users.FirstName + " " + d.Users.FatherName,
-                Email = d.Users.Email,
-                Phone = d.Users.Phone,
-                Roles = d.Users.UserRole.Select(ur => ur.Role.RoleName).ToList()
-            })
-            .ToListAsync();
+                .Where(d => doctorIdsFromJoin.Contains(d.DoctorID) || d.ClinicalDepartmentID == DepartmentID)
+                .Include(d => d.Users)
+                .ThenInclude(u => u.UserRole)
+                .ThenInclude(ur => ur.Role)
+                .Select(d => new DoctorDto
+                {
+                    Id = d.UserID,
+                    doctorID = d.DoctorID,
+                    Username = d.Users!.Username,
+                    FullName = d.Users.FirstName + " " + d.Users.FatherName,
+                    Email = d.Users.Email,
+                    Phone = d.Users.Phone,
+                    Roles = d.Users.UserRole.Select(ur => ur.Role!.RoleName).ToList()
+                })
+                .ToListAsync();
 
             return Ok(doctors);
         }
+
+        /// <summary>
+        /// Replace the complete list of departments assigned to a doctor.
+        /// Only Admin. Authoritative source becomes DoctorDepartment.
+        /// </summary>
+        [HttpPut("doctors/{doctorId}/departments")]
+        [AuthorizeRole("Admin")]
+        public async Task<IActionResult> AssignDoctorDepartments(int doctorId, [FromBody] AssignDoctorDepartmentsDto dto)
+        {
+            if (dto?.DepartmentIds == null)
+                return BadRequest("departmentIds is required");
+
+            var doctor = await _context.Doctors
+                .Include(d => d.Users)
+                .ThenInclude(u => u!.UserRole)
+                .ThenInclude(ur => ur.Role)
+                .FirstOrDefaultAsync(d => d.DoctorID == doctorId);
+
+            if (doctor == null)
+                return NotFound(new { message = "Doctor not found" });
+
+            if (doctor.Users == null || doctor.Users.UserRole.All(r => r.Role!.RoleName != "Doctor"))
+                return BadRequest(new { message = "Target user is not a Doctor" });
+
+            var desiredIds = dto.DepartmentIds.Where(id => id > 0).Distinct().ToList();
+
+            // Validate all requested departments exist
+            if (desiredIds.Count > 0)
+            {
+                var validCount = await _context.ClinicalDepartments
+                    .CountAsync(d => desiredIds.Contains(d.ClinicalDepartmentID));
+                if (validCount != desiredIds.Count)
+                    return BadRequest(new { message = "One or more department IDs are invalid" });
+            }
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var existing = await _context.DoctorDepartments
+                    .Where(dd => dd.DoctorID == doctorId)
+                    .ToListAsync();
+
+                // Remove assignments no longer selected
+                var toRemove = existing.Where(e => !desiredIds.Contains(e.ClinicalDepartmentID)).ToList();
+                if (toRemove.Count > 0)
+                    _context.DoctorDepartments.RemoveRange(toRemove);
+
+                // Add new assignments
+                var existingIds = existing.Select(e => e.ClinicalDepartmentID).ToHashSet();
+                foreach (var deptId in desiredIds.Where(id => !existingIds.Contains(id)))
+                {
+                    await _context.DoctorDepartments.AddAsync(new Models.DoctorDepartment
+                    {
+                        DoctorID = doctorId,
+                        ClinicalDepartmentID = deptId
+                    });
+                }
+
+                // Keep legacy ClinicalDepartmentID in sync with the first assigned department (or 0 if none)
+                if (desiredIds.Count > 0)
+                    doctor.ClinicalDepartmentID = desiredIds.First();
+                // If empty list, leave the legacy field as-is (or you could set a sentinel)
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                var result = await _context.DoctorDepartments
+                    .Where(dd => dd.DoctorID == doctorId)
+                    .Include(dd => dd.ClinicalDepartment)
+                    .Select(dd => new DepartmentInfoDto
+                    {
+                        DepartmentID = dd.ClinicalDepartmentID,
+                        DepartmentName = dd.ClinicalDepartment != null ? dd.ClinicalDepartment.DepartmentName : ""
+                    })
+                    .ToListAsync();
+
+                return Ok(new
+                {
+                    doctorID = doctorId,
+                    departments = result
+                });
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Get the list of departments currently assigned to a doctor.
+        /// </summary>
+        [HttpGet("doctors/{doctorId}/departments")]
+        [AuthorizeRole("Admin")]
+        public async Task<IActionResult> GetDoctorDepartments(int doctorId)
+        {
+            var doctorExists = await _context.Doctors.AnyAsync(d => d.DoctorID == doctorId);
+            if (!doctorExists)
+                return NotFound(new { message = "Doctor not found" });
+
+            var depts = await _context.DoctorDepartments
+                .Where(dd => dd.DoctorID == doctorId)
+                .Include(dd => dd.ClinicalDepartment)
+                .Select(dd => new DepartmentInfoDto
+                {
+                    DepartmentID = dd.ClinicalDepartmentID,
+                    DepartmentName = dd.ClinicalDepartment != null ? dd.ClinicalDepartment.DepartmentName : ""
+                })
+                .ToListAsync();
+
+            // Fallback to legacy field if join table is still empty
+            if (depts.Count == 0)
+            {
+                var legacy = await _context.Doctors
+                    .Where(d => d.DoctorID == doctorId)
+                    .Include(d => d.ClinicalDepartment)
+                    .Select(d => new DepartmentInfoDto
+                    {
+                        DepartmentID = d.ClinicalDepartmentID,
+                        DepartmentName = d.ClinicalDepartment != null ? d.ClinicalDepartment.DepartmentName : ""
+                    })
+                    .FirstOrDefaultAsync();
+                if (legacy != null && legacy.DepartmentID > 0)
+                    depts.Add(legacy);
+            }
+
+            return Ok(new { doctorID = doctorId, departments = depts });
+        }
+
         [HttpDelete("remove_doctor_from_department/{doctorId}")]
         public async Task<IActionResult> RemoveDoctorFromDepartment(int doctorId)
         {
@@ -902,6 +1121,47 @@ public async Task<IActionResult> GetCentralPharmacyManagers(int centralPharmacyI
         }
     }
     
+
+    /// <summary>
+    /// Resolve Doctor record by UserID (for Admin UI when list only has UserID).
+    /// </summary>
+    [HttpGet("get_doctor_by_user/{userId}")]
+    [AuthorizeRole("Admin")]
+    public async Task<IActionResult> GetDoctorByUserId(int userId)
+    {
+        if (userId <= 0)
+            return BadRequest(new { message = "userId is required" });
+
+        var doc = await _context.Doctors
+            .Include(d => d.Users)
+            .Include(d => d.DepartmentAssignments)
+                .ThenInclude(dd => dd.ClinicalDepartment)
+            .Where(d => d.UserID == userId)
+            .Select(d => new
+            {
+                doctorID = d.DoctorID,
+                userID = d.UserID,
+                licenseNumber = d.LicenseNumber,
+                clinicalDepartmentID = d.ClinicalDepartmentID,
+                fullName = d.Users != null ? (d.Users.FirstName + " " + d.Users.FatherName) : "",
+                username = d.Users != null ? d.Users.Username : "",
+                departments = d.DepartmentAssignments
+                    .Where(dd => dd.ClinicalDepartment != null)
+                    .Select(dd => new
+                    {
+                        departmentID = dd.ClinicalDepartmentID,
+                        departmentName = dd.ClinicalDepartment!.DepartmentName
+                    })
+                    .ToList()
+            })
+            .FirstOrDefaultAsync();
+
+        if (doc == null)
+            return NotFound(new { message = "Doctor record not found for this user" });
+
+        return Ok(doc);
+    }
+
     [HttpGet("get_nurse_info/{nurseID}")]
     public async Task<IActionResult> GetNurseInfo(int nurseID)
         {
@@ -1194,17 +1454,31 @@ public async Task<IActionResult> GetAllDoctors()
     try
     {
         var doctors = await _context.Doctors
-            .Include(u => u.Users)
-            //    .ThenInclude(u=>u.Role)
-            .Select(u => new
+            .Include(d => d.Users)
+            .Include(d => d.ClinicalDepartment)
+            .Include(d => d.DepartmentAssignments)
+                .ThenInclude(dd => dd.ClinicalDepartment)
+            .Select(d => new
             {
-                u.Users.UserID,
-                u.Users.FirstName,
-                u.Users.FatherName,
-                u.Users.Email,
-                u.Users.Phone,
-                u.Users.Username,
-                // Role = u.Users.Role.RoleName
+                doctorID = d.DoctorID,
+                userID = d.Users != null ? d.Users.UserID : 0,
+                firstName = d.Users != null ? d.Users.FirstName : "",
+                fatherName = d.Users != null ? d.Users.FatherName : "",
+                email = d.Users != null ? d.Users.Email : "",
+                phone = d.Users != null ? d.Users.Phone : "",
+                username = d.Users != null ? d.Users.Username : "",
+                role = "Doctor",
+                licenseNumber = d.LicenseNumber,
+                clinicalDepartmentID = d.ClinicalDepartmentID,
+                departmentName = d.ClinicalDepartment != null ? d.ClinicalDepartment.DepartmentName : "",
+                departments = d.DepartmentAssignments
+                    .Where(dd => dd.ClinicalDepartment != null)
+                    .Select(dd => new
+                    {
+                        departmentID = dd.ClinicalDepartmentID,
+                        departmentName = dd.ClinicalDepartment!.DepartmentName
+                    })
+                    .ToList()
             })
             .ToListAsync();
         return Ok(doctors);

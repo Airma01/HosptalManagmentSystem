@@ -2,6 +2,7 @@ using HospitalSys.Configuration;
 using HospitalSys.Data;
 using HospitalSys.Middleware;
 using HospitalSys.RateLimiting;
+using HospitalSys.Services;
 using HospitalSys.Services.AI;
 using HospitalSys.Services.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -30,6 +31,7 @@ builder.Services.AddScoped<IClinicalContextService, ClinicalContextService>();
 // --- Security monitoring ---
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<ISecurityEventService, SecurityEventService>();
+builder.Services.AddScoped<DoctorDepartmentAuthorizationService>();
 builder.Services.AddHospitalRateLimiting();
 
 // Forwarded headers (enable UseForwardedHeaders only behind a trusted reverse proxy)

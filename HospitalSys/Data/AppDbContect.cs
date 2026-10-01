@@ -111,6 +111,28 @@ namespace HospitalSys.Data
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
+            // ==============================================
+            // Doctor <-> ClinicalDepartment many-to-many (DoctorDepartment)
+            // Composite PK prevents duplicate assignments.
+            // ==============================================
+            modelBuilder.Entity<DoctorDepartment>(entity =>
+            {
+                entity.HasKey(dd => new { dd.DoctorID, dd.ClinicalDepartmentID });
+
+                entity.HasOne(dd => dd.Doctor)
+                    .WithMany(d => d.DepartmentAssignments)
+                    .HasForeignKey(dd => dd.DoctorID)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(dd => dd.ClinicalDepartment)
+                    .WithMany(cd => cd.DoctorDepartments)
+                    .HasForeignKey(dd => dd.ClinicalDepartmentID)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(dd => dd.DoctorID);
+                entity.HasIndex(dd => dd.ClinicalDepartmentID);
+            });
+
             modelBuilder.Entity<Nurse>(entity =>
             {
                 entity.HasKey(n => n.NurseID);
@@ -344,6 +366,7 @@ modelBuilder.Entity<PaymentHospital>(entity =>
 
         // ---- Staff ----
         public DbSet<Doctor> Doctors { get; set; }
+        public DbSet<DoctorDepartment> DoctorDepartments { get; set; }
         public DbSet<Nurse> Nurses { get; set; }
         public DbSet<Receptionist> Receptionists { get; set; }
         public DbSet<Pharmacist> Pharmacists { get; set; }
