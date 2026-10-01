@@ -1,5 +1,7 @@
 
 using HospitalSys.Data;
+using HospitalSys.Services;
+using HospitalSys.Enums;
 using HospitalSys.Dto.DoctorDtos;
 using HospitalSys.Models.MaternalChildHealth;
 using HospitalSys.Models.Consultation_M;
@@ -19,10 +21,12 @@ namespace HospitalSys.Controllers.Doctor
     public class DoctorMaternalChildHealthController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly DepartmentPermissionService _permService;
 
-        public DoctorMaternalChildHealthController(AppDbContext context)
+        public DoctorMaternalChildHealthController(AppDbContext context, DepartmentPermissionService permService)
         {
             _context = context;
+            _permService = permService;
         }
 
         private int GetDepartmentId()
@@ -159,9 +163,8 @@ namespace HospitalSys.Controllers.Doctor
 
         /// <summary>
         /// Write (POST/PUT/DELETE) permission for Maternal &amp; Child Health.
-        /// Resolves the doctor's department from the database using the DoctorID JWT claim
-        /// (never trusts department data from the client).
-        /// Returns null when allowed; otherwise Unauthorized or Forbid.
+        /// Uses active DepartmentID from JWT + DepartmentPermissionService (database-driven).
+        /// Returns null when allowed; 401 if not authenticated; 403 if no permission.
         /// </summary>
         private async Task<IActionResult?> CheckWritePermissionAsync()
         {
@@ -169,36 +172,23 @@ namespace HospitalSys.Controllers.Doctor
             if (string.IsNullOrEmpty(doctorIdClaim) || !int.TryParse(doctorIdClaim, out int doctorId))
                 return Unauthorized(new { message = "Unauthorized" });
 
-            var doctor = await _context.Doctors
-                .AsNoTracking()
-                .Include(d => d.ClinicalDepartment)
-                .FirstOrDefaultAsync(d => d.DoctorID == doctorId);
-
-            if (doctor == null)
+            int departmentId;
+            try
+            {
+                departmentId = GetDepartmentId();
+            }
+            catch (UnauthorizedAccessException)
+            {
                 return Unauthorized(new { message = "Unauthorized" });
+            }
 
-            // No department assigned → treat as not permitted for writes
-            var deptName = doctor.ClinicalDepartment?.DepartmentName?.Trim() ?? string.Empty;
-            if (!IsMchOrGeneralDepartment(deptName))
-                return Forbid();
+            bool allowed = await _permService.DoctorCanCreateAsync(
+                doctorId, departmentId, DepartmentModule.MaternalChildHealth);
+
+            if (!allowed)
+                return StatusCode(403, new { message = "Your department does not have permission to write Maternal & Child Health data." });
 
             return null;
-        }
-
-        /// <summary>
-        /// ClinicalDepartment has only DepartmentName (no code field).
-        /// Allowed write departments: MCH / Maternal &amp; Child Health variants, and General.
-        /// </summary>
-        private static bool IsMchOrGeneralDepartment(string departmentName)
-        {
-            if (string.IsNullOrWhiteSpace(departmentName))
-                return false;
-
-            return departmentName.Equals("MCH", StringComparison.OrdinalIgnoreCase)
-                || departmentName.Equals("General", StringComparison.OrdinalIgnoreCase)
-                || departmentName.Equals("Maternal & Child Health", StringComparison.OrdinalIgnoreCase)
-                || departmentName.Equals("Maternal and Child Health", StringComparison.OrdinalIgnoreCase)
-                || departmentName.Equals("Maternal Child Health", StringComparison.OrdinalIgnoreCase);
         }
 
 

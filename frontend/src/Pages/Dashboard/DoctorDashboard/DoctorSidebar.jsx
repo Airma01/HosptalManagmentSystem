@@ -2,8 +2,8 @@
 import { useEffect, useRef, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { getAuthenticatedUser } from "../../../utils/getAuthenticatedUser";
-import { canWriteAdultMedicalCareFromUser } from "../../../utils/canWriteAdultMedicalCare";
-import { canWriteMaternalChildHealthFromUser } from "../../../utils/canWriteMaternalChildHealth";
+import { canAccessAdultMedicalCareFromUser } from "../../../utils/canWriteAdultMedicalCare";
+import { canAccessMaternalChildHealthFromUser } from "../../../utils/canWriteMaternalChildHealth";
 import { canAccessConsultationFromUser } from "../../../utils/canAccessConsultation";
 
 /**
@@ -127,8 +127,9 @@ export default function DoctorSidebar() {
 
   useEffect(() => {
     getAuthenticatedUser().then((u) => {
-      setCanAdult(canWriteAdultMedicalCareFromUser(u));
-      setCanMch(canWriteMaternalChildHealthFromUser(u));
+      // Show modules based on READ permission (navigation). Write is enforced by backend.
+      setCanAdult(canAccessAdultMedicalCareFromUser(u));
+      setCanMch(canAccessMaternalChildHealthFromUser(u));
       setCanConsult(canAccessConsultationFromUser(u));
     });
   }, []);

@@ -32,6 +32,7 @@ builder.Services.AddScoped<IClinicalContextService, ClinicalContextService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<ISecurityEventService, SecurityEventService>();
 builder.Services.AddScoped<DoctorDepartmentAuthorizationService>();
+builder.Services.AddScoped<DepartmentPermissionService>();
 builder.Services.AddHospitalRateLimiting();
 
 // Forwarded headers (enable UseForwardedHeaders only behind a trusted reverse proxy)

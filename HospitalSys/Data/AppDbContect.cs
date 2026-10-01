@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using HospitalSys.Models;
+using HospitalSys.Enums;
 using HospitalSys.Models.Security;
 using HospitalSys.Models.HospitalStruct;
 using HospitalSys.Models.PatientManagment;
@@ -131,6 +132,26 @@ namespace HospitalSys.Data
 
                 entity.HasIndex(dd => dd.DoctorID);
                 entity.HasIndex(dd => dd.ClinicalDepartmentID);
+            });
+
+            // ==============================================
+            // Department module permissions (admin-configurable)
+            // Unique (ClinicalDepartmentID, Module)
+            // ==============================================
+            modelBuilder.Entity<DepartmentPermission>(entity =>
+            {
+                entity.HasKey(p => p.DepartmentPermissionID);
+
+                entity.HasOne(p => p.ClinicalDepartment)
+                    .WithMany(cd => cd.DepartmentPermissions)
+                    .HasForeignKey(p => p.ClinicalDepartmentID)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(p => new { p.ClinicalDepartmentID, p.Module })
+                    .IsUnique();
+
+                entity.Property(p => p.Module)
+                    .HasConversion<int>();
             });
 
             modelBuilder.Entity<Nurse>(entity =>
@@ -380,6 +401,7 @@ modelBuilder.Entity<PaymentHospital>(entity =>
 
         // ---- Hospital Structure ----
         public DbSet<ClinicalDepartment> ClinicalDepartments { get; set; }
+        public DbSet<DepartmentPermission> DepartmentPermissions { get; set; }
         public DbSet<TriageDepartment> TriageDepartments { get; set; }
         public DbSet<Ward> Wards { get; set; }
         public DbSet<Room> Rooms { get; set; }

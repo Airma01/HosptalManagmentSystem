@@ -1,4 +1,6 @@
 using HospitalSys.Data;
+using HospitalSys.Services;
+using HospitalSys.Enums;
 using HospitalSys.Dto.DoctorDtos;
 using HospitalSys.Models.AdultMedicalCare;
 using Microsoft.AspNetCore.Authorization;
@@ -13,10 +15,41 @@ namespace HospitalSys.Controllers.Doctor
     public class DoctorAdultMedicalCareController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly DepartmentPermissionService _permService;
 
-        public DoctorAdultMedicalCareController(AppDbContext context)
+        public DoctorAdultMedicalCareController(AppDbContext context, DepartmentPermissionService permService)
         {
             _context = context;
+            _permService = permService;
+        }
+
+        private int GetDoctorId()
+        {
+            var claim = User.FindFirst("DoctorID")?.Value;
+            if (string.IsNullOrEmpty(claim) || !int.TryParse(claim, out int id))
+                throw new UnauthorizedAccessException("Invalid doctor authentication");
+            return id;
+        }
+
+        /// <summary>
+        /// 401/403 if active department lacks AdultMedicalCare write permission.
+        /// </summary>
+        private async Task<IActionResult?> RequireAdultWriteAsync()
+        {
+            try
+            {
+                int doctorId = GetDoctorId();
+                int departmentId = GetDepartmentId();
+                bool ok = await _permService.DoctorCanCreateAsync(
+                    doctorId, departmentId, DepartmentModule.AdultMedicalCare);
+                if (!ok)
+                    return StatusCode(403, new { message = "Your department does not have permission to write Adult Medical Care data." });
+                return null;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Unauthorized(new { message = "Unauthorized" });
+            }
         }
 
         private int GetDepartmentId()
@@ -64,6 +97,7 @@ namespace HospitalSys.Controllers.Doctor
         }
 
         [HttpGet("asthma/{id:int}")]
+        [HttpGet("asthma/{id:int}")]
         public async Task<IActionResult> GetAsthmaById(int patientId, int id)
         {
             try
@@ -80,10 +114,13 @@ namespace HospitalSys.Controllers.Doctor
         }
 
         [HttpPost("asthma")]
+        [HttpPost("asthma")]
         public async Task<IActionResult> CreateAsthma(int patientId, [FromBody] CreateAsthmaManagementDto dto)
         {
             try
             {
+                var denied = await RequireAdultWriteAsync();
+                if (denied != null) return denied;
                 await EnsurePatientAccessAsync(patientId);
                 var entity = new AsthmaManagement
                 {
@@ -119,6 +156,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var denied = await RequireAdultWriteAsync();
+                if (denied != null) return denied;
                 await EnsurePatientAccessAsync(patientId);
                 var entity = await _context.AsthmaManagements
                     .FirstOrDefaultAsync(x => x.AsthmaManagementID == id && x.PatientID == patientId);
@@ -154,6 +193,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var denied = await RequireAdultWriteAsync();
+                if (denied != null) return denied;
                 await EnsurePatientAccessAsync(patientId);
                 var entity = await _context.AsthmaManagements
                     .FirstOrDefaultAsync(x => x.AsthmaManagementID == id && x.PatientID == patientId);
@@ -184,6 +225,7 @@ namespace HospitalSys.Controllers.Doctor
         }
 
         [HttpGet("diabetes/{id:int}")]
+        [HttpGet("diabetes/{id:int}")]
         public async Task<IActionResult> GetDiabetesById(int patientId, int id)
         {
             try
@@ -200,10 +242,13 @@ namespace HospitalSys.Controllers.Doctor
         }
 
         [HttpPost("diabetes")]
+        [HttpPost("diabetes")]
         public async Task<IActionResult> CreateDiabetes(int patientId, [FromBody] CreateDiabetesManagementDto dto)
         {
             try
             {
+                var denied = await RequireAdultWriteAsync();
+                if (denied != null) return denied;
                 await EnsurePatientAccessAsync(patientId);
                 if (!Enum.TryParse<DiabetesType>(dto.DiabetesType, true, out var diabetesType))
                     return BadRequest(new { message = "Invalid DiabetesType. Use Type1, Type2, Gestational, or Other." });
@@ -243,6 +288,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var denied = await RequireAdultWriteAsync();
+                if (denied != null) return denied;
                 await EnsurePatientAccessAsync(patientId);
                 var entity = await _context.DiabetesManagements
                     .FirstOrDefaultAsync(x => x.DiabetesManagementID == id && x.PatientID == patientId);
@@ -282,6 +329,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var denied = await RequireAdultWriteAsync();
+                if (denied != null) return denied;
                 await EnsurePatientAccessAsync(patientId);
                 var entity = await _context.DiabetesManagements
                     .FirstOrDefaultAsync(x => x.DiabetesManagementID == id && x.PatientID == patientId);
@@ -312,6 +361,7 @@ namespace HospitalSys.Controllers.Doctor
         }
 
         [HttpGet("hiv/{id:int}")]
+        [HttpGet("hiv/{id:int}")]
         public async Task<IActionResult> GetHivById(int patientId, int id)
         {
             try
@@ -328,10 +378,13 @@ namespace HospitalSys.Controllers.Doctor
         }
 
         [HttpPost("hiv")]
+        [HttpPost("hiv")]
         public async Task<IActionResult> CreateHiv(int patientId, [FromBody] CreateHIVCareDto dto)
         {
             try
             {
+                var denied = await RequireAdultWriteAsync();
+                if (denied != null) return denied;
                 await EnsurePatientAccessAsync(patientId);
                 var entity = new HIVCare
                 {
@@ -369,6 +422,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var denied = await RequireAdultWriteAsync();
+                if (denied != null) return denied;
                 await EnsurePatientAccessAsync(patientId);
                 var entity = await _context.HIVCares
                     .FirstOrDefaultAsync(x => x.HIVCareID == id && x.PatientID == patientId);
@@ -406,6 +461,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var denied = await RequireAdultWriteAsync();
+                if (denied != null) return denied;
                 await EnsurePatientAccessAsync(patientId);
                 var entity = await _context.HIVCares
                     .FirstOrDefaultAsync(x => x.HIVCareID == id && x.PatientID == patientId);
@@ -436,6 +493,7 @@ namespace HospitalSys.Controllers.Doctor
         }
 
         [HttpGet("hepatitis/{id:int}")]
+        [HttpGet("hepatitis/{id:int}")]
         public async Task<IActionResult> GetHepatitisById(int patientId, int id)
         {
             try
@@ -452,10 +510,13 @@ namespace HospitalSys.Controllers.Doctor
         }
 
         [HttpPost("hepatitis")]
+        [HttpPost("hepatitis")]
         public async Task<IActionResult> CreateHepatitis(int patientId, [FromBody] CreateHepatitisManagementDto dto)
         {
             try
             {
+                var denied = await RequireAdultWriteAsync();
+                if (denied != null) return denied;
                 await EnsurePatientAccessAsync(patientId);
                 var entity = new HepatitisManagement
                 {
@@ -491,6 +552,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var denied = await RequireAdultWriteAsync();
+                if (denied != null) return denied;
                 await EnsurePatientAccessAsync(patientId);
                 var entity = await _context.HepatitisManagements
                     .FirstOrDefaultAsync(x => x.HepatitisManagementID == id && x.PatientID == patientId);
@@ -526,6 +589,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var denied = await RequireAdultWriteAsync();
+                if (denied != null) return denied;
                 await EnsurePatientAccessAsync(patientId);
                 var entity = await _context.HepatitisManagements
                     .FirstOrDefaultAsync(x => x.HepatitisManagementID == id && x.PatientID == patientId);
@@ -556,6 +621,7 @@ namespace HospitalSys.Controllers.Doctor
         }
 
         [HttpGet("hypertension/{id:int}")]
+        [HttpGet("hypertension/{id:int}")]
         public async Task<IActionResult> GetHypertensionById(int patientId, int id)
         {
             try
@@ -572,10 +638,13 @@ namespace HospitalSys.Controllers.Doctor
         }
 
         [HttpPost("hypertension")]
+        [HttpPost("hypertension")]
         public async Task<IActionResult> CreateHypertension(int patientId, [FromBody] CreateHypertensionManagementDto dto)
         {
             try
             {
+                var denied = await RequireAdultWriteAsync();
+                if (denied != null) return denied;
                 await EnsurePatientAccessAsync(patientId);
                 var entity = new HypertensionManagement
                 {
@@ -610,6 +679,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var denied = await RequireAdultWriteAsync();
+                if (denied != null) return denied;
                 await EnsurePatientAccessAsync(patientId);
                 var entity = await _context.HypertensionManagements
                     .FirstOrDefaultAsync(x => x.HypertensionManagementID == id && x.PatientID == patientId);
@@ -644,6 +715,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var denied = await RequireAdultWriteAsync();
+                if (denied != null) return denied;
                 await EnsurePatientAccessAsync(patientId);
                 var entity = await _context.HypertensionManagements
                     .FirstOrDefaultAsync(x => x.HypertensionManagementID == id && x.PatientID == patientId);
@@ -674,6 +747,7 @@ namespace HospitalSys.Controllers.Doctor
         }
 
         [HttpGet("mental-health/{id:int}")]
+        [HttpGet("mental-health/{id:int}")]
         public async Task<IActionResult> GetMentalHealthById(int patientId, int id)
         {
             try
@@ -690,10 +764,13 @@ namespace HospitalSys.Controllers.Doctor
         }
 
         [HttpPost("mental-health")]
+        [HttpPost("mental-health")]
         public async Task<IActionResult> CreateMentalHealth(int patientId, [FromBody] CreateMentalHealthCareDto dto)
         {
             try
             {
+                var denied = await RequireAdultWriteAsync();
+                if (denied != null) return denied;
                 await EnsurePatientAccessAsync(patientId);
                 var entity = new MentalHealthCare
                 {
@@ -728,6 +805,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var denied = await RequireAdultWriteAsync();
+                if (denied != null) return denied;
                 await EnsurePatientAccessAsync(patientId);
                 var entity = await _context.MentalHealthCares
                     .FirstOrDefaultAsync(x => x.MentalHealthCareID == id && x.PatientID == patientId);
@@ -763,6 +842,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var denied = await RequireAdultWriteAsync();
+                if (denied != null) return denied;
                 await EnsurePatientAccessAsync(patientId);
                 var entity = await _context.MentalHealthCares
                     .FirstOrDefaultAsync(x => x.MentalHealthCareID == id && x.PatientID == patientId);
@@ -793,6 +874,7 @@ namespace HospitalSys.Controllers.Doctor
         }
 
         [HttpGet("tuberculosis/{id:int}")]
+        [HttpGet("tuberculosis/{id:int}")]
         public async Task<IActionResult> GetTuberculosisById(int patientId, int id)
         {
             try
@@ -809,10 +891,13 @@ namespace HospitalSys.Controllers.Doctor
         }
 
         [HttpPost("tuberculosis")]
+        [HttpPost("tuberculosis")]
         public async Task<IActionResult> CreateTuberculosis(int patientId, [FromBody] CreateTuberculosisManagementDto dto)
         {
             try
             {
+                var denied = await RequireAdultWriteAsync();
+                if (denied != null) return denied;
                 await EnsurePatientAccessAsync(patientId);
                 var entity = new TuberculosisManagement
                 {
@@ -853,6 +938,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var denied = await RequireAdultWriteAsync();
+                if (denied != null) return denied;
                 await EnsurePatientAccessAsync(patientId);
                 var entity = await _context.TuberculosisManagements
                     .FirstOrDefaultAsync(x => x.TuberculosisManagementID == id && x.PatientID == patientId);
@@ -893,6 +980,8 @@ namespace HospitalSys.Controllers.Doctor
         {
             try
             {
+                var denied = await RequireAdultWriteAsync();
+                if (denied != null) return denied;
                 await EnsurePatientAccessAsync(patientId);
                 var entity = await _context.TuberculosisManagements
                     .FirstOrDefaultAsync(x => x.TuberculosisManagementID == id && x.PatientID == patientId);

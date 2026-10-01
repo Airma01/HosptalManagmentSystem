@@ -1,6 +1,8 @@
 // Controllers/Doctor/DoctorConsultationController.cs
 using System.Security.Claims;
 using HospitalSys.Data;
+using HospitalSys.Services;
+using HospitalSys.Enums;
 using HospitalSys.Dto.DoctorDtos;
 using HospitalSys.Models.Consultation_M;
 using HospitalSys.Models.Laboratory;
@@ -19,10 +21,45 @@ namespace HospitalSys.Controllers.Doctor
     public class DoctorConsultationController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly DepartmentPermissionService _permService;
 
-        public DoctorConsultationController(AppDbContext context)
+        public DoctorConsultationController(AppDbContext context, DepartmentPermissionService permService)
         {
             _context = context;
+            _permService = permService;
+        }
+
+        /// <summary>
+        /// Returns 401 / 403 IActionResult if the active department lacks the required Consultation permission.
+        /// Null means allowed.
+        /// </summary>
+        private async Task<IActionResult?> RequireConsultationPermissionAsync(bool forCreate = false, bool forUpdate = false, bool forDelete = false)
+        {
+            int doctorId;
+            int departmentId;
+            try
+            {
+                doctorId = GetDoctorId();
+                departmentId = GetDepartmentId();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Unauthorized(new { message = "Unauthorized" });
+            }
+
+            bool ok;
+            if (forDelete)
+                ok = await _permService.DoctorCanDeleteAsync(doctorId, departmentId, DepartmentModule.Consultation);
+            else if (forUpdate)
+                ok = await _permService.DoctorCanUpdateAsync(doctorId, departmentId, DepartmentModule.Consultation);
+            else if (forCreate)
+                ok = await _permService.DoctorCanCreateAsync(doctorId, departmentId, DepartmentModule.Consultation);
+            else
+                ok = await _permService.DoctorCanReadAsync(doctorId, departmentId, DepartmentModule.Consultation);
+
+            if (!ok)
+                return StatusCode(403, new { message = "Your department does not have the required Consultation permission." });
+            return null;
         }
 
         private int GetDoctorId()
@@ -394,6 +431,9 @@ var radiologyRequests = await _context.RadiologyRequests
         {
             try
             {
+                var denied = await RequireConsultationPermissionAsync(forCreate: true);
+                if (denied != null) return denied;
+
                 int doctorId = GetDoctorId();
                 int departmentId = GetDepartmentId();
 

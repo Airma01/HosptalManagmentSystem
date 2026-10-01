@@ -22,6 +22,25 @@ const DepartmentDetail = () => {
   const [staffToDelete, setStaffToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
+  const MODULES = [
+    { key: 'Consultation', label: 'Consultation' },
+    { key: 'AdultMedicalCare', label: 'Adult Medical Care' },
+    { key: 'MaternalChildHealth', label: 'Maternal & Child Health' },
+    { key: 'ChildHealth', label: 'Child Health' },
+    { key: 'Laboratory', label: 'Laboratory' },
+    { key: 'Radiology', label: 'Radiology' },
+    { key: 'Pharmacy', label: 'Pharmacy' },
+    { key: 'Referral', label: 'Referral' },
+    { key: 'CommunityHealth', label: 'Community Health' },
+  ];
+  const emptyPerm = () => ({ canRead: false, canCreate: false, canUpdate: false, canDelete: false });
+  const [permRows, setPermRows] = useState(
+    MODULES.map((m) => ({ module: m.key, label: m.label, ...emptyPerm() }))
+  );
+  const [permLoading, setPermLoading] = useState(false);
+  const [permSaving, setPermSaving] = useState(false);
+  const [permMessage, setPermMessage] = useState('');
+
   // Guard
   useEffect(() => {
     if (!id) {
@@ -29,6 +48,70 @@ const DepartmentDetail = () => {
       setLoading(false);
     }
   }, [id]);
+
+  const fetchPermissions = async () => {
+    if (!id) return;
+    setPermLoading(true);
+    setPermMessage('');
+    try {
+      const res = await API.get(`/Hospital/Admin/department/${id}/permissions`);
+      const list = res.data?.permissions || [];
+      setPermRows(
+        MODULES.map((m) => {
+          const found = list.find(
+            (p) => (p.module || '').toLowerCase() === m.key.toLowerCase()
+          );
+          return {
+            module: m.key,
+            label: m.label,
+            canRead: !!(found?.canRead || found?.read),
+            canCreate: !!(found?.canCreate || found?.create),
+            canUpdate: !!(found?.canUpdate || found?.update),
+            canDelete: !!(found?.canDelete || found?.delete),
+          };
+        })
+      );
+    } catch (err) {
+      console.error('Failed to load permissions', err);
+    } finally {
+      setPermLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPermissions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  const togglePerm = (moduleKey, field) => {
+    setPermRows((rows) =>
+      rows.map((r) =>
+        r.module === moduleKey ? { ...r, [field]: !r[field] } : r
+      )
+    );
+  };
+
+  const savePermissions = async () => {
+    if (!id) return;
+    setPermSaving(true);
+    setPermMessage('');
+    try {
+      await API.put(`/Hospital/Admin/department/${id}/permissions`, permRows.map((r) => ({
+        module: r.module,
+        canRead: r.canRead,
+        canCreate: r.canCreate,
+        canUpdate: r.canUpdate,
+        canDelete: r.canDelete,
+      })));
+      setPermMessage('Permissions saved successfully.');
+      await fetchPermissions();
+    } catch (err) {
+      console.error(err);
+      setPermMessage(err.response?.data?.message || 'Failed to save permissions.');
+    } finally {
+      setPermSaving(false);
+    }
+  };
 
   // Fetch department (fallback)
   const fetchDepartment = async () => {
@@ -311,6 +394,67 @@ const DepartmentDetail = () => {
         {error && (
           <div className="mt-4 text-red-600 bg-red-50 p-2 rounded border border-red-200">
             {error}
+          </div>
+        )}
+      </div>
+
+
+      {/* Module Permissions */}
+      <div className="bg-white rounded-xl shadow-md p-6 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-800">Module Permissions</h2>
+            <p className="text-sm text-gray-500">
+              Control which clinical modules doctors in this department can access.
+              Changes take effect after the doctor refreshes their session.
+            </p>
+          </div>
+          <button
+            onClick={savePermissions}
+            disabled={permSaving || permLoading}
+            className="px-4 py-2 rounded-lg text-white shadow"
+            style={{ backgroundColor: '#4f46e5', opacity: permSaving ? 0.6 : 1 }}
+          >
+            {permSaving ? 'Saving...' : 'Save Permissions'}
+          </button>
+        </div>
+        {permMessage && (
+          <div className="mb-3 text-sm text-indigo-700 bg-indigo-50 border border-indigo-100 rounded p-2">
+            {permMessage}
+          </div>
+        )}
+        {permLoading ? (
+          <p className="text-gray-500 text-sm">Loading permissions...</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-gray-600">
+                  <th className="py-2 pr-4">Module</th>
+                  <th className="py-2 px-3 text-center">Read</th>
+                  <th className="py-2 px-3 text-center">Create</th>
+                  <th className="py-2 px-3 text-center">Update</th>
+                  <th className="py-2 px-3 text-center">Delete</th>
+                </tr>
+              </thead>
+              <tbody>
+                {permRows.map((row) => (
+                  <tr key={row.module} className="border-b last:border-0">
+                    <td className="py-2 pr-4 font-medium text-gray-800">{row.label}</td>
+                    {['canRead', 'canCreate', 'canUpdate', 'canDelete'].map((field) => (
+                      <td key={field} className="py-2 px-3 text-center">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 text-indigo-600 rounded border-gray-300"
+                          checked={!!row[field]}
+                          onChange={() => togglePerm(row.module, field)}
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

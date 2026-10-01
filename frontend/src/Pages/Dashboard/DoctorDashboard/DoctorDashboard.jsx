@@ -2,8 +2,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getAuthenticatedUser } from "../../../utils/getAuthenticatedUser";
-import { canWriteAdultMedicalCareFromUser } from "../../../utils/canWriteAdultMedicalCare";
-import { canWriteMaternalChildHealthFromUser } from "../../../utils/canWriteMaternalChildHealth";
+import { canAccessAdultMedicalCareFromUser } from "../../../utils/canWriteAdultMedicalCare";
+import { canAccessMaternalChildHealthFromUser } from "../../../utils/canWriteMaternalChildHealth";
 import { canAccessConsultationFromUser } from "../../../utils/canAccessConsultation";
 import DoctorStatisticsDashboard from "./DoctorStatisticsDashboard";
 
@@ -16,8 +16,8 @@ export default function DoctorDashboard() {
   useEffect(() => {
     getAuthenticatedUser().then((u) => {
       setDoctor(u);
-      setCanAdult(canWriteAdultMedicalCareFromUser(u));
-      setCanMch(canWriteMaternalChildHealthFromUser(u));
+      setCanAdult(canAccessAdultMedicalCareFromUser(u));
+      setCanMch(canAccessMaternalChildHealthFromUser(u));
       setCanConsult(canAccessConsultationFromUser(u));
     });
   }, []);

@@ -18,14 +18,19 @@ namespace HospitalSys.Controllers
     {
         private readonly AppDbContext _context;
         private readonly DoctorDepartmentAuthorizationService _deptAuth;
+        private readonly DepartmentPermissionService _permService;
 
         // Keep the same key used by the rest of the project for compatibility.
         private const string JwtSigningKey = "hkfjhdkfjhddkjfhsdkjfhkjfjliieorieh.lalaklewkewikk";
 
-        public DoctorAuthController(AppDbContext context, DoctorDepartmentAuthorizationService deptAuth)
+        public DoctorAuthController(
+            AppDbContext context,
+            DoctorDepartmentAuthorizationService deptAuth,
+            DepartmentPermissionService permService)
         {
             _context = context;
             _deptAuth = deptAuth;
+            _permService = permService;
         }
 
         /// <summary>
@@ -81,6 +86,13 @@ namespace HospitalSys.Controllers
                 activeDeptName = "";
             }
 
+            // Permissions for the ACTIVE department only (not union of all departments)
+            object permissions = new Dictionary<string, object>();
+            if (activeDeptId > 0)
+            {
+                permissions = await _permService.GetDepartmentPermissionsMapAsync(activeDeptId);
+            }
+
             return Ok(new
             {
                 doctorID = doctorId,
@@ -92,7 +104,8 @@ namespace HospitalSys.Controllers
                 activeDepartment = activeDeptId > 0
                     ? new { departmentID = activeDeptId, departmentName = activeDeptName }
                     : null,
-                departments = assignments
+                departments = assignments,
+                permissions = permissions
             });
         }
 

@@ -1,5 +1,7 @@
 //Controller/AdminController
 using HospitalSys.Data;
+using HospitalSys.Services;
+using HospitalSys.Enums;
 using HospitalSys.Dto;
 using HospitalSys.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -18,9 +20,12 @@ namespace HospitalSys.Controllers
     public class AdminController :ControllerBase
     {
         private readonly AppDbContext _context;
-        public AdminController(AppDbContext context)
+        private readonly DepartmentPermissionService _permService;
+
+        public AdminController(AppDbContext context, DepartmentPermissionService permService)
         {
             _context = context;
+            _permService = permService;
         }
         
         [HttpPost("CreateAd")] 
@@ -1652,5 +1657,93 @@ public async Task<IActionResult> CreateTriageDepartment([FromBody] CreateTriageD
                 return StatusCode(500, new { message = "An error occurred while updating the central pharmacy." });
             }
         }
+
+        // ============================================================
+        // Department Module Permissions (admin-configurable)
+        // ============================================================
+
+        /// <summary>
+        /// List all clinical departments (for permission management UI).
+        /// </summary>
+        [HttpGet("clinical-departments")]
+        [AuthorizeRole("Admin")]
+        public async Task<IActionResult> GetClinicalDepartments()
+        {
+            var list = await _context.ClinicalDepartments
+                .AsNoTracking()
+                .OrderBy(d => d.DepartmentName)
+                .Select(d => new
+                {
+                    clinicalDepartmentID = d.ClinicalDepartmentID,
+                    departmentName = d.DepartmentName,
+                    description = d.Description
+                })
+                .ToListAsync();
+            return Ok(list);
+        }
+
+        /// <summary>
+        /// Get module permissions for a department.
+        /// Returns all known modules; missing rows appear as all-false.
+        /// </summary>
+        [HttpGet("department/{departmentId:int}/permissions")]
+        [AuthorizeRole("Admin")]
+        public async Task<IActionResult> GetDepartmentPermissions(int departmentId)
+        {
+            var dept = await _context.ClinicalDepartments.AsNoTracking()
+                .FirstOrDefaultAsync(d => d.ClinicalDepartmentID == departmentId);
+            if (dept == null)
+                return NotFound(new { message = "Department not found" });
+
+            var map = await _permService.GetDepartmentPermissionsMapAsync(departmentId);
+
+            // Also return as a list convenient for the admin UI
+            var list = map.Select(kv => new
+            {
+                module = kv.Key,
+                canRead = kv.Value.Read,
+                canCreate = kv.Value.Create,
+                canUpdate = kv.Value.Update,
+                canDelete = kv.Value.Delete
+            }).ToList();
+
+            return Ok(new
+            {
+                clinicalDepartmentID = dept.ClinicalDepartmentID,
+                departmentName = dept.DepartmentName,
+                permissions = list
+            });
+        }
+
+        /// <summary>
+        /// Replace all module permissions for a department.
+        /// Body: [ { "module": "Consultation", "canRead": true, "canCreate": true, "canUpdate": true, "canDelete": false }, ... ]
+        /// </summary>
+        [HttpPut("department/{departmentId:int}/permissions")]
+        [AuthorizeRole("Admin")]
+        public async Task<IActionResult> SetDepartmentPermissions(
+            int departmentId,
+            [FromBody] List<PermissionUpsertDto> permissions)
+        {
+            if (permissions == null)
+                return BadRequest(new { message = "permissions body is required" });
+
+            var dept = await _context.ClinicalDepartments
+                .FirstOrDefaultAsync(d => d.ClinicalDepartmentID == departmentId);
+            if (dept == null)
+                return NotFound(new { message = "Department not found" });
+
+            await _permService.SetPermissionsAsync(departmentId, permissions);
+
+            var map = await _permService.GetDepartmentPermissionsMapAsync(departmentId);
+            return Ok(new
+            {
+                message = "Permissions updated",
+                clinicalDepartmentID = departmentId,
+                departmentName = dept.DepartmentName,
+                permissions = map
+            });
+        }
+
     }
 }

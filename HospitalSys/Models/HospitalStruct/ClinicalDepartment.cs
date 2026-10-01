@@ -21,6 +21,11 @@ namespace HospitalSys.Models.HospitalStruct
         /// </summary>
         public List<DoctorDepartment> DoctorDepartments { get; set; } = new();
 
+        /// <summary>
+        /// Module-level CRUD permissions for this department (admin-configured).
+        /// </summary>
+        public List<DepartmentPermission> DepartmentPermissions { get; set; } = new();
+
         public List<Nurse> Nurse { get; set; } = new();
         public List<Triage> Triage { get; set; } = new();
     }

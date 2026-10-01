@@ -1,39 +1,45 @@
 import { getAuthenticatedUser } from "./getAuthenticatedUser";
 
-const ALLOWED_EXACT = new Set([
-  "GENERAL MEDICINE",
-  "GENRAL",
-  "ART",
-  "GENERAL",
-  "EMERGENCY",
-  
-]);
+/**
+ * Database-driven Adult Medical Care write access.
+ * No hard-coded department names.
+ */
+
+function hasAdultCreate(user) {
+  if (!user) return false;
+  return user.permissions?.adultMedicalCare?.create === true;
+}
+
+function hasAdultRead(user) {
+  if (!user) return false;
+  return user.permissions?.adultMedicalCare?.read === true;
+}
 
 export function normalizeDepartmentName(departmentName) {
   return departmentName?.trim().toLowerCase() || "";
 }
 
+/** @deprecated Prefer permission checks. Always returns false. */
 export function isAdultMedicalCareDepartment(departmentName) {
-  if (!departmentName || typeof departmentName !== "string") return false;
-  const n = departmentName.trim().toUpperCase();
-  if (ALLOWED_EXACT.has(n)) return true;
-  const lower = n.toLowerCase();
-  if (lower === "general medicine" || lower === "general") return true;
-  if (lower === "emergency") return true;
   return false;
 }
 
 export async function canWriteAdultMedicalCare() {
   const user = await getAuthenticatedUser();
-  if (!user) return false;
-  return isAdultMedicalCareDepartment(user.departmentName);
+  return hasAdultCreate(user);
 }
 
 export function canWriteAdultMedicalCareFromUser(user) {
-  if (!user) return false;
-  return isAdultMedicalCareDepartment(user.departmentName);
+  return hasAdultCreate(user);
 }
 
-export const canAccessAdultMedicalCare = canWriteAdultMedicalCare;
+export async function canAccessAdultMedicalCare() {
+  const user = await getAuthenticatedUser();
+  return hasAdultRead(user);
+}
+
+export function canAccessAdultMedicalCareFromUser(user) {
+  return hasAdultRead(user);
+}
 
 export default canWriteAdultMedicalCare;

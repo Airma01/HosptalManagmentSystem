@@ -1,50 +1,41 @@
 import { getAuthenticatedUser } from "./getAuthenticatedUser";
 
 /**
- * Department names that may CREATE / UPDATE / DELETE Maternal & Child Health data.
- * Matches backend DoctorMaternalChildHealthController write authorization.
- * ClinicalDepartment only has DepartmentName (no code field).
+ * Database-driven Maternal & Child Health write access.
+ * No hard-coded department names.
  */
-const ALLOWED_EXACT = new Set([
-  "MCH",
-  "GENERAL",
-  "GENRAL",
-  "MATERNAL & CHILD HEALTH",
-  "MATERNAL AND CHILD HEALTH",
-  "MATERNAL CHILD HEALTH",
-]);
 
-/**
- * @param {string | null | undefined} departmentName
- * @returns {boolean}
- */
-export function isMchOrGeneralDepartment(departmentName) {
-  if (!departmentName || typeof departmentName !== "string") return false;
-  const n = departmentName.trim().toUpperCase();
-  if (ALLOWED_EXACT.has(n)) return true;
-  // Fallback for common variants that include both "maternal" and "child"
-  return n.includes("MATERNAL") && n.includes("CHILD");
+function hasMchCreate(user) {
+  if (!user) return false;
+  return user.permissions?.maternalChildHealth?.create === true;
 }
 
-/**
- * Async check using the existing getAuthenticatedUser() helper.
- * Uses departmentName from /Hospital/doctor/DoctorAuth/auth_me (and localStorage cache).
- * @returns {Promise<boolean>}
- */
+function hasMchRead(user) {
+  if (!user) return false;
+  return user.permissions?.maternalChildHealth?.read === true;
+}
+
+/** @deprecated Prefer permission checks. Always returns false. */
+export function isMchOrGeneralDepartment(departmentName) {
+  return false;
+}
+
 export async function canWriteMaternalChildHealth() {
   const user = await getAuthenticatedUser();
-  if (!user) return false;
-  return isMchOrGeneralDepartment(user.departmentName);
+  return hasMchCreate(user);
 }
 
-/**
- * Sync check when the user object is already available.
- * @param {{ departmentName?: string } | null | undefined} user
- * @returns {boolean}
- */
 export function canWriteMaternalChildHealthFromUser(user) {
-  if (!user) return false;
-  return isMchOrGeneralDepartment(user.departmentName);
+  return hasMchCreate(user);
+}
+
+export async function canAccessMaternalChildHealth() {
+  const user = await getAuthenticatedUser();
+  return hasMchRead(user);
+}
+
+export function canAccessMaternalChildHealthFromUser(user) {
+  return hasMchRead(user);
 }
 
 export default canWriteMaternalChildHealth;
