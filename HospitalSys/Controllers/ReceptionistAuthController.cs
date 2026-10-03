@@ -8,6 +8,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authorization;
+using HospitalSys.Services;
 namespace HospitalSys.Controllers
 {
     [ApiController]
@@ -16,8 +17,10 @@ namespace HospitalSys.Controllers
     {
         private readonly AppDbContext _context;
 
-        public ReceptionistAuthController(AppDbContext context)
+        private readonly IJwtService _jwt;
+        public ReceptionistAuthController(AppDbContext context, IJwtService jwt)
         {
+            _jwt = jwt;
             _context = context;
         }
         [HttpGet("auth_me")]
@@ -29,16 +32,7 @@ namespace HospitalSys.Controllers
             {
                 return Unauthorized(new { message = "No authentication token found" });
             }
-            var validationParameter = new TokenValidationParameters
-            {
-              ValidateSignatureLast = true,
-              IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("hkfjhdkfjhddkjfhsdkjfhkjfjliieorieh.lalaklewkewikk")),
-              ValidateIssuer = false,
-              ValidateAudience = false,
-              ClockSkew = TimeSpan.Zero
-            };
-
-            var princple = new JwtSecurityTokenHandler().ValidateToken(token,validationParameter,out _);
+            var princple = _jwt.ValidateToken(token);
             var fullName =  princple.FindFirst(ClaimTypes.GivenName)?.Value;
             var username = princple.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var role = princple.FindFirst(ClaimTypes.Role)?.Value;
@@ -84,17 +78,7 @@ namespace HospitalSys.Controllers
                         FullName = receptionist.FirstName + " " + receptionist.FatherName,
                         RoleName = receptionist.UserRole.Select(r => r.Role.RoleName).ToList() 
                     });
-                    var cookieOptions = new CookieOptions
-                    {
-                        HttpOnly = true,          
-                        Secure = true,            
-                        SameSite = SameSiteMode.Lax,
-                        Expires = DateTime.UtcNow.AddHours(2),
-                        Path = "/",
-                        Domain = "localhost"     
-                    };
-
-                    Response.Cookies.Append("jwt", token, cookieOptions);
+                    _jwt.AppendAuthCookie(Response, token);
 
                 return Ok(new { message = "Login successful" });
             }
@@ -106,25 +90,14 @@ namespace HospitalSys.Controllers
 
         public string GenerateAuthToken(ReceptionistCookieDto  user)
         {
-           var claims = new[]
+            var claims = new[]
             {
                 new Claim(ClaimTypes.GivenName, user.username),
                 new Claim(ClaimTypes.NameIdentifier, user.username),
                 new Claim(ClaimTypes.Name, user.FullName),
                 new Claim(ClaimTypes.Role, "Receptionist")};
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("hkfjhdkfjhddkjfhsdkjfhkjfjliieorieh.lalaklewkewikk"));
-            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-            var han = new JwtSecurityTokenHandler();
-            var token = new JwtSecurityToken(
-                claims: claims,
-                signingCredentials: credentials,
-                expires: DateTime.UtcNow.AddHours(2),
-                issuer: "HospitalSys",
-                audience: "HospitalSysClient"
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            return _jwt.GenerateToken(claims, TimeSpan.FromHours(2));
         }
     }
 }

@@ -12,9 +12,87 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
+// Load .env for local development (no-op if file is missing).
+// Production / Docker should inject secrets via environment variables — do not bake .env into images.
+DotNetEnv.Env.Load();
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
+
+// --- Database connection (environment-driven) ---
+// Prefer ConnectionStrings__Default, or construct from DB_* variables.
+var connectionString = ResolveConnectionString(builder.Configuration);
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException(
+        "Database connection string is not configured. " +
+        "Set ConnectionStrings__Default or DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD.");
+}
+
+// --- JWT settings (fail fast if secret is missing) ---
+var jwtSettings = new JwtSettings();
+builder.Configuration.GetSection(JwtSettings.SectionName).Bind(jwtSettings);
+
+// Environment variable overrides (Docker / .env)
+var envSecret = Environment.GetEnvironmentVariable("JWT_SECRET")
+    ?? builder.Configuration["Jwt:Secret"];
+if (!string.IsNullOrWhiteSpace(envSecret))
+    jwtSettings.Secret = envSecret;
+
+var envIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER");
+if (!string.IsNullOrWhiteSpace(envIssuer))
+    jwtSettings.Issuer = envIssuer;
+
+var envAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE");
+if (!string.IsNullOrWhiteSpace(envAudience))
+    jwtSettings.Audience = envAudience;
+
+var envCookieName = Environment.GetEnvironmentVariable("JWT_COOKIE_NAME");
+if (!string.IsNullOrWhiteSpace(envCookieName))
+    jwtSettings.CookieName = envCookieName;
+
+if (int.TryParse(Environment.GetEnvironmentVariable("JWT_EXPIRATION_MINUTES"), out var expMinutes) && expMinutes > 0)
+    jwtSettings.ExpirationMinutes = expMinutes;
+
+var envCookieSecure = Environment.GetEnvironmentVariable("JWT_COOKIE_SECURE");
+if (!string.IsNullOrWhiteSpace(envCookieSecure))
+    jwtSettings.CookieSecure = envCookieSecure.Equals("true", StringComparison.OrdinalIgnoreCase)
+        || envCookieSecure == "1";
+
+var envCookieSameSite = Environment.GetEnvironmentVariable("JWT_COOKIE_SAMESITE");
+if (!string.IsNullOrWhiteSpace(envCookieSameSite))
+    jwtSettings.CookieSameSite = envCookieSameSite;
+
+var envCookieDomain = Environment.GetEnvironmentVariable("JWT_COOKIE_DOMAIN");
+if (envCookieDomain != null)
+    jwtSettings.CookieDomain = string.IsNullOrWhiteSpace(envCookieDomain) ? null : envCookieDomain;
+
+if (string.IsNullOrWhiteSpace(jwtSettings.Secret))
+{
+    throw new InvalidOperationException(
+        "JWT Secret is not configured. Set JWT_SECRET (or Jwt:Secret) to a long random secret. " +
+        "Do not use a default/hardcoded key.");
+}
+
+if (jwtSettings.Secret.Length < 32)
+{
+    throw new InvalidOperationException(
+        "JWT Secret must be at least 32 characters for adequate HMAC-SHA256 strength.");
+}
+
+builder.Services.Configure<JwtSettings>(opts =>
+{
+    opts.Secret = jwtSettings.Secret;
+    opts.Issuer = jwtSettings.Issuer;
+    opts.Audience = jwtSettings.Audience;
+    opts.ExpirationMinutes = jwtSettings.ExpirationMinutes;
+    opts.CookieName = jwtSettings.CookieName;
+    opts.CookieSecure = jwtSettings.CookieSecure;
+    opts.CookieSameSite = jwtSettings.CookieSameSite;
+    opts.CookieDomain = jwtSettings.CookieDomain;
+});
+builder.Services.AddSingleton<IJwtService, JwtService>();
 
 // --- Google Gemini AI Clinical Assistant ---
 // Prefer env GEMINI_API_KEY or user-secrets; never commit the key.
@@ -41,7 +119,8 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
 });
 
-// JWT from cookie "jwt"
+// JWT from cookie (name from configuration)
+var cookieName = string.IsNullOrWhiteSpace(jwtSettings.CookieName) ? "jwt" : jwtSettings.CookieName;
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -51,17 +130,16 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = "HospitalSys",
-            ValidAudience = "HospitalSysClient",
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes("hkfjhdkfjhddkjfhsdkjfhkjfjliieorieh.lalaklewkewikk"))
+            ValidIssuer = jwtSettings.Issuer,
+            ValidAudience = jwtSettings.Audience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret))
         };
 
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
             {
-                var token = context.Request.Cookies["jwt"];
+                var token = context.Request.Cookies[cookieName];
                 if (!string.IsNullOrEmpty(token))
                     context.Token = token;
                 return Task.CompletedTask;
@@ -72,13 +150,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
+    options.UseNpgsql(connectionString));
 
+// CORS — explicit origins only (required when using credentials)
+var corsOrigins = ResolveCorsOrigins(builder.Configuration);
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Jwt-Policy", policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
+        policy.WithOrigins(corsOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -134,3 +214,51 @@ if (app.Environment.IsDevelopment())
 }
 
 app.Run();
+
+/// <summary>
+/// Resolves the PostgreSQL connection string from ConnectionStrings:Default
+/// or from discrete DB_* environment variables (Docker-friendly).
+/// </summary>
+static string? ResolveConnectionString(IConfiguration configuration)
+{
+    var fromConfig = configuration.GetConnectionString("Default");
+    if (!string.IsNullOrWhiteSpace(fromConfig))
+        return fromConfig;
+
+    var host = Environment.GetEnvironmentVariable("DB_HOST")
+        ?? configuration["DB_HOST"];
+    var port = Environment.GetEnvironmentVariable("DB_PORT")
+        ?? configuration["DB_PORT"]
+        ?? "5432";
+    var name = Environment.GetEnvironmentVariable("DB_NAME")
+        ?? configuration["DB_NAME"];
+    var user = Environment.GetEnvironmentVariable("DB_USER")
+        ?? configuration["DB_USER"];
+    var password = Environment.GetEnvironmentVariable("DB_PASSWORD")
+        ?? configuration["DB_PASSWORD"];
+
+    if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(name)
+        || string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(password))
+        return null;
+
+    return $"Host={host};Port={port};Database={name};Username={user};Password={password}";
+}
+
+/// <summary>
+/// CORS origins from CORS_ORIGINS (comma-separated) or fallback to localhost Vite.
+/// </summary>
+static string[] ResolveCorsOrigins(IConfiguration configuration)
+{
+    var raw = Environment.GetEnvironmentVariable("CORS_ORIGINS")
+        ?? configuration["CORS_ORIGINS"]
+        ?? configuration["Cors:Origins"];
+
+    if (!string.IsNullOrWhiteSpace(raw))
+    {
+        return raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(o => !string.IsNullOrWhiteSpace(o))
+            .ToArray();
+    }
+
+    return new[] { "http://localhost:5173" };
+}

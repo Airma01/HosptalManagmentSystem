@@ -13,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 
+using HospitalSys.Services;
 namespace HospitalSys.Controllers
 {
     [ApiController]
@@ -20,16 +21,17 @@ namespace HospitalSys.Controllers
     public class Admin_authController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IJwtService _jwt;
         private readonly IConfiguration _configuration;
         private readonly ISecurityEventService _security;
         private readonly IAuditLogService _audit;
 
-        public Admin_authController(
-            AppDbContext context,
+        public Admin_authController(AppDbContext context,
             IConfiguration configuration,
             ISecurityEventService security,
-            IAuditLogService audit)
+            IAuditLogService audit, IJwtService jwt)
         {
+            _jwt = jwt;
             _context = context;
             _configuration = configuration;
             _security = security;
@@ -77,17 +79,7 @@ namespace HospitalSys.Controllers
             }
 
             string token = GenerateAuthToken(Admin);
-            var cookieOptions = new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,            // set false for local HTTP-only testing if needed
-                SameSite = SameSiteMode.Lax,
-                Expires = DateTime.UtcNow.AddHours(2),
-                Path = "/",
-                Domain = "localhost"
-            };
-
-            Response.Cookies.Append("jwt", token, cookieOptions);
+            _jwt.AppendAuthCookie(Response, token);
 
             await _security.RecordAsync(
                 "SuccessfulLogin",
@@ -129,14 +121,7 @@ namespace HospitalSys.Controllers
             if (int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id))
                 userId = id;
 
-            Response.Cookies.Delete("jwt", new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.Lax,
-                Path = "/",
-                Domain = "localhost"
-            });
+            _jwt.DeleteAuthCookie(Response);
 
             await _security.RecordAsync(
                 "Logout",
@@ -164,18 +149,7 @@ namespace HospitalSys.Controllers
 
             try
             {
-                var tokenHandler = new JwtSecurityTokenHandler();
-                var key = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"] ?? "hkfjhdkfjhddkjfhsdkjfhkjfjliieorieh.lalaklewkewikk");
-                var validationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(key),
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
-                    ClockSkew = TimeSpan.Zero
-                };
-
-                var principal = tokenHandler.ValidateToken(token, validationParameters, out _);
+                var principal = _jwt.ValidateToken(token);
                 var userId = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 var username = principal.FindFirst(ClaimTypes.GivenName)?.Value;
                 var role = principal.FindFirst(ClaimTypes.Role)?.Value;
@@ -202,17 +176,7 @@ namespace HospitalSys.Controllers
                 new Claim(ClaimTypes.Role, admin.AdminRole.ToString())
             };
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("hkfjhdkfjhddkjfhsdkjfhkjfjliieorieh.lalaklewkewikk"));
-            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-            var token = new JwtSecurityToken(
-                claims: claims,
-                signingCredentials: credentials,
-                expires: DateTime.UtcNow.AddHours(2),
-                issuer: "HospitalSys",
-                audience: "HospitalSysClient"
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            return _jwt.GenerateToken(claims, TimeSpan.FromHours(2));
         }
     }
 }

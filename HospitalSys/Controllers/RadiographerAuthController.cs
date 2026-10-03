@@ -10,6 +10,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
+using HospitalSys.Services;
 namespace HospitalSys.Controllers
 {
     [ApiController]
@@ -18,16 +19,12 @@ namespace HospitalSys.Controllers
     {
         private readonly AppDbContext _context;
 
-        private const string JwtSecret =
-            "hkfjhdkfjhddkjfhsdkjfhkjfjliieorieh.lalaklewkewikk";
+        private readonly IJwtService _jwt;
+private const string RadiographerRole = "Radiographer";
 
-        private const string JwtIssuer = "HospitalSys";
-        private const string JwtAudience = "HospitalSysClient";
-
-        private const string RadiographerRole = "Radiographer";
-
-        public RadiographerAuthController(AppDbContext context)
+        public RadiographerAuthController(AppDbContext context, IJwtService jwt)
         {
+            _jwt = jwt;
             _context = context;
         }
 
@@ -164,21 +161,7 @@ namespace HospitalSys.Controllers
                 // JWT Cookie
                 // -------------------------------------------------
 
-                var cookieOptions = new CookieOptions
-                {
-                    HttpOnly = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.Lax,
-                    Expires = DateTimeOffset.UtcNow.AddHours(2),
-                    Path = "/",
-                    IsEssential = true
-                };
-
-                Response.Cookies.Append(
-                    "jwt",
-                    token,
-                    cookieOptions
-                );
+                _jwt.AppendAuthCookie(Response, token);
 
                 return Ok(new
                 {
@@ -229,47 +212,7 @@ namespace HospitalSys.Controllers
                 }
 
 
-                // -------------------------------------------------
-                // JWT validation
-                // -------------------------------------------------
-
-                var validationParameters =
-                    new TokenValidationParameters
-                    {
-                        ValidateIssuerSigningKey = true,
-
-                        IssuerSigningKey =
-                            new SymmetricSecurityKey(
-                                Encoding.UTF8.GetBytes(
-                                    JwtSecret
-                                )
-                            ),
-
-                        ValidateIssuer = true,
-
-                        ValidIssuer = JwtIssuer,
-
-                        ValidateAudience = true,
-
-                        ValidAudience = JwtAudience,
-
-                        ValidateLifetime = true,
-
-                        ClockSkew = TimeSpan.Zero
-                    };
-
-
-                // -------------------------------------------------
-                // Validate JWT
-                // -------------------------------------------------
-
-                var principal =
-                    new JwtSecurityTokenHandler()
-                        .ValidateToken(
-                            token,
-                            validationParameters,
-                            out _
-                        );
+                var principal = _jwt.ValidateToken(token);
 
 
                 // -------------------------------------------------
@@ -413,40 +356,7 @@ namespace HospitalSys.Controllers
                 )
             };
 
-
-            var key =
-                new SymmetricSecurityKey(
-                    Encoding.UTF8.GetBytes(
-                        JwtSecret
-                    )
-                );
-
-
-            var credentials =
-                new SigningCredentials(
-                    key,
-                    SecurityAlgorithms.HmacSha256
-                );
-
-
-            var token =
-                new JwtSecurityToken(
-                    issuer: JwtIssuer,
-
-                    audience: JwtAudience,
-
-                    claims: claims,
-
-                    expires:
-                        DateTime.UtcNow.AddHours(2),
-
-                    signingCredentials:
-                        credentials
-                );
-
-
-            return new JwtSecurityTokenHandler()
-                .WriteToken(token);
+            return _jwt.GenerateToken(claims, TimeSpan.FromHours(8));
         }
     }
 }

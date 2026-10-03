@@ -7,6 +7,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authorization;
+using HospitalSys.Services;
 namespace HospitalSys.Controllers
 {
     [ApiController]
@@ -14,8 +15,10 @@ namespace HospitalSys.Controllers
     public class PharmacistAuthController : ControllerBase
     {
         private readonly AppDbContext _context;
-        public PharmacistAuthController(AppDbContext context)
+        private readonly IJwtService _jwt;
+        public PharmacistAuthController(AppDbContext context, IJwtService jwt)
         {
+            _jwt = jwt;
             _context = context;
         }
         [HttpGet("auth_me")]
@@ -29,19 +32,7 @@ namespace HospitalSys.Controllers
                 return Unauthorized(new { message = "No authentication token found" });
             }
 
-            var validationParameter = new TokenValidationParameters
-            {
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(
-                    Encoding.UTF8.GetBytes("hkfjhdkfjhddkjfhsdkjfhkjfjliieorieh.lalaklewkewikk")
-                ),
-                ValidateIssuer = false,
-                ValidateAudience = false,
-                ClockSkew = TimeSpan.Zero
-            };
-
-            var principal = new JwtSecurityTokenHandler()
-                .ValidateToken(token, validationParameter, out _);
+            var principal = _jwt.ValidateToken(token);
 
             return Ok(new
             {
@@ -89,17 +80,7 @@ namespace HospitalSys.Controllers
                                     UserID = pharmacist.Users.UserID,
                                     Fullname = pharmacist.Users.FirstName + " " + pharmacist.Users.FatherName
                                 });
-                    var cookieOptions = new CookieOptions
-                    {
-                        HttpOnly = true,          
-                        Secure = true,            
-                        SameSite = SameSiteMode.Lax, 
-                        Expires = DateTime.UtcNow.AddHours(2),
-                        Path = "/",
-                        Domain = "localhost"  
-                    };
-
-                    Response.Cookies.Append("jwt", token, cookieOptions);
+                    _jwt.AppendAuthCookie(Response, token);
 
                 
 
@@ -113,8 +94,8 @@ namespace HospitalSys.Controllers
         }
 
          public string GenerateAuthToken(PharmacistCookieDto user)
-            {
-                var claims = new[]
+        {
+            var claims = new[]
                 {
                     new Claim(ClaimTypes.GivenName, user.username),
                     new Claim(ClaimTypes.NameIdentifier, user.UserID.ToString()),
@@ -124,24 +105,7 @@ namespace HospitalSys.Controllers
                     new Claim(ClaimTypes.Role, "Pharmacist")
                 };
 
-                var key = new SymmetricSecurityKey(
-                    Encoding.UTF8.GetBytes("hkfjhdkfjhddkjfhsdkjfhkjfjliieorieh.lalaklewkewikk")
-                );
-
-                var credentials = new SigningCredentials(
-                    key,
-                    SecurityAlgorithms.HmacSha256
-                );
-
-                var token = new JwtSecurityToken(
-                    issuer: "HospitalSys",
-                    audience: "HospitalSysClient",
-                    claims: claims,
-                    expires: DateTime.UtcNow.AddHours(2),
-                    signingCredentials: credentials
-                );
-
-                return new JwtSecurityTokenHandler().WriteToken(token);
-            }
+            return _jwt.GenerateToken(claims, TimeSpan.FromHours(2));
+        }
     }
 }

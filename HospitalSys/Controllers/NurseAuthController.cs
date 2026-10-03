@@ -7,6 +7,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authorization;
+using HospitalSys.Services;
 namespace HospitalSys.Controllers
 {
     [ApiController]
@@ -14,8 +15,10 @@ namespace HospitalSys.Controllers
     public class NurseAuthController : ControllerBase
     {
         private readonly AppDbContext _context;
-        public NurseAuthController(AppDbContext context)
+        private readonly IJwtService _jwt;
+        public NurseAuthController(AppDbContext context, IJwtService jwt)
         {
+            _jwt = jwt;
             _context = context;
         }
         [HttpGet("auth_me")]
@@ -27,16 +30,7 @@ namespace HospitalSys.Controllers
             {
                 return Unauthorized(new { message = "No authentication token found" });
             }
-            var validationParameter = new TokenValidationParameters
-            {
-              ValidateSignatureLast = true,
-              IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("hkfjhdkfjhddkjfhsdkjfhkjfjliieorieh.lalaklewkewikk")),
-              ValidateIssuer = false,
-              ValidateAudience = false,
-              ClockSkew = TimeSpan.Zero
-            };
-
-            var princple = new JwtSecurityTokenHandler().ValidateToken(token,validationParameter,out _);
+            var princple = _jwt.ValidateToken(token);
             var fullName =  princple.FindFirst(ClaimTypes.GivenName)?.Value;
             var UserID = princple.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var role = princple.FindFirst(ClaimTypes.Role)?.Value;
@@ -86,17 +80,7 @@ namespace HospitalSys.Controllers
                         FullName = nurse.Users.FirstName + " " + nurse.Users.FatherName,
                         RoleName = nurse.Users.UserRole.Select(r => r.Role.RoleName).ToList() 
                     });
-                    var cookieOptions = new CookieOptions
-                    {
-                        HttpOnly = true,          
-                        Secure = true,            
-                        SameSite = SameSiteMode.Lax, 
-                        Expires = DateTime.UtcNow.AddHours(2),
-                        Path = "/",
-                        Domain = "localhost"  
-                    };
-
-                    Response.Cookies.Append("jwt", token, cookieOptions);
+                    _jwt.AppendAuthCookie(Response, token);
 
                 
 
@@ -111,7 +95,7 @@ namespace HospitalSys.Controllers
 
          public string GenerateAuthToken(NurseCookieDto  user)
         {
-           var claims = new[]
+            var claims = new[]
             {
                 new Claim(ClaimTypes.GivenName, user.username),
                 new Claim(ClaimTypes.NameIdentifier, user.UserID.ToString()),
@@ -119,18 +103,7 @@ namespace HospitalSys.Controllers
                 new Claim(ClaimTypes.Name, user.FullName),
                 new Claim(ClaimTypes.Role, "Nurse")};
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("hkfjhdkfjhddkjfhsdkjfhkjfjliieorieh.lalaklewkewikk"));
-            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-            var han = new JwtSecurityTokenHandler();
-            var token = new JwtSecurityToken(
-                claims: claims,
-                signingCredentials: credentials,
-                expires: DateTime.UtcNow.AddHours(2),
-                issuer: "HospitalSys",
-                audience: "HospitalSysClient"
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            return _jwt.GenerateToken(claims, TimeSpan.FromHours(2));
         }
     }
 }

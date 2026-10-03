@@ -8,6 +8,7 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authorization;
 
+using HospitalSys.Services;
 namespace HospitalSys.Controllers
 {
     [ApiController]
@@ -16,11 +17,10 @@ namespace HospitalSys.Controllers
     {
         private readonly AppDbContext _context;
 
-        private const string JwtKey =
-            "hkfjhdkfjhddkjfhsdkjfhkjfjliieorieh.lalaklewkewikk";
-
-        public CSMAuthController(AppDbContext context)
+        private readonly IJwtService _jwt;
+public CSMAuthController(AppDbContext context, IJwtService jwt)
         {
+            _jwt = jwt;
             _context = context;
         }
 
@@ -39,20 +39,7 @@ namespace HospitalSys.Controllers
                     });
                 }
 
-                var validationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey =
-                        new SymmetricSecurityKey(
-                            Encoding.UTF8.GetBytes(JwtKey)),
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
-                    ClockSkew = TimeSpan.Zero
-                };
-
-                var principal =
-                    new JwtSecurityTokenHandler()
-                    .ValidateToken(token, validationParameters, out _);
+                var principal = _jwt.ValidateToken(token);
 
                 return Ok(new
                 {
@@ -154,19 +141,7 @@ namespace HospitalSys.Controllers
                     manager.CentralPharmacyID
                 );
 
-                var cookieOptions = new CookieOptions
-                {
-                    HttpOnly = true,
-                    Secure = false, // true in production HTTPS
-                    SameSite = SameSiteMode.Lax,
-                    Expires = DateTime.UtcNow.AddHours(2),
-                    Path = "/"
-                };
-
-                Response.Cookies.Append(
-                    "jwt",
-                    token,
-                    cookieOptions);
+                _jwt.AppendAuthCookie(Response, token);
 
                 return Ok(new
                 {
@@ -224,25 +199,7 @@ namespace HospitalSys.Controllers
                     "CSM")
             };
 
-            var key =
-                new SymmetricSecurityKey(
-                    Encoding.UTF8.GetBytes(JwtKey));
-
-            var credentials =
-                new SigningCredentials(
-                    key,
-                    SecurityAlgorithms.HmacSha256);
-
-            var token = new JwtSecurityToken(
-                issuer: "HospitalSys",
-                audience: "HospitalSysClient",
-                claims: claims,
-                expires: DateTime.UtcNow.AddHours(2),
-                signingCredentials: credentials
-            );
-
-            return new JwtSecurityTokenHandler()
-                .WriteToken(token);
+            return _jwt.GenerateToken(claims, TimeSpan.FromHours(2));
         }
     }
 }

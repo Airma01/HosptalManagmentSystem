@@ -17,17 +17,16 @@ namespace HospitalSys.Controllers
     public class DoctorAuthController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IJwtService _jwt;
         private readonly DoctorDepartmentAuthorizationService _deptAuth;
         private readonly DepartmentPermissionService _permService;
 
         // Keep the same key used by the rest of the project for compatibility.
-        private const string JwtSigningKey = "hkfjhdkfjhddkjfhsdkjfhkjfjliieorieh.lalaklewkewikk";
-
-        public DoctorAuthController(
-            AppDbContext context,
+public DoctorAuthController(AppDbContext context,
             DoctorDepartmentAuthorizationService deptAuth,
-            DepartmentPermissionService permService)
+            DepartmentPermissionService permService, IJwtService jwt)
         {
+            _jwt = jwt;
             _context = context;
             _deptAuth = deptAuth;
             _permService = permService;
@@ -166,17 +165,7 @@ namespace HospitalSys.Controllers
                     DepartmentName = defaultDept.DepartmentName
                 });
 
-                var cookieOptions = new CookieOptions
-                {
-                    HttpOnly = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.Lax,
-                    Expires = DateTime.UtcNow.AddHours(2),
-                    Path = "/",
-                    Domain = "localhost"
-                };
-
-                Response.Cookies.Append("jwt", token, cookieOptions);
+                _jwt.AppendAuthCookie(Response, token);
 
                 return Ok(new { message = "Login successful" });
             }
@@ -236,17 +225,7 @@ namespace HospitalSys.Controllers
                 DepartmentName = department.DepartmentName
             });
 
-            var cookieOptions = new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.Lax,
-                Expires = DateTime.UtcNow.AddHours(2),
-                Path = "/",
-                Domain = "localhost"
-            };
-
-            Response.Cookies.Append("jwt", newToken, cookieOptions);
+            _jwt.AppendAuthCookie(Response, newToken);
 
             return Ok(new
             {
@@ -274,30 +253,12 @@ namespace HospitalSys.Controllers
                 new Claim("DepartmentName", user.DepartmentName)
             };
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(JwtSigningKey));
-            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-            var token = new JwtSecurityToken(
-                claims: claims,
-                signingCredentials: credentials,
-                expires: DateTime.UtcNow.AddHours(2),
-                issuer: "HospitalSys",
-                audience: "HospitalSysClient"
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            return _jwt.GenerateToken(claims, TimeSpan.FromHours(2));
         }
 
         private ClaimsPrincipal ValidateToken(string token)
         {
-            var validationParameter = new TokenValidationParameters
-            {
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(JwtSigningKey)),
-                ValidateIssuer = false,
-                ValidateAudience = false,
-                ClockSkew = TimeSpan.Zero
-            };
-            return new JwtSecurityTokenHandler().ValidateToken(token, validationParameter, out _);
+            return _jwt.ValidateToken(token);
         }
     }
 }

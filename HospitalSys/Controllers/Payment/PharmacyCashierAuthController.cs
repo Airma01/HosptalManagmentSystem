@@ -9,6 +9,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
+using HospitalSys.Services;
 namespace HospitalSys.Controllers.Payment
 {
     /// <summary>
@@ -20,11 +21,12 @@ namespace HospitalSys.Controllers.Payment
     public class PharmacyCashierAuthController : ControllerBase
     {
         private readonly AppDbContext _context;
-        private const string JwtSecret = "hkfjhdkfjhddkjfhsdkjfhkjfjliieorieh.lalaklewkewikk";
-        private const string RoleName = "PharmacyCashier";
+        private readonly IJwtService _jwt;
+private const string RoleName = "PharmacyCashier";
 
-        public PharmacyCashierAuthController(AppDbContext context)
+        public PharmacyCashierAuthController(AppDbContext context, IJwtService jwt)
         {
+            _jwt = jwt;
             _context = context;
         }
 
@@ -75,15 +77,7 @@ namespace HospitalSys.Controllers.Payment
                 var fullName = $"{user.FirstName} {user.FatherName}";
                 var token = GenerateAuthToken(user.UserID, user.Username, fullName, RoleName);
 
-                Response.Cookies.Append("jwt", token, new CookieOptions
-                {
-                    HttpOnly = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.Lax,
-                    Expires = DateTime.UtcNow.AddHours(8),
-                    Path = "/",
-                    Domain = "localhost"
-                });
+                _jwt.AppendAuthCookie(Response, token);
 
                 return Ok(new PharmacyCashierLoginResponseDto
                 {
@@ -106,21 +100,13 @@ namespace HospitalSys.Controllers.Payment
         [Authorize(Roles = "PharmacyCashier")]
         public IActionResult Logout()
         {
-            Response.Cookies.Delete("jwt", new CookieOptions { Path = "/", Domain = "localhost" });
+            _jwt.DeleteAuthCookie(Response);
             return Ok(new { message = "Logged out successfully" });
         }
 
         private ClaimsPrincipal ValidateToken(string token)
         {
-            var parameters = new TokenValidationParameters
-            {
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(JwtSecret)),
-                ValidateIssuer = false,
-                ValidateAudience = false,
-                ClockSkew = TimeSpan.Zero
-            };
-            return new JwtSecurityTokenHandler().ValidateToken(token, parameters, out _);
+            return _jwt.ValidateToken(token);
         }
 
         private string GenerateAuthToken(int userId, string username, string fullName, string role)
@@ -134,16 +120,7 @@ namespace HospitalSys.Controllers.Payment
                 new Claim("CanAccessAllBranches", "true")
             };
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(JwtSecret));
-            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-            var jwt = new JwtSecurityToken(
-                claims: claims,
-                signingCredentials: credentials,
-                expires: DateTime.UtcNow.AddHours(8),
-                issuer: "HospitalSys",
-                audience: "HospitalSysClient"
-            );
-            return new JwtSecurityTokenHandler().WriteToken(jwt);
+            return _jwt.GenerateToken(claims, TimeSpan.FromHours(8));
         }
     }
 }
