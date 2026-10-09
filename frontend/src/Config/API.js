@@ -1,7 +1,11 @@
 import axios from "axios";
 
+// Vite exposes only variables prefixed with VITE_
+// Falls back to local backend if the env var is not set
+const baseURL = import.meta.env.VITE_API_BASE_URL;
+
 const API = axios.create({
-  baseURL: "http://localhost:5241",
+  baseURL,
   withCredentials: true,
   headers: {
     Accept: "application/json",

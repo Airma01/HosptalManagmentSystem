@@ -14,7 +14,18 @@ using System.Text;
 
 // Load .env for local development (no-op if file is missing).
 // Production / Docker should inject secrets via environment variables — do not bake .env into images.
-DotNetEnv.Env.Load();
+var envPath = Path.Combine(Directory.GetCurrentDirectory(), ".env");
+if (File.Exists(envPath))
+{
+    DotNetEnv.Env.Load(envPath);
+}
+else
+{
+    // Fallback for some hosting / IDE scenarios
+    var altPath = Path.Combine(AppContext.BaseDirectory, ".env");
+    if (File.Exists(altPath))
+        DotNetEnv.Env.Load(altPath);
+}
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -103,6 +114,19 @@ builder.Services.Configure<GeminiAIOptions>(options =>
     if (!string.IsNullOrWhiteSpace(envKey))
         options.ApiKey = envKey;
 });
+
+// Fail-fast configuration check (mirrors JWT secret handling)
+var geminiCheck = new GeminiAIOptions();
+builder.Configuration.GetSection(GeminiAIOptions.SectionName).Bind(geminiCheck);
+var geminiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY") ?? geminiCheck.ApiKey;
+if (string.IsNullOrWhiteSpace(geminiKey))
+{
+    throw new InvalidOperationException(
+        "Gemini API key is not configured. " +
+        "Set the environment variable GEMINI_API_KEY (or GeminiAI:ApiKey in user-secrets / appsettings). " +
+        "Copy HospitalSys/.env.example to HospitalSys/.env and fill in the key for local development.");
+}
+
 builder.Services.AddHttpClient<IGeminiAIService, GeminiAIService>();
 builder.Services.AddScoped<IClinicalContextService, ClinicalContextService>();
 

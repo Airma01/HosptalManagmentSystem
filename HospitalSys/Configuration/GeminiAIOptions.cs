@@ -18,8 +18,7 @@ namespace HospitalSys.Configuration
         /// Model name. Defaults to a widely available Gemini 1.5/2.0 flash model.
         /// Override via config if your project has access to a different model.
         /// </summary>
-        public string Model { get; set; } = "gemini-1.5-flash";
-
+         public string Model { get; set; } = "gemini-3.5-flash";
         /// <summary>Base URL for the Generative Language API.</summary>
         public string BaseUrl { get; set; } = "https://generativelanguage.googleapis.com/v1beta";
 

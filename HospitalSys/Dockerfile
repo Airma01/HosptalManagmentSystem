@@ -9,16 +9,13 @@ RUN dotnet restore
 
 RUN dotnet publish -c Release -o /app/publish
 
-
 # Runtime stage
-FROM mcr.microsoft.com/dotnet/aspnet:10.0
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 
-WORKDIR /app
+WORKDIR /src
 
 COPY --from=build /app/publish .
 
 EXPOSE 5000
-
-ENV ASPNETCORE_URLS=http://+:5000
 
 ENTRYPOINT ["dotnet", "HospitalSys.dll"]

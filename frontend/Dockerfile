@@ -1,21 +1,26 @@
 # Build stage
-FROM node:22 AS build
+FROM node:20-alpine AS frontend-build
 
 WORKDIR /app
 
 COPY package*.json ./
-
 RUN npm install
 
 COPY . .
 
-RUN npm run build
+# Allow API base URL to be set at build time (Vite embeds it)
+ARG VITE_API_BASE_URL=http://localhost:5000
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
+RUN npm run build
 
 # Production stage
 FROM nginx:alpine
 
-COPY --from=build /app/dist /usr/share/nginx/html
+COPY --from=frontend-build /app/dist /usr/share/nginx/html
+
+# Optional: custom nginx config if needed
+# COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 
