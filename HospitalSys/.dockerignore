@@ -1,6 +1,7 @@
 bin/
 obj/
 .gitignore/
+.git/
 .vs/
 .env
 node_modules/

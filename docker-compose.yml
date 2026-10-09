@@ -1,0 +1,67 @@
+services:
+
+  postgres:
+    image: postgres:17
+    container_name: hospital-postgres
+    environment:
+      POSTGRES_DB: HospitalManagement
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "7475"
+    ports:
+      - "5433:5432"
+    volumes:
+      - hospital-postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d HospitalManagement"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./HospitalSys
+      dockerfile: Dockerfile
+    image: ehr-backend:latest
+    container_name: ehr-backend
+    ports:
+      - "5000:8080"              # Backend → http://localhost:5000
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: "http://+:8080"
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: HospitalManagement
+      DB_USER: postgres
+      DB_PASSWORD: "7475"
+      JWT_SECRET: "YOUR_NEW_SECRET_AT_LEAST_32_CHARACTERS_LONG"
+      JWT_ISSUER: HospitalSys
+      JWT_AUDIENCE: HospitalSysClient
+      JWT_EXPIRATION_MINUTES: "120"
+      JWT_COOKIE_NAME: jwt
+      JWT_COOKIE_SECURE: "false"
+      JWT_COOKIE_SAMESITE: Lax
+      JWT_COOKIE_DOMAIN: ""
+      CORS_ORIGINS: "http://localhost:8080"
+      GEMINI_API_KEY: "AQ.Ab8RN6ISBThO9sz-KNSKyLiI4Y7qHudfjwJmfxnXoxxAXUnZDg"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:5000
+    image: ehr-frontend:latest
+    container_name: ehr-frontend
+    ports:
+      - "8080:80"                # Frontend → http://localhost:8080
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  hospital-postgres-data:
