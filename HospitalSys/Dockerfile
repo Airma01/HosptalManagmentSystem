@@ -1,3 +1,4 @@
+
 # Build stage
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 
@@ -23,11 +24,10 @@ ENTRYPOINT ["dotnet", "ef"]
 # Runtime stage: API only
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 
-WORKDIR /src
+WORKDIR /app
 
 COPY --from=build /app/publish .
 
 EXPOSE 8080
 
-ENTRYPOINT ["dotnet", "HospitalSys.dll"]
 ENTRYPOINT ["dotnet", "HospitalSys.dll"]
