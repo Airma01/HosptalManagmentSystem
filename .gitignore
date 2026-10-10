@@ -1,0 +1,11 @@
+docker-compose.yml
+--- a/file:///c%3A/Users/ermiv/Desktop/.net/HosptalManagmentSystem/docker-compose.yml
++++ b/file:///c%3A/Users/ermiv/Desktop/.net/HosptalManagmentSystem/docker-compose.yml
+@@ -1,7 +1,7 @@
+ version: '3.8'
+ services:
+   hospital-sys:
+-    build:
++    build: ./HospitalSys
+     ports:
+       - "5241:5241"          
