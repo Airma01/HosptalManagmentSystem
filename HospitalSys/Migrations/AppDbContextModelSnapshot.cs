@@ -3176,6 +3176,9 @@ namespace HospitalSys.Migrations
                     b.Property<DateTime>("AppointmentDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int?>("ClinicalDepartmentID")
+                        .HasColumnType("integer");
+
                     b.Property<int>("DoctorID")
                         .HasColumnType("integer");
 
@@ -3194,6 +3197,8 @@ namespace HospitalSys.Migrations
                     b.HasKey("AppointmentID");
 
                     b.HasIndex("AppointmentDate");
+
+                    b.HasIndex("ClinicalDepartmentID");
 
                     b.HasIndex("DoctorID");
 
@@ -5831,6 +5836,10 @@ namespace HospitalSys.Migrations
 
             modelBuilder.Entity("HospitalSys.Models.PatientManagment.Appointment", b =>
                 {
+                    b.HasOne("HospitalSys.Models.HospitalStruct.ClinicalDepartment", "ClinicalDepartment")
+                        .WithMany()
+                        .HasForeignKey("ClinicalDepartmentID");
+
                     b.HasOne("HospitalSys.Models.Doctor", "Doctor")
                         .WithMany("Appointment")
                         .HasForeignKey("DoctorID")
@@ -5842,6 +5851,8 @@ namespace HospitalSys.Migrations
                         .HasForeignKey("PatientID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("ClinicalDepartment");
 
                     b.Navigation("Doctor");
 

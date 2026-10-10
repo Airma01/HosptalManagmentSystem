@@ -24,7 +24,7 @@ namespace HospitalSys.Dto.DoctorDtos
         public string Notes { get; set; } = "";
     }
 
-    // ─── New Appointment DTOs ───────────────────────────────────────────────
+    // ─── Appointment DTOs ───────────────────────────────────────────────────
     public class DoctorAppointmentListItemDto
     {
         public int AppointmentID { get; set; }
@@ -85,11 +85,16 @@ namespace HospitalSys.Dto.DoctorDtos
         public DateTime DateOfBirth { get; set; }
         public string Phone { get; set; } = "";
     }
+
     public class CreateAppointmentDto
     {
         public int PatientID { get; set; }
         public DateTime AppointmentDate { get; set; }
         public string Reason { get; set; } = "";
+        /// <summary>
+        /// Required for multi-department doctors. Must be one of the doctor's assigned departments.
+        /// </summary>
+        public int ClinicalDepartmentID { get; set; }
     }
 
     public class CreateAppointmentResponseDto
@@ -101,6 +106,8 @@ namespace HospitalSys.Dto.DoctorDtos
         public DateTime AppointmentDate { get; set; }
         public string Status { get; set; } = "";
         public string Reason { get; set; } = "";
+        public int ClinicalDepartmentID { get; set; }
+        public string DepartmentName { get; set; } = "";
         public string Message { get; set; } = "";
     }
 }

@@ -1,7 +1,7 @@
 import API from "../../../../Config/API";
 
-export const getDoctorAppointments = () =>
-  API.get("/api/doctor/appointments");
+export const getDoctorAppointments = (params = {}) =>
+  API.get("/api/doctor/appointments", { params });
 
 export const getDoctorAppointmentDetails = (appointmentId) =>
   API.get(`/api/doctor/appointments/${appointmentId}`);

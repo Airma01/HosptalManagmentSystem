@@ -250,7 +250,13 @@ export default function Appointments() {
   const [createForm, setCreateForm] = useState({
     patientID: "",
     reason: "",
+    clinicalDepartmentID: "",
   });
+
+  // Multi-department support
+  const [departments, setDepartments] = useState([]); // [{departmentID, departmentName}]
+  const [deptFilter, setDeptFilter] = useState(""); // "" = all authorized
+  const [userLoading, setUserLoading] = useState(true);
 
   // ETHIOPIAN CALENDAR state
   // selectedDate = Gregorian JS Date for the selected EC day (from DayPicker)
@@ -277,14 +283,48 @@ export default function Appointments() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showCalendar]);
 
-  // Load appointments
+  // Load authenticated user + departments
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setUserLoading(true);
+      try {
+        const user = await getAuthenticatedUser(true);
+        if (cancelled) return;
+        const depts = Array.isArray(user?.departments) ? user.departments : [];
+        setDepartments(depts);
+        // Default create form to active department when available
+        const activeId =
+          user?.activeDepartment?.departmentID ??
+          user?.departmentID ??
+          (depts[0]?.departmentID ?? "");
+        if (activeId) {
+          setCreateForm((prev) => ({
+            ...prev,
+            clinicalDepartmentID: String(activeId),
+          }));
+        }
+      } catch {
+        // non-fatal
+      } finally {
+        if (!cancelled) setUserLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Load appointments (all authorized depts, or filtered)
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setLoading(true);
       setError("");
       try {
-        const res = await getDoctorAppointments();
+        const params = {};
+        if (deptFilter) params.departmentId = Number(deptFilter);
+        const res = await getDoctorAppointments(params);
         if (!cancelled) setRows(Array.isArray(res.data) ? res.data : []);
       } catch (err) {
         if (cancelled) return;
@@ -303,7 +343,7 @@ export default function Appointments() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [deptFilter]);
 
   // Load patients when Create modal opens
   useEffect(() => {
@@ -505,10 +545,17 @@ export default function Appointments() {
         appointmentTime
       );
 
+      if (!createForm.clinicalDepartmentID) {
+        setCreateError("Please select a department.");
+        setCreating(false);
+        return;
+      }
+
       const payload = {
         patientID: Number(createForm.patientID),
         appointmentDate,
         reason: createForm.reason.trim(),
+        clinicalDepartmentID: Number(createForm.clinicalDepartmentID),
       };
 
       await createDoctorAppointment(payload);
@@ -517,7 +564,11 @@ export default function Appointments() {
       setRows(Array.isArray(res.data) ? res.data : []);
 
       setShowCreate(false);
-      setCreateForm({ patientID: "", reason: "" });
+      setCreateForm((prev) => ({
+        patientID: "",
+        reason: "",
+        clinicalDepartmentID: prev.clinicalDepartmentID || (departments[0] ? String(departments[0].departmentID) : ""),
+      }));
       setSelectedPatient(null);
       setPatientSearch("");
       setSelectedDate(undefined);
@@ -603,6 +654,20 @@ export default function Appointments() {
             {statuses.map((s) => (
               <option key={s} value={s}>
                 {s}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={deptFilter}
+            onChange={(e) => setDeptFilter(e.target.value)}
+            className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            title="Filter by department"
+          >
+            <option value="">All departments</option>
+            {departments.map((d) => (
+              <option key={d.departmentID} value={d.departmentID}>
+                {d.departmentName}
               </option>
             ))}
           </select>
@@ -918,6 +983,36 @@ export default function Appointments() {
                   onChange={(e) => setAppointmentTime(e.target.value)}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
+              </div>
+
+              {/* Department (multi-dept doctors) */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Department <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={createForm.clinicalDepartmentID}
+                  onChange={(e) =>
+                    setCreateForm((p) => ({
+                      ...p,
+                      clinicalDepartmentID: e.target.value,
+                    }))
+                  }
+                  required
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="">Select department…</option>
+                  {departments.map((d) => (
+                    <option key={d.departmentID} value={d.departmentID}>
+                      {d.departmentName}
+                    </option>
+                  ))}
+                </select>
+                {departments.length === 0 && !userLoading && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    No departments assigned. Contact admin.
+                  </p>
+                )}
               </div>
 
               {/* Reason */}
