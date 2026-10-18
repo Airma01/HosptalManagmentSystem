@@ -1,33 +1,37 @@
+# ============================================================
+# HospitalSys API — multi-stage Dockerfile
+# Targets: build | migrate | final
+# ============================================================
 
-# Build stage
+# ---------- Build ----------
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
-
 WORKDIR /src
+
+COPY HospitalSys.csproj .
+RUN dotnet restore
 
 COPY . .
+RUN dotnet publish -c Release -o /app/publish --no-restore
 
-RUN dotnet restore
-RUN dotnet publish -c Release -o /app/publish
-
-# Migration stage: SDK and EF CLI
+# ---------- Migrate (one-shot: applies all EF migrations) ----------
 FROM build AS migrate
-
-# Install EF Core CLI if it is not already available
-RUN dotnet tool install --global dotnet-ef
-
+RUN dotnet tool install --global dotnet-ef --version 10.0.*
 ENV PATH="${PATH}:/root/.dotnet/tools"
-
 WORKDIR /src
+# Default command: apply migrations (connection string from env)
+ENTRYPOINT ["dotnet", "ef", "database", "update", "--project", "HospitalSys.csproj"]
 
-ENTRYPOINT ["dotnet", "ef"]
-
-# Runtime stage: API only
+# ---------- Runtime ----------
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
-
 WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /app/publish .
 
+ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
 
 ENTRYPOINT ["dotnet", "HospitalSys.dll"]
