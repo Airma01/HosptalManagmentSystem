@@ -162,13 +162,17 @@ namespace HospitalSys.Dto
     
     public class RegisterUserDto
 {
-    public string FirstName { get; set; }
-    public string FatherName { get; set; }
-    public string Username { get; set; }
-    public string Password { get; set; }
-    public string Email { get; set; }
-    public string Phone { get; set; }
-    public List<int> RoleIDs { get; set; }   // ← array of role IDs
+    public string FirstName { get; set; } = "";
+    public string FatherName { get; set; } = "";
+    public string Username { get; set; } = "";
+    public string Password { get; set; } = "";
+    public string Email { get; set; } = "";
+    public string Phone { get; set; } = "";
+
+    /// <summary>"Male" or "Female"</summary>
+    public string Gender { get; set; } = "";
+
+    public List<int> RoleIDs { get; set; } = new();
 }
 
     // For User Profile Update

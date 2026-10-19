@@ -17,6 +17,7 @@ namespace HospitalSys.Controllers
 {
     [ApiController]
     [Route("Hospital/[Controller]")]
+    [AuthorizeRole("Admin")]
     public class AdminController :ControllerBase
     {
         private readonly AppDbContext _context;
@@ -85,11 +86,10 @@ namespace HospitalSys.Controllers
             }
         }
 
-       [HttpPost("add_user")]
+      [HttpPost("add_user")]
       [AuthorizeRole("Admin")]
 public async Task<IActionResult> AddUser([FromBody] RegisterUserDto userDto)
 {
-    // Validate required fields
     if (string.IsNullOrEmpty(userDto.FirstName) ||
         string.IsNullOrEmpty(userDto.FatherName) ||
         string.IsNullOrEmpty(userDto.Username) ||
@@ -99,10 +99,16 @@ public async Task<IActionResult> AddUser([FromBody] RegisterUserDto userDto)
         return BadRequest("All required fields must be filled.");
     }
 
+    // Gender required: Male or Female
+    if (string.IsNullOrWhiteSpace(userDto.Gender) ||
+        (userDto.Gender != "Male" && userDto.Gender != "Female"))
+    {
+        return BadRequest("Gender is required and must be 'Male' or 'Female'.");
+    }
+
     if (await _context.Users.AnyAsync(u => u.Username == userDto.Username))
         return BadRequest("Username already taken.");
 
-    // Validate roles
     if (userDto.RoleIDs == null || !userDto.RoleIDs.Any())
         return BadRequest("At least one role must be assigned.");
 
@@ -116,23 +122,25 @@ public async Task<IActionResult> AddUser([FromBody] RegisterUserDto userDto)
 
     try
     {
+        // Parse string → enum (HospitalSys.Models.Gender)
+        var gender = Enum.Parse<HospitalSys.Models.Gender>(userDto.Gender, ignoreCase: true);
+
         var user = new Users
         {
             FirstName = userDto.FirstName,
             FatherName = userDto.FatherName,
             Username = userDto.Username,
-            Email = userDto.Email,
+            Email = userDto.Email ?? "",
             HashPassword = BCrypt.Net.BCrypt.HashPassword(userDto.Password),
-            Phone = userDto.Phone
-            // Gender and other fields if needed
+            Phone = userDto.Phone,
+            Gender = gender
         };
 
         using var transaction = await _context.Database.BeginTransactionAsync();
 
         await _context.Users.AddAsync(user);
-        await _context.SaveChangesAsync(); // user.UserID generated
+        await _context.SaveChangesAsync();
 
-       
         var userRoles = userDto.RoleIDs.Select(roleId => new UserRole
         {
             UserID = user.UserID,
@@ -145,9 +153,8 @@ public async Task<IActionResult> AddUser([FromBody] RegisterUserDto userDto)
 
         return Ok("User added successfully with roles.");
     }
-    catch (Exception ex)
+    catch (Exception)
     {
-        // Log exception
         return StatusCode(500, "Internal server error.");
     }
 }

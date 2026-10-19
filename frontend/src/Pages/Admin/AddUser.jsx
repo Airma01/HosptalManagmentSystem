@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../../Config/API';
@@ -14,6 +15,7 @@ const AddUser = () => {
         ConfirmPassword: '',
         Email: '',
         Phone: '',
+        Gender: '', // 'Male' | 'Female'
         RoleIDs: [] // ← now an array
     });
     const [errors, setErrors] = useState({});
@@ -72,6 +74,9 @@ const AddUser = () => {
         } else if (!/^[0-9]{10,15}$/.test(formData.Phone)) {
             newErrors.Phone = 'Please enter a valid phone number';
         }
+        if (!formData.Gender || !['Male', 'Female'].includes(formData.Gender)) {
+            newErrors.Gender = 'Please select gender (Male or Female)';
+        }
         if (formData.Email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.Email)) {
             newErrors.Email = 'Please enter a valid email address';
         }
@@ -97,6 +102,7 @@ const AddUser = () => {
                 Password: formData.Password,
                 Email: formData.Email || '',
                 Phone: formData.Phone,
+                Gender: formData.Gender, // 'Male' | 'Female'
                 RoleIDs: formData.RoleIDs // array of integers
             };
 
@@ -111,6 +117,7 @@ const AddUser = () => {
                 ConfirmPassword: '',
                 Email: '',
                 Phone: '',
+                Gender: '',
                 RoleIDs: []
             });
 
@@ -198,6 +205,40 @@ const AddUser = () => {
                                     placeholder="Enter father name"
                                 />
                                 {errors.FatherName && <p className="mt-1 text-sm text-red-500">{errors.FatherName}</p>}
+                            </div>
+
+                            {/* Gender Selection */}
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Gender <span className="text-red-500">*</span>
+                                </label>
+                                <div className={`flex flex-wrap gap-4 p-3 border rounded-lg ${
+                                    errors.Gender ? 'border-red-500' : 'border-gray-300'
+                                }`}>
+                                    <label className="flex items-center space-x-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="Gender"
+                                            value="Male"
+                                            checked={formData.Gender === 'Male'}
+                                            onChange={handleChange}
+                                            className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                                        />
+                                        <span className="text-sm text-gray-700">Male</span>
+                                    </label>
+                                    <label className="flex items-center space-x-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="Gender"
+                                            value="Female"
+                                            checked={formData.Gender === 'Female'}
+                                            onChange={handleChange}
+                                            className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                                        />
+                                        <span className="text-sm text-gray-700">Female</span>
+                                    </label>
+                                </div>
+                                {errors.Gender && <p className="mt-1 text-sm text-red-500">{errors.Gender}</p>}
                             </div>
                         </div>
                     </div>

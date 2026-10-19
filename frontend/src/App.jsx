@@ -603,8 +603,8 @@ function App() {
 </Route>
 
         {/* Fallback routes */}
-        <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
-        <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="/" element={<Navigate to="/Bishoftu/login" replace />} />
+        <Route path="*" element={<Navigate to="/Bishoftu/login" replace />} />
       </Routes>
     </Router>
   );

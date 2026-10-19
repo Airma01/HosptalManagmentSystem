@@ -1,3 +1,4 @@
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -33,22 +34,27 @@ namespace HospitalSys.Controllers.Nurse
         }
 
         // ============================================================
-        // Helper: Get NurseID from claims
+        // Helpers: identity from Users schema (JWT NameIdentifier = UserID)
         // ============================================================
-        private int GetNurseId()
-        {
-            var nurseIdClaim = User.FindFirst("NurseID")?.Value;
-            if (string.IsNullOrEmpty(nurseIdClaim) || !int.TryParse(nurseIdClaim, out int nurseId))
-                throw new UnauthorizedAccessException("Invalid nurse authentication");
-            return nurseId;
-        }
-
         private int GetUserId()
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
                 throw new UnauthorizedAccessException("Invalid user authentication");
             return userId;
+        }
+
+        /// <summary>
+        /// Resolve NurseID from Users → Nurses when writing to tables that still have NurseID FK (e.g. Triage).
+        /// Returns null if no Nurse profile exists for this user.
+        /// </summary>
+        private async Task<int?> GetNurseIdFromUserAsync()
+        {
+            int userId = GetUserId();
+            var nurse = await _context.Nurses
+                .AsNoTracking()
+                .FirstOrDefaultAsync(n => n.UserID == userId);
+            return nurse?.NurseID;
         }
 
         // ============================================================
@@ -59,17 +65,21 @@ namespace HospitalSys.Controllers.Nurse
         {
             try
             {
-                int nurseId = GetNurseId();
+                int userId = GetUserId();
                 var today = DateTime.UtcNow.Date;
 
-                // Get nurse info
-                var nurse = await _context.Nurses
-                    .Include(n => n.Users)
-                    .Include(n => n.ClinicalDepartment)
-                    .FirstOrDefaultAsync(n => n.NurseID == nurseId);
+                // Load from Users schema (role already enforced by [Authorize(Roles = "Nurse")])
+                var user = await _context.Users
+                    .Include(u => u.Nurse)
+                        .ThenInclude(n => n.ClinicalDepartment)
+                    .FirstOrDefaultAsync(u => u.UserID == userId);
 
-                if (nurse == null)
-                    return NotFound(new { message = "Nurse not found" });
+                if (user == null)
+                    return NotFound(new { message = "User not found" });
+
+                var nurseProfile = user.Nurse?.FirstOrDefault();
+                int nurseId = nurseProfile?.NurseID ?? 0;
+                string? departmentName = nurseProfile?.ClinicalDepartment?.DepartmentName;
 
                 // Today's patients: distinct patients with a visit today
                 var todayPatientCount = await _context.PatientVisits
@@ -82,13 +92,12 @@ namespace HospitalSys.Controllers.Nurse
                 var todayVisitCount = await _context.PatientVisits
                     .CountAsync(pv => pv.VisitDate.Date == today);
 
-                // Pending triage: visits that have no triage yet (or any logic you define)
-                // We'll assume pending = visit exists but no triage record.
+                // Pending triage: visits that have no triage yet
                 var pendingTriageCount = await _context.PatientVisits
                     .Where(pv => !_context.Triages.Any(t => t.VisitID == pv.VisitID))
                     .CountAsync();
 
-                // Completed triage: visits that have at least one triage record
+                // Completed triage
                 var completedTriageCount = await _context.Triages.CountAsync();
 
                 // Today's prescriptions
@@ -98,8 +107,8 @@ namespace HospitalSys.Controllers.Nurse
                 var dashboard = new NurseDashboardDto
                 {
                     NurseId = nurseId,
-                    NurseName = $"{nurse.Users.FirstName} {nurse.Users.FatherName}",
-                    DepartmentName = nurse.ClinicalDepartment?.DepartmentName,
+                    NurseName = $"{user.FirstName} {user.FatherName}",
+                    DepartmentName = departmentName,
                     TodayPatientCount = todayPatientCount,
                     TodayVisitCount = todayVisitCount,
                     PendingTriageCount = pendingTriageCount,
@@ -113,7 +122,7 @@ namespace HospitalSys.Controllers.Nurse
             {
                 return Unauthorized(new { message = "Invalid nurse authentication" });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return StatusCode(500, new { message = "An unexpected error occurred" });
             }
@@ -402,7 +411,9 @@ public async Task<IActionResult> RegisterPatient([FromBody] RegisterPatientDto d
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                int nurseId = GetNurseId();
+                // Auth from Users schema; resolve NurseID only for Triage FK
+                int userId = GetUserId();
+                int? nurseId = await GetNurseIdFromUserAsync();
 
                 var patient = await _context.Patients.FindAsync(dto.PatientId);
                 if (patient == null)
@@ -436,7 +447,7 @@ public async Task<IActionResult> RegisterPatient([FromBody] RegisterPatientDto d
                     var triage = new Triage
                     {
                         VisitID = visit.VisitID,
-                        NurseID = nurseId,
+                        NurseID = nurseId,  // nullable FK – from Users→Nurse lookup
                         TriageDepartmentID = dto.TriageDepartmentId,
                         ClinicalDepartmentID = dto.ClinicalDepartmentId,
                         Temprature = dto.Temprature,
@@ -742,7 +753,9 @@ public async Task<IActionResult> GetClinicalDepartments()
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                int nurseId = GetNurseId();
+                // Auth from Users schema; resolve NurseID only for Triage FK
+                int userId = GetUserId();
+                int? nurseId = await GetNurseIdFromUserAsync();
 
                 var visit = await _context.PatientVisits.FindAsync(dto.VisitId);
                 if (visit == null)
@@ -756,7 +769,7 @@ public async Task<IActionResult> GetClinicalDepartments()
                 if (clinicalDept == null)
                     return NotFound(new { message = "Clinical Department not found" });
 
-                // Use authenticated nurse ID, ignore any NurseId from DTO
+                // Use authenticated user → Nurse lookup; ignore any NurseId from DTO
                 var triage = new Triage
                 {
                     VisitID = dto.VisitId,
@@ -859,18 +872,17 @@ public async Task<IActionResult> GetClinicalDepartments()
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                int nurseId = GetNurseId();
+                // Auth from Users schema; resolve NurseID only for Triage FK
+                int userId = GetUserId();
+                int? nurseId = await GetNurseIdFromUserAsync();
 
                 var triage = await _context.Triages.FindAsync(id);
                 if (triage == null)
                     return NotFound(new { message = "Triage not found" });
 
-                // Check if this nurse is allowed to update (optional: allow only if same nurse or admin)
-                // For now, allow any authenticated nurse to update any triage? Usually you might restrict.
-                // Since requirement didn't specify restriction, we'll allow.
-
-                if (dto.NurseId.HasValue)
-                    triage.NurseID = dto.NurseId.Value; // but better to use authenticated? We'll keep as-is.
+                // Prefer authenticated nurse (from Users), ignore DTO NurseId
+                if (nurseId.HasValue)
+                    triage.NurseID = nurseId.Value;
                 if (dto.TriageDepartmentId.HasValue)
                     triage.TriageDepartmentID = dto.TriageDepartmentId.Value;
                 if (dto.ClinicalDepartmentId.HasValue)
