@@ -408,26 +408,63 @@ public async Task<IActionResult> RegisterPatient([FromBody] RegisterPatientDto d
         {
             try
             {
-                if (!ModelState.IsValid)
-                    return BadRequest(ModelState);
+                if (dto == null)
+                    return BadRequest(new { message = "Request body is required" });
 
-                // Auth from Users schema; resolve NurseID only for Triage FK
-                int userId = GetUserId();
+                if (!ModelState.IsValid)
+                    return BadRequest(new { message = "Validation failed", errors = ModelState });
+
+                // ---- Auth: Users schema (JWT NameIdentifier = UserID) ----
+                int userId;
+                try
+                {
+                    userId = GetUserId();
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    return Unauthorized(new { message = "Invalid nurse authentication. Please log in again." });
+                }
+
                 int? nurseId = await GetNurseIdFromUserAsync();
+                if (!nurseId.HasValue || nurseId.Value <= 0)
+                {
+                    return BadRequest(new
+                    {
+                        message = "Nurse profile not found for this user. In Admin: assign Nurse role AND register user as Nurse (Add Nurse)."
+                    });
+                }
+
+                if (dto.PatientId <= 0)
+                    return BadRequest(new { message = "PatientId is required" });
 
                 var patient = await _context.Patients.FindAsync(dto.PatientId);
                 if (patient == null)
                     return NotFound(new { message = "Patient not found" });
 
+                // Frontend may send null/empty triageDepartmentId — treat as missing
+                if (dto.TriageDepartmentId <= 0)
+                    return BadRequest(new { message = "Triage Department is required" });
+
                 var triageDept = await _context.TriageDepartments.FindAsync(dto.TriageDepartmentId);
                 if (triageDept == null)
                     return NotFound(new { message = "Triage Department not found" });
+
+                if (dto.ClinicalDepartmentId <= 0)
+                    return BadRequest(new { message = "Clinical Department is required" });
 
                 var clinicalDept = await _context.ClinicalDepartments.FindAsync(dto.ClinicalDepartmentId);
                 if (clinicalDept == null)
                     return NotFound(new { message = "Clinical Department not found" });
 
-                // Registration / consultation fee (change as needed)
+                // Npgsql requires UTC for timestamp with time zone
+                DateTime visitDate;
+                if (dto.VisitDate == default)
+                    visitDate = DateTime.UtcNow;
+                else if (dto.VisitDate.Kind == DateTimeKind.Utc)
+                    visitDate = dto.VisitDate;
+                else
+                    visitDate = DateTime.SpecifyKind(dto.VisitDate, DateTimeKind.Utc);
+
                 const double registrationFee = 50.0;
 
                 await using var transaction = await _context.Database.BeginTransactionAsync();
@@ -436,9 +473,9 @@ public async Task<IActionResult> RegisterPatient([FromBody] RegisterPatientDto d
                     var visit = new PatientVisit
                     {
                         PatientID = dto.PatientId,
-                        VisitDate = DateTime.SpecifyKind(dto.VisitDate, DateTimeKind.Utc),
-                        VisitType = dto.VisitType,
-                        Status = dto.Status,
+                        VisitDate = visitDate,
+                        VisitType = string.IsNullOrWhiteSpace(dto.VisitType) ? "Outpatient" : dto.VisitType,
+                        Status = string.IsNullOrWhiteSpace(dto.Status) ? "Scheduled" : dto.Status,
                         Created_at = DateTime.UtcNow
                     };
                     _context.PatientVisits.Add(visit);
@@ -447,7 +484,7 @@ public async Task<IActionResult> RegisterPatient([FromBody] RegisterPatientDto d
                     var triage = new Triage
                     {
                         VisitID = visit.VisitID,
-                        NurseID = nurseId,  // nullable FK – from Users→Nurse lookup
+                        NurseID = nurseId.Value,
                         TriageDepartmentID = dto.TriageDepartmentId,
                         ClinicalDepartmentID = dto.ClinicalDepartmentId,
                         Temprature = dto.Temprature,
@@ -455,13 +492,12 @@ public async Task<IActionResult> RegisterPatient([FromBody] RegisterPatientDto d
                         HeartRate = dto.HeartRate,
                         RespiratotyRate = dto.RespiratyRate,
                         Weight = dto.Weight,
-                        Notes = dto.Notes
+                        Notes = dto.Notes ?? ""
                     };
                     _context.Triages.Add(triage);
 
                     visit.Status = "Progress";
 
-                    // ---- PAYMENT: unpaid hospital bill (doctor queue waits for Paid) ----
                     var bill = new Bill
                     {
                         PatientID = dto.PatientId,
@@ -485,38 +521,34 @@ public async Task<IActionResult> RegisterPatient([FromBody] RegisterPatientDto d
                     await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
 
-                    var visitResponse = new PatientVisitResponseDto
-                    {
-                        VisitId = visit.VisitID,
-                        PatientId = visit.PatientID,
-                        PatientName = $"{patient.FirstName} {patient.LastName}",
-                        VisitDate = visit.VisitDate,
-                        VisitType = visit.VisitType,
-                        Status = visit.Status,
-                        Created_at = visit.Created_at
-                    };
-
-                    var triageResponse = new TriageResponseDto
-                    {
-                        TriageId = triage.TriageId,
-                        VisitId = triage.VisitID,
-                        NurseId = triage.NurseID,
-                        TriageDepartmentId = triage.TriageDepartmentID,
-                        ClinicalDepartmentId = triage.ClinicalDepartmentID,
-                        Temprature = triage.Temprature,
-                        BloodPressure = triage.BloodPressure,
-                        HeartRate = triage.HeartRate,
-                        RespiratyRate = triage.RespiratotyRate,
-                        Weight = triage.Weight,
-                        Notes = triage.Notes,
-                        PatientName = $"{patient.FirstName} {patient.LastName}",
-                        VisitDate = visit.VisitDate
-                    };
-
                     return Ok(new
                     {
-                        Visit = visitResponse,
-                        Triage = triageResponse,
+                        Visit = new PatientVisitResponseDto
+                        {
+                            VisitId = visit.VisitID,
+                            PatientId = visit.PatientID,
+                            PatientName = $"{patient.FirstName} {patient.LastName}",
+                            VisitDate = visit.VisitDate,
+                            VisitType = visit.VisitType,
+                            Status = visit.Status,
+                            Created_at = visit.Created_at
+                        },
+                        Triage = new TriageResponseDto
+                        {
+                            TriageId = triage.TriageId,
+                            VisitId = triage.VisitID,
+                            NurseId = triage.NurseID,
+                            TriageDepartmentId = triage.TriageDepartmentID,
+                            ClinicalDepartmentId = triage.ClinicalDepartmentID,
+                            Temprature = triage.Temprature,
+                            BloodPressure = triage.BloodPressure,
+                            HeartRate = triage.HeartRate,
+                            RespiratyRate = triage.RespiratotyRate,
+                            Weight = triage.Weight,
+                            Notes = triage.Notes,
+                            PatientName = $"{patient.FirstName} {patient.LastName}",
+                            VisitDate = visit.VisitDate
+                        },
                         Bill = new
                         {
                             bill.BillID,
@@ -527,19 +559,31 @@ public async Task<IActionResult> RegisterPatient([FromBody] RegisterPatientDto d
                         }
                     });
                 }
-                catch
+                catch (Exception inner)
                 {
                     await transaction.RollbackAsync();
-                    throw;
+                    Console.WriteLine(inner);
+                    return StatusCode(500, new
+                    {
+                        message = "Failed to create visit/triage/bill",
+                        error = inner.Message,
+                        detail = inner.InnerException?.Message
+                    });
                 }
             }
             catch (UnauthorizedAccessException)
             {
-                return Unauthorized(new { message = "Invalid nurse authentication" });
+                return Unauthorized(new { message = "Invalid nurse authentication. Please log in again." });
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An unexpected error occurred" });
+                Console.WriteLine(ex);
+                return StatusCode(500, new
+                {
+                    message = "An unexpected error occurred",
+                    error = ex.Message,
+                    detail = ex.InnerException?.Message
+                });
             }
         }
 
@@ -753,9 +797,17 @@ public async Task<IActionResult> GetClinicalDepartments()
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                // Auth from Users schema; resolve NurseID only for Triage FK
+                // Auth from Users schema; resolve NurseID for Triage FK
                 int userId = GetUserId();
                 int? nurseId = await GetNurseIdFromUserAsync();
+
+                if (!nurseId.HasValue || nurseId.Value <= 0)
+                {
+                    return BadRequest(new
+                    {
+                        message = "Nurse profile not found for this user. Admin must register this account as Nurse (Add Nurse) after assigning the Nurse role."
+                    });
+                }
 
                 var visit = await _context.PatientVisits.FindAsync(dto.VisitId);
                 if (visit == null)
@@ -773,7 +825,7 @@ public async Task<IActionResult> GetClinicalDepartments()
                 var triage = new Triage
                 {
                     VisitID = dto.VisitId,
-                    NurseID = nurseId,
+                    NurseID = nurseId.Value,
                     TriageDepartmentID = dto.TriageDepartmentId,
                     ClinicalDepartmentID = dto.ClinicalDepartmentId,
                     Temprature = dto.Temprature,

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import API from '../../../../Config/API';
@@ -164,30 +165,41 @@ const CreateVisitAndTriage = () => {
       setError('Clinical Department is required.');
       return;
     }
+    if (!formData.triageDepartmentId) {
+      setError('Triage Department is required.');
+      return;
+    }
+    if (!formData.visitDate) {
+      setError('Visit Date is required.');
+      return;
+    }
 
     setLoading(true);
     try {
-      // Preserve existing request structure & field names (including backend typos)
       const payload = {
-        patientId: formData.patientId,
-        visitDate: formData.visitDate,
-        visitType: formData.visitType,
-        status: formData.status,
-        triageDepartmentId: formData.triageDepartmentId || null,
-        clinicalDepartmentId: formData.clinicalDepartmentId,
-        temprature: formData.temprature || null,
-        bloodPressure: formData.bloodPressure || null,
-        heartRate: formData.heartRate || null,
-        respiratyRate: formData.respiratyRate || null,
-        weight: formData.weight || null,
-        notes: formData.notes || null,
+        patientId: Number(formData.patientId),
+        visitDate: formData.visitDate, // e.g. 2026-10-19T10:00 or full ISO
+        visitType: formData.visitType || 'Outpatient',
+        status: formData.status || 'Scheduled',
+        triageDepartmentId: Number(formData.triageDepartmentId),
+        clinicalDepartmentId: Number(formData.clinicalDepartmentId),
+        temprature: Number(formData.temprature) || 0,
+        bloodPressure: Number(formData.bloodPressure) || 0,
+        heartRate: Number(formData.heartRate) || 0,
+        respiratyRate: Number(formData.respiratyRate) || 0,
+        weight: Number(formData.weight) || 0,
+        notes: formData.notes || '',
       };
 
       await API.post('/Hospital/nurse/Nurse/create-visit-triage', payload);
       setSuccess('Visit and triage created successfully.');
       setTimeout(() => navigate('/nurse/visits/today'), 1200);
     } catch (err) {
-      setError(err.response?.data?.message || 'Creation failed');
+      const data = err.response?.data;
+      const msg = data?.message || 'Creation failed';
+      const extra = data?.error || data?.detail || '';
+      setError(extra ? `${msg}: ${extra}` : msg);
+      console.error('create-visit-triage failed', data || err);
     } finally {
       setLoading(false);
     }
