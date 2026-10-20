@@ -1,3 +1,4 @@
+
 using HospitalSys.Data;
 using HospitalSys.Services;
 using HospitalSys.Enums;
@@ -97,7 +98,6 @@ namespace HospitalSys.Controllers.Doctor
         }
 
         [HttpGet("asthma/{id:int}")]
-        [HttpGet("asthma/{id:int}")]
         public async Task<IActionResult> GetAsthmaById(int patientId, int id)
         {
             try
@@ -113,7 +113,6 @@ namespace HospitalSys.Controllers.Doctor
             catch { return StatusCode(500, new { message = "Error retrieving asthma record." }); }
         }
 
-        [HttpPost("asthma")]
         [HttpPost("asthma")]
         public async Task<IActionResult> CreateAsthma(int patientId, [FromBody] CreateAsthmaManagementDto dto)
         {
@@ -225,7 +224,6 @@ namespace HospitalSys.Controllers.Doctor
         }
 
         [HttpGet("diabetes/{id:int}")]
-        [HttpGet("diabetes/{id:int}")]
         public async Task<IActionResult> GetDiabetesById(int patientId, int id)
         {
             try
@@ -241,7 +239,6 @@ namespace HospitalSys.Controllers.Doctor
             catch { return StatusCode(500, new { message = "Error retrieving diabetes record." }); }
         }
 
-        [HttpPost("diabetes")]
         [HttpPost("diabetes")]
         public async Task<IActionResult> CreateDiabetes(int patientId, [FromBody] CreateDiabetesManagementDto dto)
         {
@@ -361,7 +358,6 @@ namespace HospitalSys.Controllers.Doctor
         }
 
         [HttpGet("hiv/{id:int}")]
-        [HttpGet("hiv/{id:int}")]
         public async Task<IActionResult> GetHivById(int patientId, int id)
         {
             try
@@ -377,7 +373,6 @@ namespace HospitalSys.Controllers.Doctor
             catch { return StatusCode(500, new { message = "Error retrieving HIV record." }); }
         }
 
-        [HttpPost("hiv")]
         [HttpPost("hiv")]
         public async Task<IActionResult> CreateHiv(int patientId, [FromBody] CreateHIVCareDto dto)
         {
@@ -493,7 +488,6 @@ namespace HospitalSys.Controllers.Doctor
         }
 
         [HttpGet("hepatitis/{id:int}")]
-        [HttpGet("hepatitis/{id:int}")]
         public async Task<IActionResult> GetHepatitisById(int patientId, int id)
         {
             try
@@ -509,7 +503,6 @@ namespace HospitalSys.Controllers.Doctor
             catch { return StatusCode(500, new { message = "Error retrieving hepatitis record." }); }
         }
 
-        [HttpPost("hepatitis")]
         [HttpPost("hepatitis")]
         public async Task<IActionResult> CreateHepatitis(int patientId, [FromBody] CreateHepatitisManagementDto dto)
         {
@@ -621,7 +614,6 @@ namespace HospitalSys.Controllers.Doctor
         }
 
         [HttpGet("hypertension/{id:int}")]
-        [HttpGet("hypertension/{id:int}")]
         public async Task<IActionResult> GetHypertensionById(int patientId, int id)
         {
             try
@@ -637,7 +629,6 @@ namespace HospitalSys.Controllers.Doctor
             catch { return StatusCode(500, new { message = "Error retrieving hypertension record." }); }
         }
 
-        [HttpPost("hypertension")]
         [HttpPost("hypertension")]
         public async Task<IActionResult> CreateHypertension(int patientId, [FromBody] CreateHypertensionManagementDto dto)
         {
@@ -747,7 +738,6 @@ namespace HospitalSys.Controllers.Doctor
         }
 
         [HttpGet("mental-health/{id:int}")]
-        [HttpGet("mental-health/{id:int}")]
         public async Task<IActionResult> GetMentalHealthById(int patientId, int id)
         {
             try
@@ -763,7 +753,6 @@ namespace HospitalSys.Controllers.Doctor
             catch { return StatusCode(500, new { message = "Error retrieving mental health record." }); }
         }
 
-        [HttpPost("mental-health")]
         [HttpPost("mental-health")]
         public async Task<IActionResult> CreateMentalHealth(int patientId, [FromBody] CreateMentalHealthCareDto dto)
         {
@@ -874,7 +863,6 @@ namespace HospitalSys.Controllers.Doctor
         }
 
         [HttpGet("tuberculosis/{id:int}")]
-        [HttpGet("tuberculosis/{id:int}")]
         public async Task<IActionResult> GetTuberculosisById(int patientId, int id)
         {
             try
@@ -890,7 +878,6 @@ namespace HospitalSys.Controllers.Doctor
             catch { return StatusCode(500, new { message = "Error retrieving tuberculosis record." }); }
         }
 
-        [HttpPost("tuberculosis")]
         [HttpPost("tuberculosis")]
         public async Task<IActionResult> CreateTuberculosis(int patientId, [FromBody] CreateTuberculosisManagementDto dto)
         {

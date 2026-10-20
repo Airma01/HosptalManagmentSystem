@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import ClinicalRecordAccordion from "../Components/ClinicalRecordAccordion";
 import API from "../../../../Config/API";
@@ -89,14 +90,14 @@ export default function Consultation({
     }
   };
 
-  // History from other visits only
+  // History from other visits only (support camelCase + PascalCase from API)
   const previous = (consultations || []).filter(
-    (c) => String(c.visitID) !== String(visitId)
+    (c) => String(c.visitID ?? c.VisitID) !== String(visitId)
   );
 
   // Group previous by VisitID
   const byVisit = previous.reduce((acc, c) => {
-    const key = String(c.visitID ?? "unknown");
+    const key = String(c.visitID ?? c.VisitID ?? "unknown");
     if (!acc[key]) acc[key] = [];
     acc[key].push(c);
     return acc;

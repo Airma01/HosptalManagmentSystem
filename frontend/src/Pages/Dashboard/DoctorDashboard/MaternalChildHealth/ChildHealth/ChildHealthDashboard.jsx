@@ -1,5 +1,6 @@
 
 
+
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import API from "../../../../../Config/API";
@@ -11,14 +12,38 @@ import NutritionAssessment from "./NutritionAssessment";
 import IMNCIEncounter from "./IMNCIEncounter";
 import { canWriteMaternalChildHealth } from "../../../../../utils/canWriteMaternalChildHealth";
 import AIClinicalAssistant from "../../Components/AIAssistant/AIClinicalAssistant";
+import Allergies from "../../Consultation/Allergies";
+import MedicalHistory from "../../Consultation/MedicalHistory";
+import FamilyHistory from "../../Consultation/FamilyHistory";
+import SocialHistory from "../../Consultation/SocialHistory";
+import Consultation from "../../Consultation/Consultation";
+import PhysicalExam from "../../Consultation/PhysicalExam";
+import Diagnosis from "../../Consultation/Diagnosis";
+import ProblemList from "../../Consultation/ProblemList";
+import Prescription from "../../Consultation/Prescription";
+import Laboratory from "../../Consultation/Laboratory";
+import Radiology from "../../Consultation/Radiology";
 
 const TABS = [
+  // Child-specific modules
   { key: "neonatal", label: "Neonatal", icon: "bi-moon-stars" },
   { key: "growth", label: "Growth", icon: "bi-graph-up" },
   { key: "development", label: "Development", icon: "bi-puzzle" },
   { key: "immunization", label: "Immunization", icon: "bi-syringe" },
   { key: "nutrition", label: "Nutrition", icon: "bi-apple" },
   { key: "imnci", label: "IMNCI", icon: "bi-clipboard2-pulse" },
+  // Shared consultation / clinical modules (same as Adult & Consultation)
+  { key: "allergies", label: "Allergies", icon: "bi-exclamation-triangle" },
+  { key: "medicalHistory", label: "Medical History", icon: "bi-journal-medical" },
+  { key: "familyHistory", label: "Family History", icon: "bi-people" },
+  { key: "socialHistory", label: "Social History", icon: "bi-house-heart" },
+  { key: "consultation", label: "Consultation", icon: "bi-clipboard2-check" },
+  { key: "physicalExam", label: "Physical Exam", icon: "bi-body-text" },
+  { key: "diagnosis", label: "Diagnosis", icon: "bi-file-medical" },
+  { key: "problemList", label: "Problem List", icon: "bi-list-check" },
+  { key: "prescription", label: "Prescription", icon: "bi-prescription2" },
+  { key: "laboratory", label: "Laboratory", icon: "bi-droplet" },
+  { key: "radiology", label: "Radiology", icon: "bi-radioactive" },
   { key: "ai", label: "AI Assistant", icon: "bi-robot" },
 ];
 
@@ -487,6 +512,9 @@ export default function ChildHealthDashboard() {
 function ChildHealthModules({ childPatientId, childVisitId, tab }) {
   const navigate = useNavigate();
   const { patientId: currentParamId, visitId: currentVisitId } = useParams();
+  const [clinicalData, setClinicalData] = useState(null);
+  const [clinicalError, setClinicalError] = useState("");
+  const [clinicalLoading, setClinicalLoading] = useState(false);
 
   useEffect(() => {
     if (
@@ -500,6 +528,39 @@ function ChildHealthModules({ childPatientId, childVisitId, tab }) {
     }
   }, [childPatientId, childVisitId, currentParamId, currentVisitId, navigate]);
 
+  const loadClinical = useCallback(async () => {
+    if (!childPatientId || !childVisitId) {
+      setClinicalData(null);
+      return;
+    }
+    setClinicalLoading(true);
+    setClinicalError("");
+    try {
+      const res = await API.get(
+        `/api/doctor/patient/${childPatientId}/visit/${childVisitId}`
+      );
+      setClinicalData(res.data);
+    } catch (err) {
+      console.error("Child clinical load failed", err?.response?.data || err);
+      setClinicalData(null);
+      setClinicalError(
+        err.response?.data?.message ||
+          "Failed to load clinical / consultation data for this visit."
+      );
+    } finally {
+      setClinicalLoading(false);
+    }
+  }, [childPatientId, childVisitId]);
+
+  useEffect(() => {
+    if (
+      String(currentParamId) === String(childPatientId) &&
+      String(currentVisitId) === String(childVisitId)
+    ) {
+      loadClinical();
+    }
+  }, [currentParamId, currentVisitId, childPatientId, childVisitId, loadClinical]);
+
   if (
     String(currentParamId) !== String(childPatientId) ||
     String(currentVisitId) !== String(childVisitId)
@@ -511,6 +572,32 @@ function ChildHealthModules({ childPatientId, childVisitId, tab }) {
     );
   }
 
+  const consultations =
+    clinicalData?.previousConsultations ||
+    clinicalData?.PreviousConsultations ||
+    [];
+  const visitConsultations = consultations.filter(
+    (c) => String(c.visitID ?? c.VisitID) === String(childVisitId)
+  );
+  const primaryConsultationId =
+    visitConsultations[0]?.consultationID ||
+    visitConsultations[0]?.ConsultationID ||
+    null;
+
+  const clinicalTabs = new Set([
+    "allergies",
+    "medicalHistory",
+    "familyHistory",
+    "socialHistory",
+    "consultation",
+    "physicalExam",
+    "diagnosis",
+    "problemList",
+    "prescription",
+    "laboratory",
+    "radiology",
+  ]);
+
   return (
     <>
       {tab === "neonatal" ? <NeonatalCare /> : null}
@@ -519,6 +606,7 @@ function ChildHealthModules({ childPatientId, childVisitId, tab }) {
       {tab === "immunization" ? <Immunization /> : null}
       {tab === "nutrition" ? <NutritionAssessment /> : null}
       {tab === "imnci" ? <IMNCIEncounter /> : null}
+
       {tab === "ai" && childPatientId && childVisitId ? (
         <AIClinicalAssistant
           patientId={Number(childPatientId)}
@@ -526,6 +614,136 @@ function ChildHealthModules({ childPatientId, childVisitId, tab }) {
           module="ChildHealth"
         />
       ) : null}
+
+      {/* Shared consultation modules */}
+      {clinicalTabs.has(tab) && (
+        <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <h3 className="text-sm font-semibold text-slate-800">
+              Clinical Records
+            </h3>
+            <span className="text-xs text-slate-500">
+              Shared with Consultation workflow · Visit #{childVisitId}
+            </span>
+          </div>
+
+          {clinicalLoading && (
+            <p className="text-sm text-slate-500">Loading clinical data…</p>
+          )}
+          {clinicalError && !clinicalLoading && (
+            <p className="text-sm text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
+              {clinicalError}
+            </p>
+          )}
+
+          {tab === "allergies" && (
+            <Allergies
+              patientId={childPatientId}
+              allergies={
+                clinicalData?.allergies || clinicalData?.Allergies || []
+              }
+              onReload={loadClinical}
+            />
+          )}
+          {tab === "medicalHistory" && (
+            <MedicalHistory
+              patientId={childPatientId}
+              medicalHistory={
+                clinicalData?.medicalHistory ||
+                clinicalData?.MedicalHistory ||
+                []
+              }
+              onReload={loadClinical}
+            />
+          )}
+          {tab === "familyHistory" && (
+            <FamilyHistory
+              patientId={childPatientId}
+              familyMedicalHistory={
+                clinicalData?.familyMedicalHistory ||
+                clinicalData?.FamilyMedicalHistory ||
+                []
+              }
+              onReload={loadClinical}
+            />
+          )}
+          {tab === "socialHistory" && (
+            <SocialHistory
+              patientId={childPatientId}
+              socialHistory={
+                clinicalData?.socialHistory ||
+                clinicalData?.SocialHistory ||
+                []
+              }
+              onReload={loadClinical}
+            />
+          )}
+          {tab === "consultation" && (
+            <Consultation
+              patientId={childPatientId}
+              visitId={childVisitId}
+              consultations={consultations}
+              currentVisitConsultations={visitConsultations}
+              onReload={loadClinical}
+            />
+          )}
+          {tab === "physicalExam" && (
+            <PhysicalExam
+              primaryConsultationId={primaryConsultationId}
+              visitConsultations={visitConsultations}
+              onReload={loadClinical}
+            />
+          )}
+          {tab === "diagnosis" && (
+            <Diagnosis
+              primaryConsultationId={primaryConsultationId}
+              visitConsultations={visitConsultations}
+              onReload={loadClinical}
+            />
+          )}
+          {tab === "problemList" && (
+            <ProblemList
+              patientId={childPatientId}
+              problemList={
+                clinicalData?.problemList || clinicalData?.ProblemList || []
+              }
+              onReload={loadClinical}
+            />
+          )}
+          {tab === "prescription" && (
+            <Prescription
+              primaryConsultationId={primaryConsultationId}
+              latestPrescription={
+                clinicalData?.latestPrescription ||
+                clinicalData?.LatestPrescription
+              }
+              onReload={loadClinical}
+            />
+          )}
+          {tab === "laboratory" && (
+            <Laboratory
+              primaryConsultationId={primaryConsultationId}
+              laboratoryTests={
+                clinicalData?.laboratoryTests ||
+                clinicalData?.LaboratoryTests ||
+                []
+              }
+              onReload={loadClinical}
+            />
+          )}
+          {tab === "radiology" && (
+            <Radiology
+              primaryConsultationId={primaryConsultationId}
+              radiologyRequests={
+                clinicalData?.radiologyRequests ||
+                clinicalData?.RadiologyRequests ||
+                []
+              }
+              onReload={loadClinical}
+            />
+          )}
+        </div>
+      )}
     </>
   );
 }

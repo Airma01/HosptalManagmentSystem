@@ -1,9 +1,13 @@
 
+
 import { useCallback, useEffect, useState } from "react";
 import ClinicalRecordAccordion from "../Components/ClinicalRecordAccordion";
 import { useNavigate, useParams } from "react-router-dom";
 import API from "../../../../Config/API";
-import { canWriteAdultMedicalCare } from "../../../../utils/canWriteAdultMedicalCare";
+import {
+  canAccessAdultMedicalCare,
+  canWriteAdultMedicalCare,
+} from "../../../../utils/canWriteAdultMedicalCare";
 import Allergies from "../Consultation/Allergies";
 import MedicalHistory from "../Consultation/MedicalHistory";
 import FamilyHistory from "../Consultation/FamilyHistory";
@@ -338,17 +342,19 @@ export default function AdultMedicalCarePatient() {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [accessChecked, setAccessChecked] = useState(false);
   const [allowed, setAllowed] = useState(false);
+  const [canWrite, setCanWrite] = useState(false);
 
-  // Department gate: only General Medicine / General / Emergency
-  // Unauthorized doctors are redirected to /doctor and never see this UI
+  // Gate page on READ permission; CREATE is only for add/edit/delete buttons
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const ok = await canWriteAdultMedicalCare();
+      const canRead = await canAccessAdultMedicalCare();
+      const canCreate = await canWriteAdultMedicalCare();
       if (cancelled) return;
-      setAllowed(ok);
+      setAllowed(canRead);
+      setCanWrite(canCreate);
       setAccessChecked(true);
-      if (!ok) {
+      if (!canRead) {
         navigate("/doctor", { replace: true });
       }
     })();
@@ -370,8 +376,14 @@ export default function AdultMedicalCarePatient() {
             `/api/doctor/patient/${patientId}/visit/${visitId}`
           );
           setClinicalData(visitRes.data);
-        } catch {
+        } catch (visitErr) {
+          // Adult care still loads; clinical tabs need this endpoint
+          console.error("Visit clinical load failed", visitErr?.response?.data || visitErr);
           setClinicalData(null);
+          setError(
+            visitErr.response?.data?.message ||
+              "Adult care loaded, but visit clinical data failed. Consultation tab may be empty."
+          );
         }
       } else {
         setClinicalData(null);
@@ -396,11 +408,18 @@ export default function AdultMedicalCarePatient() {
   const rows = data?.[careMeta?.listKey] || [];
   const patient = data?.patient || {};
 
-  const consultations = clinicalData?.previousConsultations || [];
+  const consultations =
+    clinicalData?.previousConsultations ||
+    clinicalData?.PreviousConsultations ||
+    [];
   const visitConsultations = consultations.filter(
-    (c) => String(c.visitID) === String(visitId)
+    (c) =>
+      String(c.visitID ?? c.VisitID) === String(visitId)
   );
-  const primaryConsultationId = visitConsultations[0]?.consultationID || null;
+  const primaryConsultationId =
+    visitConsultations[0]?.consultationID ||
+    visitConsultations[0]?.ConsultationID ||
+    null;
 
   const openCreate = () => {
     setForm(defaultCreateForm(active));
@@ -451,6 +470,7 @@ export default function AdultMedicalCarePatient() {
   };
 
   const doDelete = async () => {
+    if (!canWrite) return;
     try {
       await API.delete(
         `/api/doctor/patient/${patientId}/adult-medical-care/${active}/${confirmDelete}`
@@ -547,13 +567,15 @@ export default function AdultMedicalCarePatient() {
               ))}
             </select>
           </div>
-          <button
-            type="button"
-            onClick={openCreate}
-            className="px-3 py-2 text-sm rounded-lg bg-emerald-600 text-white hover:bg-emerald-700"
-          >
-            + Add {careMeta.label} record
-          </button>
+          {canWrite && (
+            <button
+              type="button"
+              onClick={openCreate}
+              className="px-3 py-2 text-sm rounded-lg bg-emerald-600 text-white hover:bg-emerald-700"
+            >
+              + Add {careMeta.label} record
+            </button>
+          )}
         </div>
 
         <div>
@@ -564,8 +586,8 @@ export default function AdultMedicalCarePatient() {
             title={careMeta.label}
             records={rows}
             idKey={careMeta.idKey}
-            onEdit={openEdit}
-            onDelete={(id) => setConfirmDelete(id)}
+            onEdit={canWrite ? openEdit : undefined}
+            onDelete={canWrite ? (id) => setConfirmDelete(id) : undefined}
             excludeKeys={["patientID", "recordedByUserID", "managedByUserID", "assessedByUserID"]}
           />
         </div>
@@ -650,7 +672,8 @@ export default function AdultMedicalCarePatient() {
               <Consultation
                 patientId={patientId}
                 visitId={visitId}
-                consultations={visitConsultations}
+                consultations={consultations}
+                currentVisitConsultations={visitConsultations}
                 onReload={load}
               />
             )}
