@@ -9,6 +9,7 @@ namespace HospitalSys.Controllers.Radiology
 {
     [ApiController]
     [Route("radiology/[controller]")]
+    [Authorize(Roles = "Radiographer")]
     public class RadiologyTestTypeController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -161,7 +162,6 @@ namespace HospitalSys.Controllers.Radiology
 
         // PUT: /radiology/RadiologyTestType/{id}
         [HttpPut("{id:int}")]
-        [Authorize(Roles = "Doctor")]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateRadiologyTestTypeDto dto)
         {
             try
